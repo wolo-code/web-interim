@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html xmlns='http://www.w3.org/1999/xhtml' lang='en' itemscope='' itemtype='http://schema.org/WebApplication'>
+<head>
+	<meta http-equiv='X-UA-Compatible' content='IE=edge' >
+	<meta http-equiv='Content-Type' content="text/html; charset=UTF-8" >
+	<meta name='title' content="WCode location" >
+	<meta itemprop='name' content="WCode location" >
+	<meta name='robots' content='noindex' >
+	<meta name='author' content="Ujjwal Singh" >
+	<meta name='viewport' content='initial-scale=1.0' >
+	<link rel="shortcut icon" type='image/x-icon' href='/favicon.ico' >
+	<link href='https://location.wcodes.org' rel='canonical' >
+	<title>WCode based addressing system - WCode location</title>
+	<script src="https://www.gstatic.com/firebasejs/4.6.0/firebase-app.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/4.6.0/firebase-database.js"></script>
+		<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-96994409-1', 'auto');
+ga('send', 'pageview');
+</script>
+		<script src="https://cdn.ravenjs.com/3.22.2/raven.min.js" crossorigin="anonymous"></script>
+		<script>Raven.config('https://67af341ea58c4424ab4af921f0583573@sentry.io/187322').install();
+</script>
+	<script>
+	</script>
+	<script src="/console.js" async></script>
+	<script>
+var DEFAULT_LATLNG = {lat: -34.397, lng: 150.644};
+var pendingInitMap = true;
+var clickHandler;
+var map;
+
+function syncInitMap() {
+	if (typeof google === 'object' && typeof google.maps === 'object' && typeof initMap == 'function' && pendingInitMap) {
+		map = new google.maps.Map(document.getElementById('map'), {
+			center: DEFAULT_LATLNG,
+			mapTypeControl: false,
+			zoom: 8,
+			fullscreenControl: false,
+			streetViewControl: false,
+			zoomControl: false
+		});
+		initMap();
+		pendingInitMap = false;
+	}
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+	if(typeof initLoad != 'undefined')
+		initLoad();
+});
+	</script>
+	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyD3qtN-ejbFTrkes1Y5j3qRY8PmQrxYHDQ&libraries=places&callback=syncInitMap' async defer></script></head>
+	<style>
+#address_text {
+	position: absolute;
+	text-align: center;
+	bottom: 80px;
+	background-color: #FFFFFF;
+	padding: 4px 8px;
+	border: 1px solid #ddd;
+	border-radius: 18px;
+	left: 0;
+	right: 0;
+	margin-left: auto;
+	margin-right: auto;
+	max-width: 350px;
+}
+
+#address_text_main {
+	display: inline-block;
+	float: left;
+}
+
+#address_text_label {
+	font-family: 'Abel';
+  font-size: large;
+	padding-top: 4px;
+	color: #69B7CF;
+}
+
+#address_text_content {
+	display: block;
+	font-family: 'Roboto';
+	min-height: 48px;
+	max-width: 306px;
+	text-align: left;
+	padding: 6px 0 6px 6px;
+}
+
+#address_text_close {
+	position: absolute;
+	top: 2px;
+	right: 6px;
+}
+
+#address_text_close svg {
+	width: 30px;
+}
+
+#address_text_buttons {
+	display: inline-block;
+	width: 30px;
+}
+
+.address_text_button_spacer {
+	display: inline-block;
+	width: 18px;
+}
+
+#address_text_copy {
+	padding-top: 2px;
+	padding-left: 10px;
+	margin-left: auto;
+	margin-right: auto;
+}
+html {
+	background: rgba(100, 100, 100, 0.75);
+}
+
+html, body {
+	height: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+input {
+	border-radius:0;
+	-webkit-appearance: none;
+}
+
+button {
+	-webkit-appearance: none;
+	background: white;
+	box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
+	border: 1px solid;
+}
+
+@font-face {
+	font-family: 'Abel';
+	font-style: normal;
+	font-weight: 400;
+	src: local('Abel'), local('Abel-Regular'), url(//fonts.gstatic.com/s/abel/v6/brdGGFwqYJxjg2CD1E9o7g.woff2) format('woff2');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;
+}
+
+#map {
+	height: 100%;
+}
+
+#description {
+	font-family: Roboto;
+	font-size: 15px;
+	font-weight: 300;
+}
+
+.pac-card {
+	margin: 10px 10px 0 0;
+	border-radius: 2px 0 0 2px;
+	box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	outline: none;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+	background-color: #fff;
+	font-family: Roboto;
+}
+
+#pac-container {
+	padding-bottom: 12px;
+	margin-right: 12px;
+}
+
+.pac-controls {
+	display: inline-block;
+	padding: 5px 11px;
+}
+
+.pac-controls label {
+	font-family: Roboto;
+	font-size: 13px;
+	font-weight: 300;
+}
+
+#logo {
+	z-index: 1;
+	position: absolute;
+	right: 10px;
+	top: 10px;
+	width: 153px;
+}
+
+#logo a {
+	display: inline-block;
+	background: rgba(241, 241, 241, 0.75);
+	border-radius: 6px;
+	border-width: thin;
+	border-color: #e8e8e8;
+	border-style: solid;
+	padding: 2px;
+}
+
+#logo_wcode > .image > svg {
+	height: 50px;
+}
+
+#logo_location {
+	text-decoration: none;
+}
+
+#logo_location > .image > svg {
+	padding-top: 4px;
+	height: 14px;
+	width: 152px;
+}
+
+#pac-input {
+	position: absolute;
+	left: 0px !important;
+	top: 36px !important;
+	height: 26px;
+	background-color: #fff;
+	font-family: Roboto;
+	font-size: 15px;
+	font-weight: 300;
+	margin-left: 12px;
+	padding: 8px;
+	border: none;
+	text-overflow: ellipsis;
+	width: 400px;
+	box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
+}
+
+#pac-input:focus {
+	border-color: #4d90fe;
+}
+
+#title {
+	color: #fff;
+	background-color: #4d90fe;
+	font-size: 25px;
+	font-weight: 500;
+	padding: 6px 12px;
+}
+
+#target {
+	width: 345px;
+}
+
+.link {
+	color: #69B7CF;
+	text-decoration: none;
+}
+
+.hide {
+	display: none;
+}
+
+.invisible {
+	visibility: hidden;
+}
+
+.control:hover {
+	cursor: pointer;
+}
+
+.slash {
+	color: #DDDDDD;
+	font-size: large;
+}
+
+#notification_top {
+	text-align: center;
+	position: absolute;
+	top: 118px;
+	background-color: #ebf2fe;
+	padding: 4px 8px;
+	border-radius: 18px;
+	color: #69B7CF;
+	left: 0;
+	right: 0;
+	margin-left: auto;
+	margin-right: auto;
+	width: 182px;
+	z-index: 1;
+	cursor: pointer;
+	border-color: #69B7CF;
+	border-style: solid;
+	border-width: 1px;
+}
+
+#notification_bottom {
+	text-align: center;
+	position: absolute;
+	bottom: 232px;
+	background-color: #ebf2fe;
+	padding: 4px 8px;
+	border-radius: 18px;
+	color: #69B7CF;
+	left: 0;
+	right: 0;
+	margin-left: auto;
+	margin-right: auto;
+	width: 350px;
+	z-index: 1;
+	border-color: #69B7CF;
+	border-style: solid;
+	border-width: 1px;
+}
+
+.center {
+	margin-left: auto;
+	margin-right: auto;
+	text-align: center;
+}
+
+.center-container-abs {
+	left: 0;
+	right: 0;
+	position: absolute;
+	text-align: center;
+}
+
+.blue {
+	color: #69B7CF;
+}@media (max-width: 662px) {
+	
+		#pac-input {
+			top: 100px !important;
+			left: -4px !important;
+			width: 310px !important;
+		}
+	
+		#logo {
+			width: auto !important;
+			left: 0;
+			right: 0;
+			text-align: center;
+		}
+		
+		#notification_top {
+			top: 168px !important;
+		}
+
+}
+
+@media (max-width: 316px) {
+	#pac-input {
+		top: 126px !important;
+	}
+}
+#infowindow-content .title {
+	font-weight: bold;
+}
+
+#infowindow-content {
+	display: none;
+}
+
+#map #infowindow-content {
+	display: inline;
+}
+
+.infowindow-content {
+	color: #666666;
+}
+
+#infowindow_code {
+	text-align: left;
+}
+
+#infowindow_code_left {
+	padding-top: 4px;
+}
+
+#infowindow_code_right {
+	padding-top: 10px;
+	padding-bottom: 10px;
+}
+
+#infowindow_code_right_code {
+	font-size: x-large;
+	padding-left: 10px;
+}
+
+.gm-style-iw + div {display: none;}
+
+.gm-style-iw {
+	left: 12px;
+	margin-left: auto;
+	margin-right: auto;
+	text-align: center;
+}
+
+#show_address_button {
+	width: 26px;
+	vertical-align: bottom;
+}
+
+#copy_code_button {
+	width: 24px;
+	vertical-align: bottom;
+}
+
+#copy_link_button {
+  width: 38px;
+	vertical-align: bottom;
+}
+
+#external_map_button {
+	width: 28px;
+	vertical-align: bottom;
+}
+
+#infowindow_actions > * {
+	margin: 0 20px;
+}
+
+#infowindow_actions > :first-child {
+	margin-left: 0;
+}
+
+#infowindow_actions > :last-child {
+	margin-right: 0;
+}
+.message_dialog {
+	position: absolute;
+	top: 230px;
+	left: 0;
+	right: 0;
+	max-width: 286px;
+	width: 286px;
+	margin: auto;
+	border: 1px solid #ddd;
+	font-family: 'Abel';
+	background-color: #FFFFFF;
+	z-index: 1;
+}
+
+.message_dialog_prompt {
+	padding: 2px 16px 8px;
+}
+
+.message_dialog_close {
+	position: absolute;
+	top: 8px;
+	right: 10px;
+}
+
+.message_dialog_label {
+	color: #69B7CF;
+	text-align: center;
+}
+
+.message_dialog_body {
+	padding: 0 20px 20px;
+}
+
+.message_dialog_body p {
+	font-size: larger;
+}
+
+.message_dialog_control_container {
+	overflow: hidden;
+}
+
+.message_dialog_control {
+	margin-left: auto;
+	margin-right: auto;
+	min-height: 34px;
+	float: right;
+	position: relative;
+	left: -50%;
+	text-align: left;
+}
+
+.message_dialog_control button {
+	min-width: 100px;
+	font-size: larger;
+	margin: 2px 8px 10px;
+	padding: 8px 14px;
+	color: #69B7CF;
+	position: relative;
+	left: 50%;
+}
+@media (max-width: 512px) {
+
+	.dialog_message_primary {
+		float: right;
+	}
+	
+	.dialog_message_secondary {
+		float: left;
+	}
+
+}
+#wait_loader {
+	position: absolute;
+	top: 0;
+	width: 100%;
+	height: 8px;
+	
+	background: linear-gradient(90deg, #69B7CF, #ddf2f9);
+	background-size: 400% 400%;
+	-webkit-animation: Gradient 2s ease infinite;
+	-moz-animation: Gradient 2s ease infinite;
+	animation: Gradient 2s ease infinite;
+}
+
+@-webkit-keyframes Gradient {
+	0% {
+		background-position: 0% 50%
+	}
+	50% {
+		background-position: 100% 50%
+	}
+	100% {
+		background-position: 0% 50%
+	}
+}
+
+@-moz-keyframes Gradient {
+	0% {
+		background-position: 0% 50%
+	}
+	50% {
+		background-position: 100% 50%
+	}
+	100% {
+		background-position: 0% 50%
+	}
+}
+
+@keyframes Gradient {
+	0% {
+		background-position: 0% 50%
+	}
+	50% {
+		background-position: 100% 50%
+	}
+	100% {
+		background-position: 0% 50%
+	}
+}
+	</style>
+	<style>
+#address_text {
+	bottom: 128px !important;
+}
+@media (max-width: 512px) {
+	#address_text {
+		bottom: 140px !important;
+	}
+}#container {
+	height: 100%;
+}
+
+#restrict_block {
+	height: 100%;
+}
+
+#restrict_block h3 {
+	padding-left: 20px;
+}
+
+#console_block {
+	height: 100%;
+}
+
+#map_canvas {
+	height: 100%;
+}
+
+#console-title-container {
+	top: 4px;
+	z-index: 1;
+}
+
+#console_title {
+	font-family: Abel;
+	font-size: x-large;
+	color: #69B7CF;
+	background: rgba(237, 240, 233, 0.75);
+	padding: 0px 6px;
+	border-radius: 6px;
+}
+
+#data_count {
+	background: rgba(237, 240, 233, 0.75);
+	border-radius: 25px;
+	color: #AAAAAA;
+	border: 1px solid #DDDDDD;
+	text-align: center;
+	font-size: xx-large;
+	display: inline-block;
+	width: 20px;
+	line-height: 20px;
+}
+
+#request-controls-container {
+	top: 80px;
+	z-index: 1;
+}
+
+#location_request_list {
+	font-family: Abel;
+	top: 40px;
+	border: 1px solid #69B7CF;
+	border-radius: 25px;
+	display: inline-block;
+	background: rgba(237, 240, 233, 0.75);
+}
+
+#data_time {
+	font-family: consolas;
+	color: #AAAAAA;
+}
+
+#data_process_checkbox {
+	width: 18px;
+	height: 18px;
+	-webkit-appearance: checkbox !important;
+}
+
+.data_control{
+	color: #69B7CF;
+}
+
+.data_control:hover {
+	cursor: pointer;
+}
+
+#location_request_list span {
+	padding: 10px;
+}
+
+#view_data_index {
+	font-weight: bolder;
+}
+
+#city_submit_panel {
+	position: absolute;
+	bottom: 60px;
+	z-index: 1;
+	left: 10px;
+}
+
+#submit_city_button {
+	z-index: 1;
+	height: 42px;
+	box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
+	color: #69B7CF;
+	font-family: Roboto, Arial, sans-serif;
+	font-size: 15px;
+	background-color: rgb(255, 255, 255);
+	padding: 8px 10px;
+	border: none;
+	border-radius: 2px;
+}
+
+#city_submit_panel input {
+	background: transparent;
+	border-top: none;
+	border-left: none;
+	border-right: none;
+	height: 36px;
+}
+
+input:invalid {
+	border: 2px solid red;
+}
+
+input:valid {
+	border: 2px solid #69B7CF;
+}
+@media (max-width: 662px) {
+	
+	#console-title-container {
+		top: 70px;
+	}
+
+	#pac-input {
+		top: 104px !important;
+		right: 4px !important;
+	}
+		
+	#request-controls-container {
+		top: 160px;
+	}
+
+}
+	</style>
+<body>
+	<script src='https://www.gstatic.com/firebasejs/4.6.0/firebase-auth.js'></script>
+<div id='container'>
+	<div id='restrict_block' class='hide'>
+		<h3>Restricted! You are not authorized to have access here.</h3>
+	</div>
+	<div id='console_block' class='hide'>
+		<div id='console-title-container' class='center-container-abs'>
+			<span id='console_title'>Console</span>
+		</div>
+		<div id='request-controls-container' class='center-container-abs'>
+			<span id='location_request_list' class='invisible'>
+				<span id='data_count'></span>
+				<span id='data_process'><input id='data_process_checkbox' type='checkbox'></span>
+				<span id='data_reject' class='data_control'>╳</span>
+				<span id='data_time'></span>
+				<span id='data_previous' class='data_control'>◁</span>
+				<span id='view_data_index' class='data_control'></span>
+				<span id='data_next' class='data_control'>▷</span>
+			</span>
+		</div>
+		<div id='logo'>
+			<a id='logo_wcode' href='https://wcodes.org' tabindex='1'>
+				<span class='image'><svg xmlns='http://www.w3.org/2000/svg' x='0px' y='0px'
+	 viewBox="-55 -18 306 100">
+	<g transform="matrix(0.2476154,0,0,0.2476154,3.0703645,-26.736306)">
+		<path fill='#69B7CF' d="M549.9,282.2h-19.4c-0.3-4.5-1.5-8.6-3.5-12.2
+			c-2.1-3.7-4.8-6.8-8.2-9.4c-3.4-2.6-7.4-4.6-12-5.9c-4.6-1.4-9.5-2.1-14.8-2.1c-7.2,0-13.7,1.3-19.5,3.8
+			c-5.8,2.5-10.8,6.2-14.9,11.1c-4.1,4.9-7.3,10.9-9.5,18.1c-2.2,7.2-3.3,15.5-3.3,24.8c0,9.3,1.1,17.5,3.3,24.7
+			c2.2,7.2,5.3,13.2,9.4,18.1c4,4.9,8.9,8.7,14.7,11.3c5.8,2.6,12.2,3.9,19.3,3.9c11.3,0,20.3-2.7,27.3-8.2
+			c6.9-5.4,10.8-13.3,11.7-23.6h19.4c-0.7,7.6-2.5,14.4-5.7,20.3c-3.1,5.9-7.2,10.9-12.3,15c-5.1,4.1-11,7.2-17.9,9.4
+			c-6.8,2.2-14.2,3.3-22.2,3.3c-10.2,0-19.5-1.7-27.7-5.2c-8.2-3.5-15.2-8.4-21-14.9c-5.8-6.4-10.2-14.2-13.3-23.4
+			c-3.1-9.2-4.7-19.4-4.7-30.7c0-11.3,1.6-21.5,4.7-30.7c3.2-9.2,7.6-17,13.4-23.4c5.8-6.4,12.8-11.4,21-14.9
+			c8.2-3.5,17.4-5.3,27.5-5.3c7.6,0,14.8,1.1,21.6,3.3c6.8,2.2,12.7,5.3,17.9,9.4c5.2,4.1,9.4,8.9,12.7,14.6
+			C547.2,269,549.2,275.3,549.9,282.2z" />
+		<path fill='#69B7CF' d="M638.4,236.3c9.9,0,19,1.8,27.4,5.3
+			c8.4,3.6,15.6,8.6,21.7,15c6.1,6.5,10.8,14.2,14.2,23.4c3.4,9.1,5.1,19.2,5.1,30.3c0,11-1.7,21-5,30.1c-3.3,9.1-8.1,16.9-14.2,23.5
+			c-6.1,6.6-13.3,11.7-21.7,15.2c-8.3,3.6-17.5,5.4-27.5,5.4c-10.1,0-19.3-1.8-27.7-5.3c-8.4-3.6-15.6-8.6-21.7-15.1
+			c-6.1-6.5-10.8-14.3-14.2-23.5c-3.4-9.1-5.1-19.2-5.1-30.3c0-11.2,1.7-21.3,5.1-30.5c3.4-9.1,8.2-16.9,14.3-23.4
+			c6.1-6.5,13.4-11.4,21.7-14.9C619.2,238.1,628.4,236.3,638.4,236.3z M638.2,368.3c7.1,0,13.7-1.3,19.7-4c6-2.6,11.2-6.5,15.6-11.4
+			c4.4-5,7.7-11,10.2-18.2c2.4-7.2,3.6-15.3,3.6-24.3c0-9.2-1.2-17.4-3.7-24.5c-2.5-7.1-5.9-13.1-10.2-18.1
+			c-4.3-4.9-9.5-8.7-15.4-11.2c-6-2.5-12.4-3.8-19.4-3.8c-7,0-13.6,1.3-19.7,3.9c-6.1,2.6-11.3,6.4-15.6,11.3
+			c-4.3,4.9-7.7,11-10.2,18.1c-2.5,7.1-3.7,15.2-3.7,24.3c0,9.1,1.2,17.2,3.6,24.3c2.4,7.2,5.8,13.2,10.1,18.2
+			c4.4,5,9.5,8.8,15.5,11.4C624.5,367,631,368.3,638.2,368.3z" />
+		<path fill='#69B7CF' d="M850.7,309.6c0,48.3-24.4,72.4-73.1,72.4h-45.4V238.8h45.4
+			C826.4,238.8,850.7,262.4,850.7,309.6z M831.1,309.6c0-8.4-0.8-15.9-2.5-22.5c-1.7-6.6-4.5-12.2-8.5-16.9c-4-4.6-9.5-8.2-16.5-10.7
+			c-7-2.5-15.7-3.7-26.1-3.7h-26.2V365h26.2c10.5,0,19.1-1.3,26-3.8c6.9-2.5,12.4-6.2,16.5-10.9c4.1-4.7,7-10.5,8.7-17.4
+			C830.3,326.1,831.1,318.3,831.1,309.6z" />
+		<path fill='#69B7CF' d="M983.8,382H876.8 V238.8h106.9l0,17h-88v43.6h57.6l21.7,17.1h-79.3V365h88L983.8,382z" />
+	</g>
+	<g transform="matrix(1.0131229,0,0,1.0131229,1.9999995,2.6140126)">
+		<g>
+			<path fill='#D9D9D9' d="M-20.8,73.9L-52-15.9l8.5,0 l31.1,89.8H-20.8z" />
+		</g>
+		<g transform="matrix(0.99981532,0,0,0.99981532,-0.57726526,0.01070876)">
+			<g>
+				<path fill='#69B7CF' d="M-3.6,66.1L-28.8-6.7h13.5 L9.8,66.1H-3.6z" />
+			</g>
+			<g>
+				<path fill='#69B7CF' d="M26.3,12.6L11.1,59.5 L5.4,40.9L20.6-6.7h12.6l17.1,51l18.1-51h13.4L56.5,66.1H43.9L26.3,12.6z" />
+			</g>
+		</g>
+		<g>
+			<path fill='#D9D9D9' d="M94.4-15.9h8.5L72.2,73.9 h-8.5L94.4-15.9z" />
+		</g>
+	</g>
+</svg>
+</span>
+			</a><a id='logo_location' href='https://location.wcodes.org' tabindex='2'>
+				<span class='image'><svg xmlns='http://www.w3.org/2000/svg' x='0px' y='0px'
+	 viewBox="0 0 152 8">
+	<g font-family='Abel' font-size='16px'>
+		<text text-anchor='middle' transform="matrix(1 0 0 1 78 8)">
+			<tspan fill='#69B7CF'>Location</tspan>
+			<tspan fill='#A8A8A8'>(beta)</tspan>
+		</text>
+	</g>
+</svg>
+</span>
+			</a>
+		</div>
+		<div id='map'></div>
+		<div id='address_details' class='message_dialog hide'>
+			<h2 class='message_dialog_label'>
+				Details
+			</h2>
+			<div id='details_close' class="message_dialog_close control">
+				<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+	 height='38' width='38' viewBox="0 0 24 24">
+	<path fill='#BEBEBE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+	<path fill='none' d="M0 0h24v24H0z" />
+</svg>
+</span>
+			</div>
+			<div class='message_dialog_body'>
+				<div id='data_gp_id'>GP id</div>
+				<div id='data_lat'>Lat</div>
+				<div id='data_lng'>Long</div>
+			</div>
+		</div>
+		<div id='address_text'>
+			<div id='address_text_label'>Address</div>
+			<div id='address_text_main'>
+				<span id='address_text_content'></span>
+			</div>
+		</div>
+		<input id='pac-input' type='text' placeholder='Search' tabindex='3' >
+		<form id='city_submit_panel'>
+			<input id='city_lat' type='hidden' >
+			<input id='city_lng' type='hidden' >
+			<input id='city_name' type='text' placeholder='Name' required tabindex='4' >
+			<input id='city_group' type='text' placeholder='Group' required tabindex='5' >
+			<input id='city_country' type='text' placeholder='Country' required tabindex='6' >
+			<input id='submit_city_button' class='control' type='submit' value='Submit' tabindex='7'>
+		</form>
+		<div id='notification_bottom' class='hide'></div>
+	</div>
+</div>
+</body>
+</html>
