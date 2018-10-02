@@ -7,12 +7,12 @@
 	<meta itemprop='name' content="WCode location" >
 	<meta name='robots' content='noindex' >
 	<meta name='author' content="Ujjwal Singh" >
-	<meta name='viewport' content='initial-scale=1.0' >
+	<meta name='viewport' content='initial-scale=1.0, viewport-fit=cover' >
 	<link rel="shortcut icon" type='image/x-icon' href='/favicon.ico' >
 	<link href='https://location.wcodes.org' rel='canonical' >
 	<title>WCode based addressing system - WCode location</title>
-	<script src="https://www.gstatic.com/firebasejs/4.6.0/firebase-app.js"></script>
-	<script src="https://www.gstatic.com/firebasejs/4.6.0/firebase-database.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-app.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-database.js"></script>
 		<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
 	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
 	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
@@ -21,8 +21,9 @@
 ga('create', 'UA-96994409-1', 'auto');
 ga('send', 'pageview');
 </script>
-		<script src="https://cdn.ravenjs.com/3.22.2/raven.min.js" crossorigin="anonymous"></script>
-		<script>Raven.config('https://67af341ea58c4424ab4af921f0583573@sentry.io/187322').install();
+		<script src='https://browser.sentry-cdn.com/4.0.6/bundle.min.js' crossorigin='anonymous'
+></script>
+		<script>Sentry.init({ dsn: 'https://67af341ea58c4424ab4af921f0583573@sentry.io/187322' });
 </script>
 	<script>
 	</script>
@@ -153,7 +154,7 @@ button {
 
 #description {
 	font-family: Roboto;
-	font-size: 15px;
+	font-size: 0.9375em;
 	font-weight: 300;
 }
 
@@ -180,7 +181,7 @@ button {
 
 .pac-controls label {
 	font-family: Roboto;
-	font-size: 13px;
+	font-size: 0.8125em;
 	font-weight: 300;
 }
 
@@ -223,7 +224,7 @@ button {
 	height: 26px;
 	background-color: #fff;
 	font-family: Roboto;
-	font-size: 15px;
+	font-size: 0.9375em;
 	font-weight: 300;
 	margin-left: 12px;
 	padding: 8px;
@@ -240,7 +241,7 @@ button {
 #title {
 	color: #fff;
 	background-color: #4d90fe;
-	font-size: 25px;
+	font-size: 1.5625em;
 	font-weight: 500;
 	padding: 6px 12px;
 }
@@ -405,8 +406,8 @@ button {
 }
 
 #copy_link_button {
-  width: 38px;
-	vertical-align: bottom;
+	display: block;
+	width: 48px;
 }
 
 #external_map_button {
@@ -462,6 +463,10 @@ button {
 	font-size: larger;
 }
 
+.message_dialog_body > .secondary > span:first-child {
+	padding-left: 10px;
+}
+
 .message_dialog_control_container {
 	overflow: hidden;
 }
@@ -484,6 +489,17 @@ button {
 	color: #69B7CF;
 	position: relative;
 	left: 50%;
+}
+
+.message_dialog_separator {
+	clear: both;
+	height: 1px;
+	width: 240px;
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 88px;
+	margin-bottom: 20px;
+	border-top: 1px solid #CCCCCC;
 }
 @media (max-width: 512px) {
 
@@ -653,7 +669,7 @@ button {
 	box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
 	color: #69B7CF;
 	font-family: Roboto, Arial, sans-serif;
-	font-size: 15px;
+	font-size: 0.9375em;
 	background-color: rgb(255, 255, 255);
 	padding: 8px 10px;
 	border: none;
@@ -693,7 +709,7 @@ input:valid {
 }
 	</style>
 <body>
-	<script src='https://www.gstatic.com/firebasejs/4.6.0/firebase-auth.js'></script>
+	<script src='https://www.gstatic.com/firebasejs/5.5.2/firebase-auth.js'></script>
 <div id='container'>
 	<div id='restrict_block' class='hide'>
 		<h3>Restricted! You are not authorized to have access here.</h3>

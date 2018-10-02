@@ -7,12 +7,12 @@
 	<meta itemprop='name' content="WCode location" >
 	<meta name='robots' content='noindex' >
 	<meta name='author' content="Ujjwal Singh" >
-	<meta name='viewport' content='initial-scale=1.0' >
+	<meta name='viewport' content='initial-scale=1.0, viewport-fit=cover' >
 	<link rel="shortcut icon" type='image/x-icon' href='/favicon.ico' >
 	<link href='https://location.wcodes.org' rel='canonical' >
 	<title>WCode based addressing system - WCode location</title>
-	<script src="https://www.gstatic.com/firebasejs/4.6.0/firebase-app.js"></script>
-	<script src="https://www.gstatic.com/firebasejs/4.6.0/firebase-database.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-app.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-database.js"></script>
 		<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
 	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
 	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
@@ -21,8 +21,9 @@
 ga('create', 'UA-96994409-1', 'auto');
 ga('send', 'pageview');
 </script>
-		<script src="https://cdn.ravenjs.com/3.22.2/raven.min.js" crossorigin="anonymous"></script>
-		<script>Raven.config('https://67af341ea58c4424ab4af921f0583573@sentry.io/187322').install();
+		<script src='https://browser.sentry-cdn.com/4.0.6/bundle.min.js' crossorigin='anonymous'
+></script>
+		<script>Sentry.init({ dsn: 'https://67af341ea58c4424ab4af921f0583573@sentry.io/187322' });
 </script>
 	<script>
 var pendingLocate = true;
@@ -167,7 +168,7 @@ button {
 
 #description {
 	font-family: Roboto;
-	font-size: 15px;
+	font-size: 0.9375em;
 	font-weight: 300;
 }
 
@@ -194,7 +195,7 @@ button {
 
 .pac-controls label {
 	font-family: Roboto;
-	font-size: 13px;
+	font-size: 0.8125em;
 	font-weight: 300;
 }
 
@@ -237,7 +238,7 @@ button {
 	height: 26px;
 	background-color: #fff;
 	font-family: Roboto;
-	font-size: 15px;
+	font-size: 0.9375em;
 	font-weight: 300;
 	margin-left: 12px;
 	padding: 8px;
@@ -254,7 +255,7 @@ button {
 #title {
 	color: #fff;
 	background-color: #4d90fe;
-	font-size: 25px;
+	font-size: 1.5625em;
 	font-weight: 500;
 	padding: 6px 12px;
 }
@@ -419,8 +420,8 @@ button {
 }
 
 #copy_link_button {
-  width: 38px;
-	vertical-align: bottom;
+	display: block;
+	width: 48px;
 }
 
 #external_map_button {
@@ -476,6 +477,10 @@ button {
 	font-size: larger;
 }
 
+.message_dialog_body > .secondary > span:first-child {
+	padding-left: 10px;
+}
+
 .message_dialog_control_container {
 	overflow: hidden;
 }
@@ -498,6 +503,17 @@ button {
 	color: #69B7CF;
 	position: relative;
 	left: 50%;
+}
+
+.message_dialog_separator {
+	clear: both;
+	height: 1px;
+	width: 240px;
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 88px;
+	margin-bottom: 20px;
+	border-top: 1px solid #CCCCCC;
 }
 @media (max-width: 512px) {
 
@@ -561,7 +577,10 @@ button {
 	</style>
 	<style>
 #copy_wcode_message_city_name {
+	display: block;
+	text-align: center;
 	color: #69B7CF;
+	padding-top: 8px;
 }
 
 #copy_wcode_message_city_name_question {
@@ -690,7 +709,7 @@ h2.message_dialog_label {
 	box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
 	color: #69B7CF;
 	font-family: Roboto, Arial, sans-serif;
-	font-size: 15px;
+	font-size: 0.9375em;
 	background-color: rgb(255, 255, 255);
 	padding: 8px 10px;
 	border: none;
@@ -724,7 +743,7 @@ h2.message_dialog_label {
 	box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
 	color: #69B7CF;
 	font-family: Roboto, Arial, sans-serif;
-	font-size: 15px;
+	font-size: 0.9375em;
 	background-color: rgb(255, 255, 255);
 	padding: 8px 4px;
 	border: none;
@@ -849,17 +868,16 @@ h2.message_dialog_label {
 </span>
 	</div>
 	<div class='message_dialog_body'>
-		<p>
-			Include the city name:
-		</p>
-		<p>
+		<p class='secondary'>
+			<span>Copy text with the city name?</span>
 			<span id='copy_wcode_message_city_name'></span>
-			<span id='copy_wcode_message_city_name_question'>?</span>
 		</p>
 		<div class="center message_dialog_control">
 			<button id='copy_wcode_submit_no' class='dialog_message_primary' type='button'>No</button>
 			<button id='copy_wcode_submit_yes' class='dialog_message_secondary' type='button'>Yes</button>
 		</div>
+		<div class="center message_dialog_separator"></div>
+		<img id='copy_link_button' class="center control" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMicgaGVpZ2h0PScyMCcgdmlld0JveD0iMCA0IDI0IDE1Ij4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTMuOSAxMmMwLTEuNzEgMS4zOS0zLjEgMy4xLTMuMWg0VjdIN2MtMi43NiAwLTUgMi4yNC01IDVzMi4yNCA1IDUgNWg0di0xLjlIN2MtMS43MSAwLTMuMS0xLjM5LTMuMS0zLjF6TTggMTNoOHYtMkg4djJ6bTktNmgtNHYxLjloNGMxLjcxIDAgMy4xIDEuMzkgMy4xIDMuMXMtMS4zOSAzLjEtMy4xIDMuMWgtNFYxN2g0YzIuNzYgMCA1LTIuMjQgNS01cy0yLjI0LTUtNS01eiIgLz4gPC9zdmc+IA==" >
 	</div>
 </div>
 <div id='overlay' class='hide'>
@@ -924,7 +942,7 @@ h2.message_dialog_label {
 			Version: 0.1 beta
 		</div>
 		<div id='updated'>Updated:
-	2018-Sep-26 10:13:09		</div>
+	2018-Oct-02 16:42:26		</div>
 	</div>
 	<div id='contact'>
 		for any related query contact me

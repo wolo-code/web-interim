@@ -229,8 +229,9 @@ function tryDefaultCity() {
 	infoWindow.close();
 }
 var urlFunctions = 'https://location.wcodes.org/api';
-var curEncRequestId = 0;
 //'http://localhost:5000/waddress-5f30b/us-central1';
+var curEncRequestId = 0;
+var curDecRequestId = 0;
 
 function encode_(city, position) {
 	var http = new XMLHttpRequest();
@@ -245,17 +246,17 @@ function encode_(city, position) {
 	http.onreadystatechange = function() {
 		if(http.readyState == 4) {
 			if(http.requestId == curEncRequestId) {
-			if(http.status == 200) {
-				setCodeWords(http.responseText, city, position);
-				wait_loader.classList.add('hide');
-			}
-			else if(http.status == 204) {
-				noCity(position);
-				notification_top.classList.remove('hide');
-				wait_loader.classList.add('hide');
+				if(http.status == 200) {
+					setCodeWords(http.responseText, city, position);
+					wait_loader.classList.add('hide');
+				}
+				else if(http.status == 204) {
+					noCity(position);
+					notification_top.classList.remove('hide');
+					wait_loader.classList.add('hide');
+				}
 			}
 		}
-	}
 	}
 
 	http.send( stringifyEncodeData(city.center, position) );
@@ -288,13 +289,16 @@ function decode_(city, code) {
 	// http.setRequestHeaders('Content-type', 'version');
 	http.setRequestHeader('Content-type', 'application/json');
 	http.setRequestHeader('version', '1');
+	http.requestId = ++curDecRequestId;
 	
 	wait_loader.classList.remove('hide');
 	http.onreadystatechange = function() {
 		if(http.readyState == 4 && http.status == 200) {
-			setCodeCoord(http.responseText, new Array(city.name).concat(code));
-			notification_top.classList.add('hide');
-			wait_loader.classList.add('hide');
+			if(http.requestId == curDecRequestId) {
+				setCodeCoord(http.responseText, new Array(city.name).concat(code));
+				notification_top.classList.add('hide');
+				wait_loader.classList.add('hide');
+			}
 		}
 	}
 
@@ -346,6 +350,7 @@ function copyWcodeLink() {
 	var wcode_url = location.hostname + '/' + getWcodeFull().join('.');
 	showAndCopy(wcode_url.toLowerCase());
 	showNotification(WCODE_LINK_COPIED_MESSAGE);
+	hideCopyWcodeMessage();
 }
 var CityList;
 var city_styled_wordlist = [];
@@ -617,7 +622,7 @@ function infoWindow_setContent(string) {
 }
 
 function setInfoWindowText(code, latLng) {
-	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'>" + code[0] + "</span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code.slice(1, code.length).join(' ') + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' onclick='toggleAddress();' src=" + svg_address + " ><img id='copy_code_button' class='control' onclick='showCopyWcodeMessage();' src=" + svg_copy + " ><img id='copy_link_button' class='control' onclick='copyWcodeLink();' src=" + svg_link + " ><a href='"+ getIntentURL(latLng, code) + "'><img id='external_map_button' class='control' onclick='' src=" + svg_map + " ></a></div>")
+	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'>" + code[0] + "</span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code.slice(1, code.length).join(' ') + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' onclick='toggleAddress();' src=" + svg_address + " ><a href='"+ getIntentURL(latLng, code) + "'><img id='external_map_button' class='control' onclick='' src=" + svg_map + " ></a><img id='copy_code_button' class='control' onclick='showCopyWcodeMessage();' src=" + svg_copy + " ></div>")
 }
 function initLocate(override_dnd) {
 	if(!locationAccessCheck()) {
@@ -1099,6 +1104,7 @@ function setupControls() {
 	document.getElementById('copy_wcode_message_close').addEventListener('click', hideCopyWcodeMessage);
 	document.getElementById('copy_wcode_submit_yes').addEventListener('click', copyWcodeFull);
 	document.getElementById('copy_wcode_submit_no').addEventListener('click', copyWcodeCode);
+	document.getElementById('copy_link_button').addEventListener('click', copyWcodeLink);
 	document.getElementById('incompatible_browser_message_close').addEventListener('click', hideIncompatibleBrowserMessage);
 	document.getElementById('incompatible_browser_message_continue').addEventListener('click', hideIncompatibleBrowserMessage);
 	document.getElementById('address_text_close').addEventListener('click', hideAddress);
