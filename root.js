@@ -192,6 +192,7 @@ function urlDecode() {
 }
 var DEFAULT_WCODE = ['bangalore', 'diesel', 'hall', 'planet'];
 var pendingCity = false;
+var pendingCitySubmit = false;
 
 function noCity(position) {
 	showAddress();
@@ -237,7 +238,6 @@ function encode_(city, position) {
 	var http = new XMLHttpRequest();
 	http.open('POST', urlFunctions+'/'+'encode', true);
 
-	// http.setRequestHeaders('Content-type', 'version');
 	http.setRequestHeader('Content-type', 'application/json');
 	http.setRequestHeader('version', '1');
 	http.requestId = ++curEncRequestId;
@@ -286,7 +286,6 @@ function decode_(city, code) {
 	var http = new XMLHttpRequest();
 	http.open('POST', urlFunctions+'/'+'decode', true);
 
-	// http.setRequestHeaders('Content-type', 'version');
 	http.setRequestHeader('Content-type', 'application/json');
 	http.setRequestHeader('version', '1');
 	http.requestId = ++curDecRequestId;
@@ -754,7 +753,6 @@ var infoWindow;
 var accuCircle;
 var myLocDot;
 var poiPlace;
-var pendingCitySubmit = false;
 var infoWindow_open = false;
 
 var INCORRECT_WCODE = 'INCORRECT INPUT! Should be at least 3 WCode words, optionally preceded by a city. E.g: "Bangalore cat apple tomato"';
@@ -837,6 +835,7 @@ function initMap() {
 
 	map.addListener('click', function(event) {
 		pendingPosition = null;
+		pendingCity = null;
 		notification_top.classList.add('hide');
 		clearAddress();
 		clearURL();
@@ -863,8 +862,8 @@ function initMap() {
 	document.getElementById('pac-input').addEventListener('input', suggestComplete);
 	clickHandler = new ClickEventHandler(map);
 	
-	if(pendingLocate)
-		syncLocate();
+	postMap();
+	
 }
 
 function resolveLatLng(latLng) {
@@ -1066,6 +1065,10 @@ function hideOverlay() {
 
 function showOverlay() {
 	document.getElementById('overlay').classList.remove('hide');
+}
+function postMap() {
+	if(pendingLocate)
+		syncLocate();
 }
 function arrayContainsArray(superset, subset) {
 	return subset.every(function (value) {

@@ -49,7 +49,7 @@ var clickHandler;
 var map;
 
 function syncInitMap() {
-	if (typeof google === 'object' && typeof google.maps === 'object' && typeof initMap == 'function' && pendingInitMap) {
+	if (document.readyState === 'interactive' && typeof google === 'object' && typeof google.maps === 'object' && typeof initMap == 'function' && pendingInitMap) {
 		map = new google.maps.Map(document.getElementById('map'), {
 			center: DEFAULT_LATLNG,
 			mapTypeControl: false,
@@ -238,7 +238,7 @@ button {
 	height: 26px;
 	background-color: #fff;
 	font-family: Roboto;
-	font-size: 0.9375em;
+	font-size: 1.38em;
 	font-weight: 300;
 	margin-left: 12px;
 	padding: 8px;
@@ -846,8 +846,9 @@ h2.message_dialog_label {
 	<div id='no_city_message_wait' class="message_dialog_body hide">
 		<div class="loader center"></div>
 		<p>
-			Waiting for city add request to be processed.<br>
-			Since this involves manual intervention, it may take hours.
+			Waiting for your city add request to be processed by backend team.<br>
+			This involves manual intervention and may take hours.<br>
+			Do you wish to stop or continue waiting?
 		</p>
 		<div class="center message_dialog_control">
 			<button id='no_city_submit_wait_continue' type='button'>Continue</button>
@@ -942,7 +943,7 @@ h2.message_dialog_label {
 			Version: 0.1 beta
 		</div>
 		<div id='updated'>Updated:
-	2018-Oct-02 16:42:26		</div>
+	2018-Oct-04 22:26:10		</div>
 	</div>
 	<div id='contact'>
 		for any related query contact me

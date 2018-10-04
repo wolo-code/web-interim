@@ -150,8 +150,7 @@ var prev_entry;
 
 function queryPendingList() {
 	beginLoader();
-	var ref = firebase.database().ref('CityRequest');
-	var list = ref.orderByChild("processed").equalTo(false).on("value", function(snapshot) {
+	var list = database.ref('CityRequest').orderByChild('processed').equalTo(false).on('value', function(snapshot) {
 		if(data != null)
 			prev_entry = data[data_index];
 		data = [];
@@ -167,6 +166,8 @@ function queryPendingList() {
 		data_count.innerText = data.length;
 		if(idLoader != null)
 			endLoader('authenticated');
+		else if(idLoader == -1)
+			showConsoleBlock();
 		if(prev_entry == null || data_index >= data.length || JSON.stringify(prev_entry) != JSON.stringify(data[data_index])) {
 			if(target_id == null)
 				data_index = 0;
@@ -327,8 +328,7 @@ function updateList() {
 		setAddress(entry.address, entry.gp_id);
 		data_time.innerText = formatDate(new Date(entry.time));
 		location_request_list.classList.remove('invisible');
-		map.panTo(entry.lat_lng);
-		showEntryMarker(entry.lat_lng);
+		syncMarkEntry(entry.lat_lng);
 	}
 	else {
 		location_request_list.classList.add('invisible');
@@ -342,7 +342,7 @@ function beginLoader() {
 
 function endLoader(status) {
 	clearTimeout(idLoader);
-	idLoader = null;
+	idLoader = -1;
 	if(status == 'authenticated')
 		showConsloeBlock();
 	else if('unauthenticated')
@@ -504,6 +504,10 @@ function getSpanBounds(lat, lng) {
 function resolveLatLng(latLng) {
 	return {'lat':latLng.lat(), 'lng':latLng.lng()};
 }
+function postMap() {
+	if(!pendingEntry_lat_lng)
+	syncMarkEntry(pendingEntry_lat_lng);
+}
 function formatNumber(number) {
 	WIDTH = 2;
 	if (String(number).length < WIDTH)
@@ -529,6 +533,7 @@ function formatDate(date) {
 var auth_processed = false;
 var map_processed = false;
 var target_id;
+var pendingEntry_lat_lng = null;
 
 function initLoad () {
 	if(!initLoadDone && document.readyState === 'interactive') {
@@ -547,9 +552,9 @@ function initApp() {
 			queryPendingList();
 		}
 		else if (firebase.auth().currentUser) {
-			queryPendingList();
 			// User already signed in.
 			// Update your UI, hide the sign in button.
+			queryPendingList();
 		} else {
 			showRestrictedBlock();
 			// No user signed in, update your UI, show the sign in button.
@@ -602,8 +607,7 @@ function setupControls() {
 	data_process_checkbox.addEventListener('change', function() {
 		if(this.checked) {
 			var entry = data[data_index];
-			map.panTo(entry.lat_lng);
-			showEntryMarker(entry.lat_lng);			
+			syncMarkEntry(entry.lat_lng);
 		}
 		else {
 			

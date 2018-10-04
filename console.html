@@ -13,6 +13,8 @@
 	<title>WCode based addressing system - WCode location</title>
 	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-app.js"></script>
 	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-database.js"></script>
+<link rel="manifest" href="/manifest-console.json">
+<script src='https://www.gstatic.com/firebasejs/5.5.2/firebase-auth.js'></script>
 		<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
 	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
 	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
@@ -26,6 +28,14 @@ ga('send', 'pageview');
 		<script>Sentry.init({ dsn: 'https://67af341ea58c4424ab4af921f0583573@sentry.io/187322' });
 </script>
 	<script>
+function syncMarkEntry(lat_lng) {
+	if (typeof google === 'object' && typeof google.maps === 'object' && typeof map == 'object') {
+		map.panTo(lat_lng);
+		showEntryMarker(lat_lng);
+	}
+	else
+		pendingEntry_lat_lng = lat_lng;
+}
 	</script>
 	<script src="/console.js" async></script>
 	<script>
@@ -35,7 +45,7 @@ var clickHandler;
 var map;
 
 function syncInitMap() {
-	if (typeof google === 'object' && typeof google.maps === 'object' && typeof initMap == 'function' && pendingInitMap) {
+	if (document.readyState === 'interactive' && typeof google === 'object' && typeof google.maps === 'object' && typeof initMap == 'function' && pendingInitMap) {
 		map = new google.maps.Map(document.getElementById('map'), {
 			center: DEFAULT_LATLNG,
 			mapTypeControl: false,
@@ -224,7 +234,7 @@ button {
 	height: 26px;
 	background-color: #fff;
 	font-family: Roboto;
-	font-size: 0.9375em;
+	font-size: 1.38em;
 	font-weight: 300;
 	margin-left: 12px;
 	padding: 8px;
@@ -671,25 +681,29 @@ button {
 	font-family: Roboto, Arial, sans-serif;
 	font-size: 0.9375em;
 	background-color: rgb(255, 255, 255);
-	padding: 8px 10px;
+	padding: 8px 14px;
 	border: none;
 	border-radius: 2px;
 }
 
 #city_submit_panel input {
-	background: transparent;
-	border-top: none;
-	border-left: none;
-	border-right: none;
 	height: 36px;
 }
 
+.city_form_field {
+	padding-left: 6px;
+	background: #aadddd80;
+	border-top: none !important;
+	border-left: none !important;
+	border-right: none !important;
+}
+
 input:invalid {
-	border: 2px solid red;
+	border-bottom: 2px solid #69B7CF;
 }
 
 input:valid {
-	border: 2px solid #69B7CF;
+	border-bottom: 2px solid #B7B7B7;
 }
 @media (max-width: 662px) {
 	
@@ -709,8 +723,7 @@ input:valid {
 }
 	</style>
 <body>
-	<script src='https://www.gstatic.com/firebasejs/5.5.2/firebase-auth.js'></script>
-<div id='container'>
+	<div id='container'>
 	<div id='restrict_block' class='hide'>
 		<h3>Restricted! You are not authorized to have access here.</h3>
 	</div>
@@ -818,9 +831,9 @@ input:valid {
 		<form id='city_submit_panel'>
 			<input id='city_lat' type='hidden' >
 			<input id='city_lng' type='hidden' >
-			<input id='city_name' type='text' placeholder='Name' required tabindex='4' >
-			<input id='city_group' type='text' placeholder='Group' required tabindex='5' >
-			<input id='city_country' type='text' placeholder='Country' required tabindex='6' >
+			<input id='city_name' class='city_form_field' type='text' placeholder='Name' required tabindex='4' autocomplete='new-password' >
+			<input id='city_group' class='city_form_field' type='text' placeholder='Group' required tabindex='5' autocomplete='new-password' >
+			<input id='city_country' class='city_form_field' type='text' placeholder='Country' required tabindex='6' autocomplete='new-password' >
 			<input id='submit_city_button' class='control' type='submit' value='Submit' tabindex='7'>
 		</form>
 		<div id='notification_bottom' class='hide'></div>
