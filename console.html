@@ -28,6 +28,28 @@ ga('send', 'pageview');
 		<script>Sentry.init({ dsn: 'https://67af341ea58c4424ab4af921f0583573@sentry.io/187322' });
 </script>
 	<script>
+// Address
+var latLng_p = '';
+var address = '';
+var gpId = '';
+
+// Database
+var data_index = 0;
+
+// Map
+var markers = [];
+
+var N = 32768;
+var A = 6378137;
+var B = 6356752.314140;
+var E_SQ = (A*A-B*B)/(A*A);
+var DEG_RAD = Math.PI/180;
+
+// Script
+var auth_processed = false;
+var map_processed = false;
+
+var pendingEntry_lat_lng = null;
 function syncMarkEntry(lat_lng) {
 	if (typeof google === 'object' && typeof google.maps === 'object' && typeof map == 'object') {
 		map.panTo(lat_lng);
@@ -39,8 +61,36 @@ function syncMarkEntry(lat_lng) {
 	</script>
 	<script src="/console.js" async></script>
 	<script>
+// .\Script
 var DEFAULT_LATLNG = {lat: -34.397, lng: 150.644};
+var DEFAULT_INIT_ZOOM = 2;
+var DEFAULT_LOCATE_ZOOM = 24;
 var pendingInitMap = true;
+
+// Firebase
+var FIREBASE_CONFIG = {
+	apiKey: "AIzaSyCYD7Q0f4ZR0cH0EOi29wVV2Edgb_j5i_s",
+	authDomain: "location.wcodes.org",
+	databaseURL: "https://waddress-5f30b.firebaseio.com",
+	projectId: "waddress-5f30b",
+	storageBucket: "waddress-5f30b.appspot.com",
+	messagingSenderId: "744968913043"
+};
+
+//Script
+var initLoadDone = false;
+
+// UpdateMyBrowser
+var _umb = {
+		require: {
+				chrome: 60,
+				firefox: 37,
+				ie: 10,
+				opera: 7,
+				safari: 29
+		}
+};
+var pendingInitMap;
 var clickHandler;
 var map;
 
@@ -48,8 +98,8 @@ function syncInitMap() {
 	if (document.readyState === 'interactive' && typeof google === 'object' && typeof google.maps === 'object' && typeof initMap == 'function' && pendingInitMap) {
 		map = new google.maps.Map(document.getElementById('map'), {
 			center: DEFAULT_LATLNG,
+			zoom: DEFAULT_INIT_ZOOM,
 			mapTypeControl: false,
-			zoom: 8,
 			fullscreenControl: false,
 			streetViewControl: false,
 			zoomControl: false
@@ -84,6 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
 #address_text_main {
 	display: inline-block;
 	float: left;
+	min-width: 89%;
 }
 
 #address_text_label {
@@ -389,14 +440,16 @@ button {
 #infowindow_code_right {
 	padding-top: 10px;
 	padding-bottom: 10px;
+	padding-left: 14px;
 }
 
 #infowindow_code_right_code {
 	font-size: x-large;
-	padding-left: 10px;
 }
 
-.gm-style-iw + div {display: none;}
+.gm-style-iw + button {
+	display: none !important;
+}
 
 .gm-style-iw {
 	left: 12px;

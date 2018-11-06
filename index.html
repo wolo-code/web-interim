@@ -13,6 +13,7 @@
 	<title>WCode based addressing system - WCode location</title>
 	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-app.js"></script>
 	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-database.js"></script>
+<link rel='manifest' href='/manifest.json' >
 		<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
 	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
 	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
@@ -26,7 +27,47 @@ ga('send', 'pageview');
 		<script>Sentry.init({ dsn: 'https://67af341ea58c4424ab4af921f0583573@sentry.io/187322' });
 </script>
 	<script>
+// .\Script
 var pendingLocate = true;
+
+// Code\Code
+var FUNCTIONS_BASE_URL = 'https://location.wcodes.org/api';
+//'http://localhost:5000/waddress-5f30b/us-central1';
+var curEncRequestId = 0;
+var curDecRequestId = 0;
+
+// Code\Copy_wcode
+var WCODE_CODE_COPIED_MESSAGE = "WCode copied to clipboard";
+var WCODE_LINK_COPIED_MESSAGE = "WCode link copied to clipboard";
+
+// Code\Core
+var city_styled_wordlist = [];
+var city_plus_wordList = [];
+
+var PURE_WCODE_CITY_PICKED = "Since your city is not set - city was chosen from the last location";
+var PURE_WCODE_CITY_FAILED = "Since your city is not set - you must first choose the city or preceed the WCode with city name";
+
+// Address
+var latLng_p = '';
+var address = '';
+var gpId = '';
+
+// Base
+var CURRENT_VERSION = 1;
+var initWCode = false;
+
+// City
+var DEFAULT_WCODE = ['bangalore', 'diesel', 'hall', 'planet'];
+var pendingCity = false;
+var pendingCitySubmit = false;
+
+// Map
+var infoWindow_open = false;
+
+var INCORRECT_WCODE = 'INCORRECT INPUT! Should be at least 3 WCode words, optionally preceded by a city. E.g: "Bangalore cat apple tomato"';
+var MESSAGE_LOADING = 'Loading ..';
+var LOCATION_PERMISSION_DENIED = "Location permission was denied. Click to point or retry with the locate button";
+// var pendingLocate;
 function syncLocate(override_dnd) {
 	if (typeof google === 'object' && typeof google.maps === 'object' && typeof map == 'object') {
 		initLocate(override_dnd);
@@ -43,8 +84,36 @@ function syncCheckIncompatibleBrowserMessage() {
 	</script>
 	<script src="/root.js" async></script>
 	<script>
+// .\Script
 var DEFAULT_LATLNG = {lat: -34.397, lng: 150.644};
+var DEFAULT_INIT_ZOOM = 2;
+var DEFAULT_LOCATE_ZOOM = 24;
 var pendingInitMap = true;
+
+// Firebase
+var FIREBASE_CONFIG = {
+	apiKey: "AIzaSyCYD7Q0f4ZR0cH0EOi29wVV2Edgb_j5i_s",
+	authDomain: "location.wcodes.org",
+	databaseURL: "https://waddress-5f30b.firebaseio.com",
+	projectId: "waddress-5f30b",
+	storageBucket: "waddress-5f30b.appspot.com",
+	messagingSenderId: "744968913043"
+};
+
+//Script
+var initLoadDone = false;
+
+// UpdateMyBrowser
+var _umb = {
+		require: {
+				chrome: 60,
+				firefox: 37,
+				ie: 10,
+				opera: 7,
+				safari: 29
+		}
+};
+var pendingInitMap;
 var clickHandler;
 var map;
 
@@ -52,8 +121,8 @@ function syncInitMap() {
 	if (document.readyState === 'interactive' && typeof google === 'object' && typeof google.maps === 'object' && typeof initMap == 'function' && pendingInitMap) {
 		map = new google.maps.Map(document.getElementById('map'), {
 			center: DEFAULT_LATLNG,
+			zoom: DEFAULT_INIT_ZOOM,
 			mapTypeControl: false,
-			zoom: 8,
 			fullscreenControl: false,
 			streetViewControl: false,
 			zoomControl: false
@@ -88,6 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
 #address_text_main {
 	display: inline-block;
 	float: left;
+	min-width: 89%;
 }
 
 #address_text_label {
@@ -393,14 +463,16 @@ button {
 #infowindow_code_right {
 	padding-top: 10px;
 	padding-bottom: 10px;
+	padding-left: 14px;
 }
 
 #infowindow_code_right_code {
 	font-size: x-large;
-	padding-left: 10px;
 }
 
-.gm-style-iw + div {display: none;}
+.gm-style-iw + button {
+	display: none !important;
+}
 
 .gm-style-iw {
 	left: 12px;
@@ -684,6 +756,17 @@ h2.message_dialog_label {
 #agency {
 	text-align: right;
 }
+
+.button_highlight {
+	color: white !important;
+	background: #69B7CF !important;
+	border-color: #69b7cf;
+}
+@media (max-width: 662px) {
+	#overlay {
+		background-color: white;
+	}
+}
 #suggestion_result {
 	position: absolute;
 	top: 8px;
@@ -812,7 +895,7 @@ h2.message_dialog_label {
 			Do you wish to allow this app to access your location?
 		</p>
 		<div class="center message_dialog_control">
-			<button id='locate_right_message_yes' class='dialog_message_primary' type='button'>Yes</button>
+			<button id='locate_right_message_yes' class="dialog_message_primary button_highlight" type='button'>Yes</button>
 			<button id='locate_right_message_no' class='dialog_message_secondary' type='button'>No</button>
 		</div>
 		<div id='locate_right_message_dnd' class='hide'>
@@ -870,7 +953,7 @@ h2.message_dialog_label {
 	</div>
 	<div class='message_dialog_body'>
 		<p class='secondary'>
-			<span>Copy text with the city name?</span>
+			<span>copy text with the city name?</span>
 			<span id='copy_wcode_message_city_name'></span>
 		</p>
 		<div class="center message_dialog_control">
@@ -878,6 +961,9 @@ h2.message_dialog_label {
 			<button id='copy_wcode_submit_yes' class='dialog_message_secondary' type='button'>Yes</button>
 		</div>
 		<div class="center message_dialog_separator"></div>
+		<p class='secondary'>
+			<span>copy link:</span>
+		</p>
 		<img id='copy_link_button' class="center control" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMicgaGVpZ2h0PScyMCcgdmlld0JveD0iMCA0IDI0IDE1Ij4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTMuOSAxMmMwLTEuNzEgMS4zOS0zLjEgMy4xLTMuMWg0VjdIN2MtMi43NiAwLTUgMi4yNC01IDVzMi4yNCA1IDUgNWg0di0xLjlIN2MtMS43MSAwLTMuMS0xLjM5LTMuMS0zLjF6TTggMTNoOHYtMkg4djJ6bTktNmgtNHYxLjloNGMxLjcxIDAgMy4xIDEuMzkgMy4xIDMuMXMtMS4zOSAzLjEtMy4xIDMuMWgtNFYxN2g0YzIuNzYgMCA1LTIuMjQgNS01cy0yLjI0LTUtNS01eiIgLz4gPC9zdmc+IA==" >
 	</div>
 </div>
@@ -909,7 +995,7 @@ h2.message_dialog_label {
 </ul>
 	<div class='message_dialog_control_container'>
 		<div class='message_dialog_control'>
-			<button id='info_intro_close_button' type='button'>Start &#x25B7;</button>
+			<button id='info_intro_close_button' class='button_highlight' type='button'>Start &#x25B7;</button>
 		</div>
 	</div>
 </div>
@@ -935,7 +1021,7 @@ h2.message_dialog_label {
 	</ul>
 	<div class='message_dialog_control_container'>
 		<div class='message_dialog_control'>
-			<button id='info_full_close_button' type='button'>&#x25C1; return</button>
+			<button id='info_full_close_button' class='button_highlight' type='button'>&#x25C1; return</button>
 		</div>
 	</div>
 	<div id='software_info'>
@@ -943,7 +1029,7 @@ h2.message_dialog_label {
 			Version: 0.1 beta
 		</div>
 		<div id='updated'>Updated:
-	2018-Oct-04 22:26:10		</div>
+	2018-Nov-05 21:36:12		</div>
 	</div>
 	<div id='contact'>
 		for any related query contact me

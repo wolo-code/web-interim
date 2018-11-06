@@ -26,16 +26,7 @@ ClickEventHandler.prototype.getPlaceInformation = function(placeId) {
 		}
 	});
 };
-var config = {
-	apiKey: "AIzaSyCYD7Q0f4ZR0cH0EOi29wVV2Edgb_j5i_s",
-	authDomain: "location.wcodes.org",
-	databaseURL: "https://waddress-5f30b.firebaseio.com",
-	projectId: "waddress-5f30b",
-	storageBucket: "waddress-5f30b.appspot.com",
-	messagingSenderId: "744968913043"
-};
-firebase.initializeApp(config);
-
+firebase.initializeApp(FIREBASE_CONFIG);
 var database = firebase.database();
 function showIncompatibleBrowserMessage() {
 	document.getElementById('incompatible_browser_message').classList.remove('hide');
@@ -55,20 +46,11 @@ function showNotification(message) {
 		notification_bottom.classList.add('hide');
 	}, 2500);
 }
-var _umb = {
-		require: {
-				chrome: 60,
-				firefox: 37,
-				ie: 10,
-				opera: 7,
-				safari: 29
-		}
-};
-var initLoadDone = false;
+var initLoadDone;
 initLoad();
-var latLng_p = "";
-var address = "";
-var gpId = "";
+// var latLng_p;
+// var address;
+// var gpId;
 
 function getAddress(latLng) {
 	var geocoder = new google.maps.Geocoder;
@@ -144,7 +126,7 @@ function showConsloeBlock() {
 		auth_processed = true;
 }
 var data
-var data_index = 0;
+// var data_index;
 var idLoader;
 var prev_entry;
 
@@ -221,6 +203,7 @@ function focus_(pos, bounds) {
 	map.panTo(pos);
 	city_lat.value = pos.lat();
 	city_lng.value = pos.lng();
+	var posBounds = getSpanBounds(pos.lat(), pos.lng());
 	if(typeof accuCircle === 'undefined') {
 		accuCircle = new google.maps.Rectangle({
 			strokeColor: '#69B7CF',
@@ -230,12 +213,12 @@ function focus_(pos, bounds) {
 			fillOpacity: 0.5,
 			map: map,
 			//center: pos,
-			bounds: getSpanBounds(pos.lat(), pos.lng()),
+			bounds: posBounds,
 			clickable: false
 		});
 	}
 	else {
-		accuCircle.setBounds(getSpanBounds(pos.lat(), pos.lng()));
+		accuCircle.setBounds(posBounds);
 	}
 
 	if(typeof marker === 'undefined') {
@@ -349,7 +332,7 @@ function endLoader(status) {
 		showRestrictedBlock();
 }
 var entryMarker;
-var markers = [];
+// var markers;
 var accuCircle;
 var pendingFillForm;
 
@@ -473,21 +456,21 @@ function showEntryMarker(location) {
 	google.maps.event.addListener(entryMarker, 'click', function() {clearForm();});
 }
 
-var N = 32768;
-var a = 6378137;
-var b = 6356752.314140;
-var e_sq = (a*a-b*b)/(a*a);
-var factor = Math.PI/180;
+// const N;
+// const A;
+// const B;
+// const E_SQ;
+// const DEG_RAD;
 
 function lat_span_half(lat) {
-	var lat_r = factor*lat;
-	var x = Math.sqrt(1-e_sq*Math.sin(lat_r)*Math.sin(lat_r));
-	return Math.abs((x*x*x)/(factor*a*(1-e_sq)));
+	var lat_r = DEG_RAD*lat;
+	var x = Math.sqrt(1-E_SQ*Math.sin(lat_r)*Math.sin(lat_r));
+	return Math.abs((x*x*x)/(DEG_RAD*A*(1-E_SQ)));
 }
 
 function lng_span_half(lat) {
-	var lat_r = factor*lat;
-	return Math.abs(Math.sqrt(1-e_sq*Math.sin(lat_r)*Math.sin(lat_r))/(factor*a*Math.cos(lat_r)));
+	var lat_r = DEG_RAD*lat;
+	return Math.abs(Math.sqrt(1-E_SQ*Math.sin(lat_r)*Math.sin(lat_r))/(DEG_RAD*A*Math.cos(lat_r)));
 }
 
 function getSpanBounds(lat, lng) {
@@ -530,10 +513,10 @@ function formatDate(date) {
 	var minute = date.getMinutes();
 	return monthNames[monthIndex] + ' ' + formatNumber(day) + ' ' + formatNumber(hour) + ':' + formatNumber(minute);
 }
-var auth_processed = false;
-var map_processed = false;
+// var auth_processed;
+// var map_processed;
 var target_id;
-var pendingEntry_lat_lng = null;
+// var pendingEntry_lat_lng;
 
 function initLoad () {
 	if(!initLoadDone && document.readyState === 'interactive') {
@@ -1345,7 +1328,7 @@ UMB.Widget = function () {
         }
 
     };
-}();var svg_address = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjgnIHdpZHRoPScyOCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTE0IDE3SDR2MmgxMHYtMnptNi04SDR2MmgxNlY5ek00IDE1aDE2di0ySDR2MnpNNCA1djJoMTZWNUg0eiIgLz4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPC9zdmc+IA==";
-var svg_copy = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjAnIHdpZHRoPScyMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTE2IDFINGMtMS4xIDAtMiAuOS0yIDJ2MTRoMlYzaDEyVjF6bTMgNEg4Yy0xLjEgMC0yIC45LTIgMnYxNGMwIDEuMS45IDIgMiAyaDExYzEuMSAwIDItLjkgMi0yVjdjMC0xLjEtLjktMi0yLTJ6bTAgMTZIOFY3aDExdjE0eiIgLz4gPC9zdmc+IA==";
-var svg_link = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMicgaGVpZ2h0PScyMCcgdmlld0JveD0iMCA0IDI0IDE1Ij4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTMuOSAxMmMwLTEuNzEgMS4zOS0zLjEgMy4xLTMuMWg0VjdIN2MtMi43NiAwLTUgMi4yNC01IDVzMi4yNCA1IDUgNWg0di0xLjlIN2MtMS43MSAwLTMuMS0xLjM5LTMuMS0zLjF6TTggMTNoOHYtMkg4djJ6bTktNmgtNHYxLjloNGMxLjcxIDAgMy4xIDEuMzkgMy4xIDMuMXMtMS4zOSAzLjEtMy4xIDMuMWgtNFYxN2g0YzIuNzYgMCA1LTIuMjQgNS01cy0yLjI0LTUtNS01eiIgLz4gPC9zdmc+IA==";
-var svg_map = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyMCcgaGVpZ2h0PScyMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTIwLjUgM2wtLjE2LjAzTDE1IDUuMSA5IDMgMy4zNiA0LjljLS4yMS4wNy0uMzYuMjUtLjM2LjQ4VjIwLjVjMCAuMjguMjIuNS41LjVsLjE2LS4wM0w5IDE4LjlsNiAyLjEgNS42NC0xLjljLjIxLS4wNy4zNi0uMjUuMzYtLjQ4VjMuNWMwLS4yOC0uMjItLjUtLjUtLjV6TTE1IDE5bC02LTIuMTFWNWw2IDIuMTFWMTl6IiAvPiA8cGF0aCBmaWxsPSdub25lJyBkPSdNMCAwaDI0djI0SDB6JyAvPiA8L3N2Zz4g";
+}();const svg_address = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjgnIHdpZHRoPScyOCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTE0IDE3SDR2MmgxMHYtMnptNi04SDR2MmgxNlY5ek00IDE1aDE2di0ySDR2MnpNNCA1djJoMTZWNUg0eiIgLz4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPC9zdmc+IA==";
+const svg_copy = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjAnIHdpZHRoPScyMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTE2IDFINGMtMS4xIDAtMiAuOS0yIDJ2MTRoMlYzaDEyVjF6bTMgNEg4Yy0xLjEgMC0yIC45LTIgMnYxNGMwIDEuMS45IDIgMiAyaDExYzEuMSAwIDItLjkgMi0yVjdjMC0xLjEtLjktMi0yLTJ6bTAgMTZIOFY3aDExdjE0eiIgLz4gPC9zdmc+IA==";
+const svg_link = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMicgaGVpZ2h0PScyMCcgdmlld0JveD0iMCA0IDI0IDE1Ij4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTMuOSAxMmMwLTEuNzEgMS4zOS0zLjEgMy4xLTMuMWg0VjdIN2MtMi43NiAwLTUgMi4yNC01IDVzMi4yNCA1IDUgNWg0di0xLjlIN2MtMS43MSAwLTMuMS0xLjM5LTMuMS0zLjF6TTggMTNoOHYtMkg4djJ6bTktNmgtNHYxLjloNGMxLjcxIDAgMy4xIDEuMzkgMy4xIDMuMXMtMS4zOSAzLjEtMy4xIDMuMWgtNFYxN2g0YzIuNzYgMCA1LTIuMjQgNS01cy0yLjI0LTUtNS01eiIgLz4gPC9zdmc+IA==";
+const svg_map = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyMCcgaGVpZ2h0PScyMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTIwLjUgM2wtLjE2LjAzTDE1IDUuMSA5IDMgMy4zNiA0LjljLS4yMS4wNy0uMzYuMjUtLjM2LjQ4VjIwLjVjMCAuMjguMjIuNS41LjVsLjE2LS4wM0w5IDE4LjlsNiAyLjEgNS42NC0xLjljLjIxLS4wNy4zNi0uMjUuMzYtLjQ4VjMuNWMwLS4yOC0uMjItLjUtLjUtLjV6TTE1IDE5bC02LTIuMTFWNWw2IDIuMTFWMTl6IiAvPiA8cGF0aCBmaWxsPSdub25lJyBkPSdNMCAwaDI0djI0SDB6JyAvPiA8L3N2Zz4g";

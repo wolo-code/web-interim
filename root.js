@@ -26,16 +26,7 @@ ClickEventHandler.prototype.getPlaceInformation = function(placeId) {
 		}
 	});
 };
-var config = {
-	apiKey: "AIzaSyCYD7Q0f4ZR0cH0EOi29wVV2Edgb_j5i_s",
-	authDomain: "location.wcodes.org",
-	databaseURL: "https://waddress-5f30b.firebaseio.com",
-	projectId: "waddress-5f30b",
-	storageBucket: "waddress-5f30b.appspot.com",
-	messagingSenderId: "744968913043"
-};
-firebase.initializeApp(config);
-
+firebase.initializeApp(FIREBASE_CONFIG);
 var database = firebase.database();
 function showIncompatibleBrowserMessage() {
 	document.getElementById('incompatible_browser_message').classList.remove('hide');
@@ -55,20 +46,11 @@ function showNotification(message) {
 		notification_bottom.classList.add('hide');
 	}, 2500);
 }
-var _umb = {
-		require: {
-				chrome: 60,
-				firefox: 37,
-				ie: 10,
-				opera: 7,
-				safari: 29
-		}
-};
-var initLoadDone = false;
+var initLoadDone;
 initLoad();
-var latLng_p = "";
-var address = "";
-var gpId = "";
+// var latLng_p;
+// var address;
+// var gpId;
 
 function getAddress(latLng) {
 	var geocoder = new google.maps.Geocoder;
@@ -125,8 +107,8 @@ function refreshAddress() {
 function copyAddress() {
 	copyNodeText(address_text_content);
 }
-var CURRENT_VERSION = 1;
-var initWCode = false;
+// const CURRENT_VERSION;
+// var initWCode;
 
 function setLocationAccess(status) {
 	if (typeof(Storage) !== 'undefined') {
@@ -135,7 +117,7 @@ function setLocationAccess(status) {
 }
 
 function locationAccessCheck() {
-	if (typeof(Storage) !== 'undefined' && typeof(localStorage.location_access) !== 'undefined' && localStorage.location_access != '' && JSON.parse(localStorage.location_access) === true) 
+	if (typeof(Storage) !== 'undefined' && typeof(localStorage.location_access) !== 'undefined' && localStorage.location_access != '' && JSON.parse(localStorage.location_access) === true)
 		return true;
 	return false;
 }
@@ -147,7 +129,7 @@ function setLocationAccessDND(status) {
 }
 
 function locationAccessDNDcheck() {
-	if(locationAccessDNDstatus() && JSON.parse(localStorage.location_access_dnd) === true) 
+	if(locationAccessDNDstatus() && JSON.parse(localStorage.location_access_dnd) === true)
 		return true;
 	return false;
 }
@@ -166,12 +148,11 @@ function versionCheck() {
 	if (typeof(Storage) !== 'undefined') {
 		if(typeof(localStorage.note_version) === 'undefined')
 			set = true;
-		else if(localStorage.note_version != '' && JSON.parse(localStorage.note_version) < CURRENT_VERSION)
+		else if(localStorage.note_version != '' && localStorage.note_version != 'undefined' && JSON.parse(localStorage.note_version) < CURRENT_VERSION)
 			set = true;
 	}
 	if(set) {
 		localStorage.note_version = CURRENT_VERSION;
-		initWCode = true;
 		showOverlay();
 	}
 	else {
@@ -190,9 +171,9 @@ function urlDecode() {
 	else
 		return false;
 }
-var DEFAULT_WCODE = ['bangalore', 'diesel', 'hall', 'planet'];
-var pendingCity = false;
-var pendingCitySubmit = false;
+// const DEFAULT_WCODE;
+// var pendingCity;
+// var pendingCitySubmit;
 
 function noCity(position) {
 	showAddress();
@@ -229,14 +210,13 @@ function tryDefaultCity() {
 	notification_top.classList.add('hide');
 	infoWindow.close();
 }
-var urlFunctions = 'https://location.wcodes.org/api';
-//'http://localhost:5000/waddress-5f30b/us-central1';
-var curEncRequestId = 0;
-var curDecRequestId = 0;
+// const FUNCTIONS_BASE_URL;
+// var curEncRequestId;
+// var curDecRequestId;
 
 function encode_(city, position) {
 	var http = new XMLHttpRequest();
-	http.open('POST', urlFunctions+'/'+'encode', true);
+	http.open('POST', FUNCTIONS_BASE_URL+'/'+'encode', true);
 
 	http.setRequestHeader('Content-type', 'application/json');
 	http.setRequestHeader('version', '1');
@@ -284,7 +264,7 @@ function stringifyEncodeData(city_center, position) {
 function decode_(city, code) {
 
 	var http = new XMLHttpRequest();
-	http.open('POST', urlFunctions+'/'+'decode', true);
+	http.open('POST', FUNCTIONS_BASE_URL+'/'+'decode', true);
 
 	http.setRequestHeader('Content-type', 'application/json');
 	http.setRequestHeader('version', '1');
@@ -320,8 +300,8 @@ function setCodeCoord(codeIndex, code) {
 	var object = JSON.parse(codeIndex);
 	focus__(object, code);
 }
-var WCODE_CODE_COPIED_MESSAGE = "WCode copied to clipboard";
-var WCODE_LINK_COPIED_MESSAGE = "WCode link copied to clipboard";
+// const WCODE_CODE_COPIED_MESSAGE;
+// const WCODE_LINK_COPIED_MESSAGE;
 
 function showCopyWcodeMessage() {
 	copy_wcode_message_city_name.innerText = getWcodeCity();
@@ -352,14 +332,14 @@ function copyWcodeLink() {
 	hideCopyWcodeMessage();
 }
 var CityList;
-var city_styled_wordlist = [];
-var city_plus_wordList = [];
+// var city_styled_wordlist;
+// var city_plus_wordList;
 var pendingPosition;
 var pendingWords;
 var wordList;
 
-const PURE_WCODE_CITY_PICKED = "Since your city is not set - city was chosen from the last location";
-const PURE_WCODE_CITY_FAILED = "Since your city is not set - you must first choose the city or preceed the WCode with city name";
+// const PURE_WCODE_CITY_PICKED;
+// const PURE_WCODE_CITY_FAILED;
 
 function getCityFromPosition(latLng) {
 	var nearCity;
@@ -572,6 +552,8 @@ function focus__(pos, code) {
 	setWcode(code, pos);
 }
 
+const ZOOM_ANIMATION_SPEED = 250;
+var firstFocus = true;
 function focus_(pos, bounds) {
 	
 	hideNoCityMessage();
@@ -600,19 +582,74 @@ function focus_(pos, bounds) {
 	if(marker.getMap() == null)
 		marker.setMap(map);
 
-	if(typeof bounds !== 'undefined') {
-		map.fitBounds(bounds, 26);
-	}
-	else if (typeof accuCircle !== 'undefined') {
-		accuCircle.setOptions({'fillOpacity': 0.10});
-	}
-	
 	map.panTo(pos);
 	map.panBy(0, getPanByOffset());
+	
+	var idleListenerPan = map.addListener('idle', function() {
+		idleListenerPan.remove();
+		var newZoom;
+		if(typeof bounds !== 'undefined') {
+			newZoom = getZoomByBounds(map, bounds);
+		}
+		else {
+			newZoom = DEFAULT_LOCATE_ZOOM;
+			if (typeof accuCircle !== 'undefined') {
+				accuCircle.setOptions({'fillOpacity': 0.10});
+			}
+		}
+		if(firstFocus == true) {
+			smoothZoomToBounds(bounds, map, newZoom, map.getZoom());
+			firstFocus = false;
+		}
+	});
+	
 	infoWindow_setContent(MESSAGE_LOADING);
 	infoWindow.open(map, marker);
 	infoWindow_open = true;
 
+}
+
+const ZOOM_ANIMATION_INCREMENT = 1;
+const ZOOM_BOUND_PADDING = 36;
+function smoothZoomToBounds(bounds, map, max, current) {
+	if (current >= max) {
+		return;
+	}
+	else {
+		var z = google.maps.event.addListener(map, 'zoom_changed', function(event) {
+			google.maps.event.removeListener(z);
+			smoothZoomToBounds(bounds, map, max, current + ZOOM_ANIMATION_INCREMENT);
+		});
+		setTimeout(function() {
+			map.setZoom(current);
+			if (current+ZOOM_ANIMATION_INCREMENT >= max) {
+				if(typeof bounds !== 'undefined')
+					setTimeout(function() {
+							map.fitBounds(bounds, ZOOM_BOUND_PADDING);
+					}, ZOOM_ANIMATION_SPEED);			
+			}
+		}, ZOOM_ANIMATION_SPEED);
+	}
+}
+
+function getZoomByBounds( map, bounds ) {
+	var MAX_ZOOM = map.mapTypes.get(map.getMapTypeId()).maxZoom || DEFAULT_LOCATE_ZOOM;
+	var MIN_ZOOM = map.mapTypes.get(map.getMapTypeId()).minZoom || 0;
+
+	var ne = map.getProjection().fromLatLngToPoint( bounds.getNorthEast() );
+	var sw = map.getProjection().fromLatLngToPoint( bounds.getSouthWest() ); 
+
+	var worldCoordWidth = Math.abs(ne.x-sw.x);
+	var worldCoordHeight = Math.abs(ne.y-sw.y);
+
+	var FIT_PAD = 10;
+
+	for(var zoom = MAX_ZOOM; zoom >= MIN_ZOOM; --zoom) { 
+		if( worldCoordWidth*(1<<zoom)+2*FIT_PAD < document.getElementById('map').scrollWidth && 
+				worldCoordHeight*(1<<zoom)+2*FIT_PAD < document.getElementById('map').scrollHeight )
+			return zoom;
+	}
+	return 0;
 }
 function infoWindow_setContent(string) {
 	if(typeof infoWindow == 'undefined')
@@ -688,7 +725,6 @@ function locateExec() {
 			}
 			else {
 				initWCode = false;
-				map.setZoom(12);
 			}
 		}, function(error) {
 			if(error.code = error.PERMISSION_DENIED) {
@@ -753,11 +789,11 @@ var infoWindow;
 var accuCircle;
 var myLocDot;
 var poiPlace;
-var infoWindow_open = false;
+// var infoWindow_open;
 
-var INCORRECT_WCODE = 'INCORRECT INPUT! Should be at least 3 WCode words, optionally preceded by a city. E.g: "Bangalore cat apple tomato"';
-var MESSAGE_LOADING = 'Loading ..';
-var LOCATION_PERMISSION_DENIED = "Location permission was denied. Click to point or retry with the locate button";
+// const INCORRECT_WCODE;
+// const MESSAGE_LOADING;
+// const LOCATION_PERMISSION_DENIED;
 
 function initMap() {
 
@@ -1844,7 +1880,7 @@ UMB.Widget = function () {
         }
 
     };
-}();var svg_address = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjgnIHdpZHRoPScyOCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTE0IDE3SDR2MmgxMHYtMnptNi04SDR2MmgxNlY5ek00IDE1aDE2di0ySDR2MnpNNCA1djJoMTZWNUg0eiIgLz4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPC9zdmc+IA==";
-var svg_copy = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjAnIHdpZHRoPScyMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTE2IDFINGMtMS4xIDAtMiAuOS0yIDJ2MTRoMlYzaDEyVjF6bTMgNEg4Yy0xLjEgMC0yIC45LTIgMnYxNGMwIDEuMS45IDIgMiAyaDExYzEuMSAwIDItLjkgMi0yVjdjMC0xLjEtLjktMi0yLTJ6bTAgMTZIOFY3aDExdjE0eiIgLz4gPC9zdmc+IA==";
-var svg_link = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMicgaGVpZ2h0PScyMCcgdmlld0JveD0iMCA0IDI0IDE1Ij4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTMuOSAxMmMwLTEuNzEgMS4zOS0zLjEgMy4xLTMuMWg0VjdIN2MtMi43NiAwLTUgMi4yNC01IDVzMi4yNCA1IDUgNWg0di0xLjlIN2MtMS43MSAwLTMuMS0xLjM5LTMuMS0zLjF6TTggMTNoOHYtMkg4djJ6bTktNmgtNHYxLjloNGMxLjcxIDAgMy4xIDEuMzkgMy4xIDMuMXMtMS4zOSAzLjEtMy4xIDMuMWgtNFYxN2g0YzIuNzYgMCA1LTIuMjQgNS01cy0yLjI0LTUtNS01eiIgLz4gPC9zdmc+IA==";
-var svg_map = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyMCcgaGVpZ2h0PScyMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTIwLjUgM2wtLjE2LjAzTDE1IDUuMSA5IDMgMy4zNiA0LjljLS4yMS4wNy0uMzYuMjUtLjM2LjQ4VjIwLjVjMCAuMjguMjIuNS41LjVsLjE2LS4wM0w5IDE4LjlsNiAyLjEgNS42NC0xLjljLjIxLS4wNy4zNi0uMjUuMzYtLjQ4VjMuNWMwLS4yOC0uMjItLjUtLjUtLjV6TTE1IDE5bC02LTIuMTFWNWw2IDIuMTFWMTl6IiAvPiA8cGF0aCBmaWxsPSdub25lJyBkPSdNMCAwaDI0djI0SDB6JyAvPiA8L3N2Zz4g";
+}();const svg_address = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjgnIHdpZHRoPScyOCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTE0IDE3SDR2MmgxMHYtMnptNi04SDR2MmgxNlY5ek00IDE1aDE2di0ySDR2MnpNNCA1djJoMTZWNUg0eiIgLz4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPC9zdmc+IA==";
+const svg_copy = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjAnIHdpZHRoPScyMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTE2IDFINGMtMS4xIDAtMiAuOS0yIDJ2MTRoMlYzaDEyVjF6bTMgNEg4Yy0xLjEgMC0yIC45LTIgMnYxNGMwIDEuMS45IDIgMiAyaDExYzEuMSAwIDItLjkgMi0yVjdjMC0xLjEtLjktMi0yLTJ6bTAgMTZIOFY3aDExdjE0eiIgLz4gPC9zdmc+IA==";
+const svg_link = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMicgaGVpZ2h0PScyMCcgdmlld0JveD0iMCA0IDI0IDE1Ij4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTMuOSAxMmMwLTEuNzEgMS4zOS0zLjEgMy4xLTMuMWg0VjdIN2MtMi43NiAwLTUgMi4yNC01IDVzMi4yNCA1IDUgNWg0di0xLjlIN2MtMS43MSAwLTMuMS0xLjM5LTMuMS0zLjF6TTggMTNoOHYtMkg4djJ6bTktNmgtNHYxLjloNGMxLjcxIDAgMy4xIDEuMzkgMy4xIDMuMXMtMS4zOSAzLjEtMy4xIDMuMWgtNFYxN2g0YzIuNzYgMCA1LTIuMjQgNS01cy0yLjI0LTUtNS01eiIgLz4gPC9zdmc+IA==";
+const svg_map = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyMCcgaGVpZ2h0PScyMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTIwLjUgM2wtLjE2LjAzTDE1IDUuMSA5IDMgMy4zNiA0LjljLS4yMS4wNy0uMzYuMjUtLjM2LjQ4VjIwLjVjMCAuMjguMjIuNS41LjVsLjE2LS4wM0w5IDE4LjlsNiAyLjEgNS42NC0xLjljLjIxLS4wNy4zNi0uMjUuMzYtLjQ4VjMuNWMwLS4yOC0uMjItLjUtLjUtLjV6TTE1IDE5bC02LTIuMTFWNWw2IDIuMTFWMTl6IiAvPiA8cGF0aCBmaWxsPSdub25lJyBkPSdNMCAwaDI0djI0SDB6JyAvPiA8L3N2Zz4g";
