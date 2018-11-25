@@ -46,8 +46,6 @@ function showNotification(message) {
 		notification_bottom.classList.add('hide');
 	}, 2500);
 }
-var initLoadDone;
-initLoad();
 // var latLng_p;
 // var address;
 // var gpId;

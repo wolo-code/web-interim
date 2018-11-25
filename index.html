@@ -28,6 +28,60 @@ ga('send', 'pageview');
 </script>
 	<script>
 // .\Script
+var DEFAULT_LATLNG = {lat: -34.397, lng: 150.644};
+var DEFAULT_INIT_ZOOM = 2;
+var DEFAULT_LOCATE_ZOOM = 24;
+var pendingInitMap = true;
+
+// Firebase
+var FIREBASE_CONFIG = {
+	apiKey: "AIzaSyCYD7Q0f4ZR0cH0EOi29wVV2Edgb_j5i_s",
+	authDomain: "location.wcodes.org",
+	databaseURL: "https://waddress-5f30b.firebaseio.com",
+	projectId: "waddress-5f30b",
+	storageBucket: "waddress-5f30b.appspot.com",
+	messagingSenderId: "744968913043"
+};
+
+//Script
+var initLoadDone = false;
+
+// UpdateMyBrowser
+var _umb = {
+		require: {
+				chrome: 60,
+				firefox: 37,
+				ie: 10,
+				opera: 7,
+				safari: 29
+		}
+};
+var pendingInitMap;
+var clickHandler;
+var map;
+
+function syncInitMap() {
+	if (document.readyState === 'interactive' && typeof google === 'object' && typeof google.maps === 'object' && typeof initMap == 'function' && pendingInitMap) {
+		map = new google.maps.Map(document.getElementById('map'), {
+			center: DEFAULT_LATLNG,
+			zoom: DEFAULT_INIT_ZOOM,
+			mapTypeControl: false,
+			fullscreenControl: false,
+			streetViewControl: false,
+			zoomControl: false
+		});
+		initMap();
+		pendingInitMap = false;
+	}
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+	if(typeof initLoad != 'undefined')
+		initLoad();
+});
+	</script>
+	<script>
+// .\Script
 var pendingLocate = true;
 
 // Code\Code
@@ -83,60 +137,6 @@ function syncCheckIncompatibleBrowserMessage() {
 }
 	</script>
 	<script src="/root.js" async></script>
-	<script>
-// .\Script
-var DEFAULT_LATLNG = {lat: -34.397, lng: 150.644};
-var DEFAULT_INIT_ZOOM = 2;
-var DEFAULT_LOCATE_ZOOM = 24;
-var pendingInitMap = true;
-
-// Firebase
-var FIREBASE_CONFIG = {
-	apiKey: "AIzaSyCYD7Q0f4ZR0cH0EOi29wVV2Edgb_j5i_s",
-	authDomain: "location.wcodes.org",
-	databaseURL: "https://waddress-5f30b.firebaseio.com",
-	projectId: "waddress-5f30b",
-	storageBucket: "waddress-5f30b.appspot.com",
-	messagingSenderId: "744968913043"
-};
-
-//Script
-var initLoadDone = false;
-
-// UpdateMyBrowser
-var _umb = {
-		require: {
-				chrome: 60,
-				firefox: 37,
-				ie: 10,
-				opera: 7,
-				safari: 29
-		}
-};
-var pendingInitMap;
-var clickHandler;
-var map;
-
-function syncInitMap() {
-	if (document.readyState === 'interactive' && typeof google === 'object' && typeof google.maps === 'object' && typeof initMap == 'function' && pendingInitMap) {
-		map = new google.maps.Map(document.getElementById('map'), {
-			center: DEFAULT_LATLNG,
-			zoom: DEFAULT_INIT_ZOOM,
-			mapTypeControl: false,
-			fullscreenControl: false,
-			streetViewControl: false,
-			zoomControl: false
-		});
-		initMap();
-		pendingInitMap = false;
-	}
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-	if(typeof initLoad != 'undefined')
-		initLoad();
-});
-	</script>
 	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyD3qtN-ejbFTrkes1Y5j3qRY8PmQrxYHDQ&libraries=places&callback=syncInitMap' async defer></script></head>
 	<style>
 #address_text {
@@ -1029,7 +1029,7 @@ h2.message_dialog_label {
 			Version: 0.1 beta
 		</div>
 		<div id='updated'>Updated:
-	2018-Nov-05 21:36:12		</div>
+	2018-Nov-25 16:22:19		</div>
 	</div>
 	<div id='contact'>
 		for any related query contact me

@@ -28,39 +28,6 @@ ga('send', 'pageview');
 		<script>Sentry.init({ dsn: 'https://67af341ea58c4424ab4af921f0583573@sentry.io/187322' });
 </script>
 	<script>
-// Address
-var latLng_p = '';
-var address = '';
-var gpId = '';
-
-// Database
-var data_index = 0;
-
-// Map
-var markers = [];
-
-var N = 32768;
-var A = 6378137;
-var B = 6356752.314140;
-var E_SQ = (A*A-B*B)/(A*A);
-var DEG_RAD = Math.PI/180;
-
-// Script
-var auth_processed = false;
-var map_processed = false;
-
-var pendingEntry_lat_lng = null;
-function syncMarkEntry(lat_lng) {
-	if (typeof google === 'object' && typeof google.maps === 'object' && typeof map == 'object') {
-		map.panTo(lat_lng);
-		showEntryMarker(lat_lng);
-	}
-	else
-		pendingEntry_lat_lng = lat_lng;
-}
-	</script>
-	<script src="/console.js" async></script>
-	<script>
 // .\Script
 var DEFAULT_LATLNG = {lat: -34.397, lng: 150.644};
 var DEFAULT_INIT_ZOOM = 2;
@@ -114,6 +81,39 @@ document.addEventListener('DOMContentLoaded', function() {
 		initLoad();
 });
 	</script>
+	<script>
+// Address
+var latLng_p = '';
+var address = '';
+var gpId = '';
+
+// Database
+var data_index = 0;
+
+// Map
+var markers = [];
+
+var N = 32768;
+var A = 6378137;
+var B = 6356752.314140;
+var E_SQ = (A*A-B*B)/(A*A);
+var DEG_RAD = Math.PI/180;
+
+// Script
+var auth_processed = false;
+var map_processed = false;
+
+var pendingEntry_lat_lng = null;
+function syncMarkEntry(lat_lng) {
+	if (typeof google === 'object' && typeof google.maps === 'object' && typeof map == 'object') {
+		map.panTo(lat_lng);
+		showEntryMarker(lat_lng);
+	}
+	else
+		pendingEntry_lat_lng = lat_lng;
+}
+	</script>
+	<script src="/console.js" async></script>
 	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyD3qtN-ejbFTrkes1Y5j3qRY8PmQrxYHDQ&libraries=places&callback=syncInitMap' async defer></script></head>
 	<style>
 #address_text {
