@@ -28,6 +28,8 @@ ClickEventHandler.prototype.getPlaceInformation = function(placeId) {
 };
 firebase.initializeApp(FIREBASE_CONFIG);
 var database = firebase.database();
+var refCityCenter = database.ref('CityCenter');
+var geoFire = new GeoFire(refCityCenter);
 function showIncompatibleBrowserMessage() {
 	document.getElementById('incompatible_browser_message').classList.remove('hide');
 }
@@ -46,6 +48,8 @@ function showNotification(message) {
 		notification_bottom.classList.add('hide');
 	}, 2500);
 }
+if(typeof initLoad !== 'undefined')
+	initLoad();
 // var latLng_p;
 // var address;
 // var gpId;
@@ -166,28 +170,27 @@ function queryPendingList() {
 }
 
 function process_entry(key) {
-	var ref = firebase.database().ref('CityRequest/'+key);
+	var ref = database.ref('CityRequest/'+key);
 	var updates = {};
 	updates['processed'] = 'true';
 	ref.update(updates);
 }
 
-function submit_city(lat, lng, country, group, name) {
-	var cityList;
-	var ref = firebase.database().ref('CityList');
-	ref.once('value', function(snapshot) {
-		cityList = snapshot.val();
-		var data = {
-			"center": {'lat':lat, 'lng':lng},
-			"country": country,
-			"group": group,
-			"name": name
-		};
-		cityList[Object.keys(cityList).length] = data;
-		ref.set(cityList);
+function submit_city(lat, lng, country, group, name, accent, callback) {
+	var refCityDetail = database.ref('CityDetail').push();
+	refCityDetail.set({
+		'country': country,
+		'group': group,
+		'name': name,
+		'accent': accent
 	});
-	showNotification("Request submitted");
-	clearForm();
+	geoFire.set(refCityDetail.key, [lat, lng]).then( function() {
+			if(typeof callback == 'function')
+				callback();
+		}, function(error) {
+	  	console.log("Error: " + error);
+		}
+	);
 }
 function hideDetails() {
 	address_details.classList.add('hide');
@@ -259,7 +262,7 @@ function focus(position) {
 }
 function fillForm(lat, lng, country) {
 	city_lat.value = lat;
-	city_lng.value = lng;	
+	city_lng.value = lng;
 	city_country.value = country;
 }
 
@@ -268,7 +271,8 @@ function clearForm() {
 	city_lng.value = '';
 	city_country.value = '';
 	city_group.value = '';
-	city_name.value = '';	
+	city_name.value = '';
+	city_accent.value = '';
 }
 function nextRow() {
 	if(data_index+1 < data.length) {
@@ -489,6 +493,38 @@ function postMap() {
 	if(!pendingEntry_lat_lng)
 	syncMarkEntry(pendingEntry_lat_lng);
 }
+var upload_data_index = 0;
+var upload_data_rows;
+
+function upload_data () {
+  var file = document.getElementById('file_input').files[0];
+  if(file != null) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      upload_data_rows = e.target.result.split("\n");
+      upload_entry();
+    }
+    reader.readAsText(file);
+  }
+}
+
+function upload_entry() {
+  if (upload_data_index < upload_data_rows.length) {
+    var cells = unquote(upload_data_rows[upload_data_index]).split('\",\"');
+    if (cells.length > 1) {
+      var lat = parseFloat(unquote(cells[3]));
+      var lng = parseFloat(unquote(cells[4]));
+      var country_iso = unquote(cells[0]);
+      var group = null;
+      var name = unquote(cells[1]);
+      var accent = unquote(cells[2]);
+      submit_city(lat, lng, country_iso, group, name, accent, upload_entry);
+    }
+    upload_data_index++;
+  }
+  else
+    console.log("Upload completed");
+}
 function formatNumber(number) {
 	WIDTH = 2;
 	if (String(number).length < WIDTH)
@@ -510,6 +546,10 @@ function formatDate(date) {
 	var hour = date.getHours();
 	var minute = date.getMinutes();
 	return monthNames[monthIndex] + ' ' + formatNumber(day) + ' ' + formatNumber(hour) + ':' + formatNumber(minute);
+}
+
+function unquote(str) {
+	return str.replace(/^"(.*)"$/, '$1');
 }
 // var auth_processed;
 // var map_processed;
@@ -562,52 +602,54 @@ function initMap() {
 }
 
 function setupControls() {
-	
+
 	view_data_index.addEventListener('click', function(e) {
 		showDetails();
 	});
-	
+
 	details_close.addEventListener('click', function(e) {
 		hideDetails();
 	});
-	
+
 	data_previous.addEventListener('click', function(e) {
 		previousRow();
 	});
-	
+
 	data_reject.addEventListener('click', function(e) {
 		process_entry(data[data_index].id);
 		deleteRow();
 //		updateRow();
 	});
-	
+
 	data_next.addEventListener('click', function(e) {
 		nextRow();
 	});
-	
+
 	data_process_checkbox.addEventListener('change', function() {
 		if(this.checked) {
 			var entry = data[data_index];
 			syncMarkEntry(entry.lat_lng);
 		}
 		else {
-			
+
 		}
 	});
-	
+
 	submit_city_button.addEventListener('click', function() {
 		if(city_lat.value != '' && city_lng.value != '')
 			if(city_submit_panel.checkValidity()) {
-				submit_city(city_lat.value, city_lng.value, city_country.value.trim(), city_group.value.trim(), city_name.value.trim());
+				submit_city(parseFloat(city_lat.value), parseFloat(city_lng.value), city_country.value.trim(), city_group.value.trim(), city_name.value.trim(), city_accent.value.trim());
 				if(data_process_checkbox.checked)
 					process_entry(data[data_index].id);
+				showNotification("Request submitted");
+				clearForm();
 			}
 			else
 				showNotification("Check form data");
 		else
 			showNotification("Did you not select a search result?");
 	});
-	
+
 }
 /*!
  * updatemybrowser.org JavaScript Library v1
@@ -1328,5 +1370,5 @@ UMB.Widget = function () {
     };
 }();const svg_address = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjgnIHdpZHRoPScyOCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTE0IDE3SDR2MmgxMHYtMnptNi04SDR2MmgxNlY5ek00IDE1aDE2di0ySDR2MnpNNCA1djJoMTZWNUg0eiIgLz4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPC9zdmc+IA==";
 const svg_copy = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjAnIHdpZHRoPScyMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTE2IDFINGMtMS4xIDAtMiAuOS0yIDJ2MTRoMlYzaDEyVjF6bTMgNEg4Yy0xLjEgMC0yIC45LTIgMnYxNGMwIDEuMS45IDIgMiAyaDExYzEuMSAwIDItLjkgMi0yVjdjMC0xLjEtLjktMi0yLTJ6bTAgMTZIOFY3aDExdjE0eiIgLz4gPC9zdmc+IA==";
-const svg_link = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMicgaGVpZ2h0PScyMCcgdmlld0JveD0iMCA0IDI0IDE1Ij4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTMuOSAxMmMwLTEuNzEgMS4zOS0zLjEgMy4xLTMuMWg0VjdIN2MtMi43NiAwLTUgMi4yNC01IDVzMi4yNCA1IDUgNWg0di0xLjlIN2MtMS43MSAwLTMuMS0xLjM5LTMuMS0zLjF6TTggMTNoOHYtMkg4djJ6bTktNmgtNHYxLjloNGMxLjcxIDAgMy4xIDEuMzkgMy4xIDMuMXMtMS4zOSAzLjEtMy4xIDMuMWgtNFYxN2g0YzIuNzYgMCA1LTIuMjQgNS01cy0yLjI0LTUtNS01eiIgLz4gPC9zdmc+IA==";
+const svg_link = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjYnIHdpZHRoPSc2Micgdmlld0JveD0iMCA0IDQ2LjQ5OTk5OSAxOS40OTk5OTkiPiA8cGF0aCBzdHlsZT0iZmlsbDpub25lIiBkPSJNIC0wLjAwMzE3NzI5LDUuOTk5OTk5NSBIIDIzLjk5NjgyMyBWIDMwIEggLTAuMDAzMTc3MjkgWiIgLz4gPHBhdGggc3R5bGU9ImZpbGw6IzY5YjdjZjtzdHJva2Utd2lkdGg6MC45NDQzODUzNSIgZD0ibSAxNS4xNDMyODUsMTMuNzUgYyAwLC0xLjUyMzgyNCAxLjM5MTE1MywtMi43NjI0ODggMy4xMDI1NzEsLTIuNzYyNDg4IGggNC4wMDMzMTYgViA5LjI5NDM3NTEgaCAtNC4wMDMzMTYgYyAtMi43NjIyODksMCAtNS4wMDQxNDYsMS45OTYxMTk5IC01LjAwNDE0Niw0LjQ1NTYyNDkgMCwyLjQ1OTUwNCAyLjI0MTg1Nyw0LjQ1NTYyNCA1LjAwNDE0Niw0LjQ1NTYyNCBoIDQuMDAzMzE2IHYgLTEuNjkzMTM3IGggLTQuMDAzMzE2IGMgLTEuNzExNDE4LDAgLTMuMTAyNTcxLC0xLjIzODY2NCAtMy4xMDI1NzEsLTIuNzYyNDg3IHogbSA0LjEwMzQsMC44OTExMjUgaCA4LjAwNjYzMiB2IC0xLjc4MjI1IEggMTkuMjQ2Njg1IFogTSAyOC4yNTQxNDYsOS4yOTQzNzUxIEggMjQuMjUwODMgdiAxLjY5MzEzNjkgaCA0LjAwMzMxNiBjIDEuNzExNDE4LDAgMy4xMDI1NzEsMS4yMzg2NjQgMy4xMDI1NzEsMi43NjI0ODggMCwxLjUyMzgyMyAtMS4zOTExNTMsMi43NjI0ODcgLTMuMTAyNTcxLDIuNzYyNDg3IEggMjQuMjUwODMgdiAxLjY5MzEzNyBoIDQuMDAzMzE2IGMgMi43NjIyODksMCA1LjAwNDE0NiwtMS45OTYxMiA1LjAwNDE0NiwtNC40NTU2MjQgMCwtMi40NTk1MDUgLTIuMjQxODU3LC00LjQ1NTYyNDkgLTUuMDA0MTQ2LC00LjQ1NTYyNDkgeiIgLz4gPHJlY3Qgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzY5YjdjZjtzdHJva2Utd2lkdGg6MC42NTc5NDM0OTtzdHJva2Utb3BhY2l0eToxIiB5PSI0LjMyODk3MjMiIHg9IjAuMzI4OTcxNzQiIGhlaWdodD0iMTguODQyMDU2IiB3aWR0aD0iNDUuODQyMDYiIC8+IDwvc3ZnPiA=";
 const svg_map = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyMCcgaGVpZ2h0PScyMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTIwLjUgM2wtLjE2LjAzTDE1IDUuMSA5IDMgMy4zNiA0LjljLS4yMS4wNy0uMzYuMjUtLjM2LjQ4VjIwLjVjMCAuMjguMjIuNS41LjVsLjE2LS4wM0w5IDE4LjlsNiAyLjEgNS42NC0xLjljLjIxLS4wNy4zNi0uMjUuMzYtLjQ4VjMuNWMwLS4yOC0uMjItLjUtLjUtLjV6TTE1IDE5bC02LTIuMTFWNWw2IDIuMTFWMTl6IiAvPiA8cGF0aCBmaWxsPSdub25lJyBkPSdNMCAwaDI0djI0SDB6JyAvPiA8L3N2Zz4g";

@@ -13,6 +13,7 @@
 	<title>WCode based addressing system - WCode location</title>
 	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-app.js"></script>
 	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-database.js"></script>
+	<script src="https://cdn.firebase.com/libs/geofire/4.1.2/geofire.min.js"></script>
 <link rel='manifest' href='/manifest.json' >
 		<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
 	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -82,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	</script>
 	<script>
 // .\Script
-var pendingLocate = true;
+var pendingLocate = false;
 
 // Code\Code
 var FUNCTIONS_BASE_URL = 'https://location.wcodes.org/api';
@@ -91,13 +92,13 @@ var curEncRequestId = 0;
 var curDecRequestId = 0;
 
 // Code\Copy_wcode
+var city_styled_wordlist = [];
+var cityNameList;
+
 var WCODE_CODE_COPIED_MESSAGE = "WCode copied to clipboard";
 var WCODE_LINK_COPIED_MESSAGE = "WCode link copied to clipboard";
 
 // Code\Core
-var city_styled_wordlist = [];
-var city_plus_wordList = [];
-
 var PURE_WCODE_CITY_PICKED = "Since your city is not set - city was chosen from the last location";
 var PURE_WCODE_CITY_FAILED = "Since your city is not set - you must first choose the city or preceed the WCode with city name";
 
@@ -121,6 +122,8 @@ var infoWindow_open = false;
 var INCORRECT_WCODE = 'INCORRECT INPUT! Should be at least 3 WCode words, optionally preceded by a city. E.g: "Bangalore cat apple tomato"';
 var MESSAGE_LOADING = 'Loading ..';
 var LOCATION_PERMISSION_DENIED = "Location permission was denied. Click to point or retry with the locate button";
+
+var CITY_RANGE_RADIUS = 32.767;
 // var pendingLocate;
 function syncLocate(override_dnd) {
 	if (typeof google === 'object' && typeof google.maps === 'object' && typeof map == 'object') {
@@ -493,7 +496,8 @@ button {
 
 #copy_link_button {
 	display: block;
-	width: 48px;
+	width: 100px;
+	box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
 }
 
 #external_map_button {
@@ -957,14 +961,14 @@ h2.message_dialog_label {
 			<span id='copy_wcode_message_city_name'></span>
 		</p>
 		<div class="center message_dialog_control">
-			<button id='copy_wcode_submit_no' class='dialog_message_primary' type='button'>No</button>
-			<button id='copy_wcode_submit_yes' class='dialog_message_secondary' type='button'>Yes</button>
+			<button id='copy_wcode_submit_yes' class='dialog_message_primary' type='button'>Yes</button>
+			<button id='copy_wcode_submit_no' class='dialog_message_secondary' type='button'>No</button>
 		</div>
 		<div class="center message_dialog_separator"></div>
 		<p class='secondary'>
 			<span>copy link:</span>
 		</p>
-		<img id='copy_link_button' class="center control" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMicgaGVpZ2h0PScyMCcgdmlld0JveD0iMCA0IDI0IDE1Ij4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTMuOSAxMmMwLTEuNzEgMS4zOS0zLjEgMy4xLTMuMWg0VjdIN2MtMi43NiAwLTUgMi4yNC01IDVzMi4yNCA1IDUgNWg0di0xLjlIN2MtMS43MSAwLTMuMS0xLjM5LTMuMS0zLjF6TTggMTNoOHYtMkg4djJ6bTktNmgtNHYxLjloNGMxLjcxIDAgMy4xIDEuMzkgMy4xIDMuMXMtMS4zOSAzLjEtMy4xIDMuMWgtNFYxN2g0YzIuNzYgMCA1LTIuMjQgNS01cy0yLjI0LTUtNS01eiIgLz4gPC9zdmc+IA==" >
+		<img id='copy_link_button' class="center control" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjYnIHdpZHRoPSc2Micgdmlld0JveD0iMCA0IDQ2LjQ5OTk5OSAxOS40OTk5OTkiPiA8cGF0aCBzdHlsZT0iZmlsbDpub25lIiBkPSJNIC0wLjAwMzE3NzI5LDUuOTk5OTk5NSBIIDIzLjk5NjgyMyBWIDMwIEggLTAuMDAzMTc3MjkgWiIgLz4gPHBhdGggc3R5bGU9ImZpbGw6IzY5YjdjZjtzdHJva2Utd2lkdGg6MC45NDQzODUzNSIgZD0ibSAxNS4xNDMyODUsMTMuNzUgYyAwLC0xLjUyMzgyNCAxLjM5MTE1MywtMi43NjI0ODggMy4xMDI1NzEsLTIuNzYyNDg4IGggNC4wMDMzMTYgViA5LjI5NDM3NTEgaCAtNC4wMDMzMTYgYyAtMi43NjIyODksMCAtNS4wMDQxNDYsMS45OTYxMTk5IC01LjAwNDE0Niw0LjQ1NTYyNDkgMCwyLjQ1OTUwNCAyLjI0MTg1Nyw0LjQ1NTYyNCA1LjAwNDE0Niw0LjQ1NTYyNCBoIDQuMDAzMzE2IHYgLTEuNjkzMTM3IGggLTQuMDAzMzE2IGMgLTEuNzExNDE4LDAgLTMuMTAyNTcxLC0xLjIzODY2NCAtMy4xMDI1NzEsLTIuNzYyNDg3IHogbSA0LjEwMzQsMC44OTExMjUgaCA4LjAwNjYzMiB2IC0xLjc4MjI1IEggMTkuMjQ2Njg1IFogTSAyOC4yNTQxNDYsOS4yOTQzNzUxIEggMjQuMjUwODMgdiAxLjY5MzEzNjkgaCA0LjAwMzMxNiBjIDEuNzExNDE4LDAgMy4xMDI1NzEsMS4yMzg2NjQgMy4xMDI1NzEsMi43NjI0ODggMCwxLjUyMzgyMyAtMS4zOTExNTMsMi43NjI0ODcgLTMuMTAyNTcxLDIuNzYyNDg3IEggMjQuMjUwODMgdiAxLjY5MzEzNyBoIDQuMDAzMzE2IGMgMi43NjIyODksMCA1LjAwNDE0NiwtMS45OTYxMiA1LjAwNDE0NiwtNC40NTU2MjQgMCwtMi40NTk1MDUgLTIuMjQxODU3LC00LjQ1NTYyNDkgLTUuMDA0MTQ2LC00LjQ1NTYyNDkgeiIgLz4gPHJlY3Qgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzY5YjdjZjtzdHJva2Utd2lkdGg6MC42NTc5NDM0OTtzdHJva2Utb3BhY2l0eToxIiB5PSI0LjMyODk3MjMiIHg9IjAuMzI4OTcxNzQiIGhlaWdodD0iMTguODQyMDU2IiB3aWR0aD0iNDUuODQyMDYiIC8+IDwvc3ZnPiA=" >
 	</div>
 </div>
 <div id='overlay' class='hide'>
@@ -1029,10 +1033,10 @@ h2.message_dialog_label {
 			Version: 0.1 beta
 		</div>
 		<div id='updated'>Updated:
-	2018-Nov-25 16:22:19		</div>
+	2019-Feb-09 00:34:25		</div>
 	</div>
 	<div id='contact'>
-		for any related query contact me
+		for any related query contact me: <a class="content-link" href="mailto:ujjwal@wcodes.org?subject=WCode location">ujjwal@wcodes.org</a>
 	</div>
 </div>
 		<div id='agency'>

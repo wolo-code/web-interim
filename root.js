@@ -28,6 +28,8 @@ ClickEventHandler.prototype.getPlaceInformation = function(placeId) {
 };
 firebase.initializeApp(FIREBASE_CONFIG);
 var database = firebase.database();
+var refCityCenter = database.ref('CityCenter');
+var geoFire = new GeoFire(refCityCenter);
 function showIncompatibleBrowserMessage() {
 	document.getElementById('incompatible_browser_message').classList.remove('hide');
 }
@@ -46,6 +48,8 @@ function showNotification(message) {
 		notification_bottom.classList.add('hide');
 	}, 2500);
 }
+if(typeof initLoad !== 'undefined')
+	initLoad();
 // var latLng_p;
 // var address;
 // var gpId;
@@ -173,6 +177,104 @@ function urlDecode() {
 // var pendingCity;
 // var pendingCitySubmit;
 
+function getProperCityAccent(city) {
+	var city_accent_normalized = city.accent.normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+	if(city.name.localeCompare(city_accent_normalized.toLocaleLowerCase()) == 0)
+		return city_accent_normalized;
+	else
+		return capitalizeWords(city.name);
+}
+
+function getCityFromPositionThenEncode(latLng) {
+	var nearCity = new Object;
+
+	var geoQuery = geoFire.query({
+		center: [latLng.lat, latLng.lng],
+		radius: CITY_RANGE_RADIUS
+	});
+
+	geoQuery.on("ready", function() {
+		geoQuery.cancel();
+		if(Object.keys(nearCity).length === 0)
+			encode_continue(null, latLng);
+		else
+			getCityFromId(nearCity.city.id, function(city) {
+				city.center = nearCity.city.center;
+				encode_continue(city, latLng);
+			});
+	});
+
+	geoData = geoQuery.on("key_entered", function(key, location, distance) {
+		if(typeof nearCity.distance == 'undefined' || distance < nearCity.distance) {
+			nearCity.city = {id:key, center:{ lat: location[0], lng: location[1]} };
+			nearCity.distance = distance;
+		}
+	});
+
+}
+
+function getCityFromPositionThenDecode(latLng, wcode) {
+	var nearCity = new Object;
+
+	var geoQuery = geoFire.query({
+	  center: [latLng.lat, latLng.lng],
+	  radius: CITY_RANGE_RADIUS
+	});
+
+	geoQuery.on("ready", function() {
+	  geoQuery.cancel();
+		if(nearCity == null)
+			decode_continue(null, wcode);
+		else
+			decode_continue(nearCity.city, wcode);
+	});
+
+	geoData = geoQuery.on("key_entered", function(key, location, distance) {
+		if(typeof nearCity.distance == 'undefined' || distance < nearCity.distance) {
+			nearCity.city = {name:CityList[key].name, center:{ lat: location[0], lng: location[1]} };
+			nearCity.distance = distance;
+		}
+	});
+
+}
+
+function getCityFromId(id, callback) {
+	var ref = database.ref('CityDetail'+'/'+id);
+	ref.once('value').then(function(snapshot) {
+		callback(snapshot.val());
+	});
+}
+
+function getCityFromName(name, callback) {
+	var ref = database.ref('CityDetail');
+	ref.orderByChild('name').equalTo(name).on("child_added", function(snapshot) {
+		var city = snapshot.val();
+		city.id = snapshot.key;
+    callback(city);
+	});
+}
+
+function getCitiesFromName(name, callback) {
+	var ref = database.ref('CityDetail');
+	ref.orderByChild('name').startAt(name).limitToFirst(10).on("value", function(snapshot) {
+    callback(snapshot.val());
+	});
+}
+
+function getCityIdFromName(name, callback) {
+	var ref = database.ref('CityDetail');
+	ref.orderByChild('name').equalTo(name).on("child_added", function(snapshot) {
+    callback(snapshot.key);
+	});
+}
+
+function getCityAccentFromId(id) {
+	if(typeof (CityList[id].accent) != 'undefined')
+		return CityList[id].accent;
+	else
+		return CityList[id].name;
+}
+
 function noCity(position) {
 	showAddress();
 	showNoCityMessage();
@@ -189,7 +291,7 @@ function submitCity() {
 }
 
 function execSubmitCity() {
-	var newPostKey = firebase.database().ref().child('CityRequest').push().key;
+	var newPostKey = database.ref().child('CityRequest').push().key;
 	var updates = {};
 	var data = {
 			"time": firebase.database.ServerValue.TIMESTAMP,
@@ -199,7 +301,7 @@ function execSubmitCity() {
 			"processed": false
 		};
 	updates['/CityRequest/' + newPostKey] = data;
-	firebase.database().ref().update(updates);
+	database.ref().update(updates);
 	showNotification("Request submitted");
 }
 
@@ -243,13 +345,12 @@ function encode_(city, position) {
 
 function setCodeWords(code, city, position) {
 	var message = [];
-	message.push(city.name);
 	var object = JSON.parse(code).code;
 
 	for(const i of object)
 		message.push(wordList.getWord(i));
 
-	setWcode(message, position);
+	setCode(city, message, position);
 }
 
 function stringifyEncodeData(city_center, position) {
@@ -267,12 +368,12 @@ function decode_(city, code) {
 	http.setRequestHeader('Content-type', 'application/json');
 	http.setRequestHeader('version', '1');
 	http.requestId = ++curDecRequestId;
-	
+
 	wait_loader.classList.remove('hide');
 	http.onreadystatechange = function() {
 		if(http.readyState == 4 && http.status == 200) {
 			if(http.requestId == curDecRequestId) {
-				setCodeCoord(http.responseText, new Array(city.name).concat(code));
+				setCodeCoord(city, http.responseText, code);
 				notification_top.classList.add('hide');
 				wait_loader.classList.add('hide');
 			}
@@ -294,44 +395,41 @@ function stringifyDecodeData(city_center, code) {
 	return JSON.stringify(object);
 }
 
-function setCodeCoord(codeIndex, code) {
+function setCodeCoord(city, codeIndex, code) {
 	var object = JSON.parse(codeIndex);
-	focus__(object, code);
+	focus__(city, object, code);
 }
 // const WCODE_CODE_COPIED_MESSAGE;
 // const WCODE_LINK_COPIED_MESSAGE;
 
 function showCopyWcodeMessage() {
-	copy_wcode_message_city_name.innerText = getWcodeCity();
+	copy_wcode_message_city_name.innerText = getCodeCity();
 	copy_wcode_message.classList.remove('hide');
 }
 
-function hideCopyWcodeMessage() {
+function hideCopyCodeMessage() {
 	copy_wcode_message.classList.add('hide');
-	copy_wcode_message_city_name.innerText = '';	
+	copy_wcode_message_city_name.innerText = '';
 }
 
 function copyWcodeFull() {
 	showAndCopy(getWcodeFull_formatted().join(' '));
 	showNotification(WCODE_CODE_COPIED_MESSAGE);
-	hideCopyWcodeMessage();
+	hideCopyCodeMessage();
 }
 
 function copyWcodeCode() {
-	showAndCopy(getWcodeCode_formatted().join(' '));
+	showAndCopy(getCodeWcode_formatted().join(' '));
 	showNotification(WCODE_CODE_COPIED_MESSAGE);
-	hideCopyWcodeMessage();
+	hideCopyCodeMessage();
 }
 
 function copyWcodeLink() {
-	var wcode_url = location.hostname + '/' + getWcodeFull().join('.');
-	showAndCopy(wcode_url.toLowerCase());
+	var code_url = location.hostname + '/' + getCodeFull().join('.');
+	showAndCopy(code_url.toLowerCase());
 	showNotification(WCODE_LINK_COPIED_MESSAGE);
-	hideCopyWcodeMessage();
+	hideCopyCodeMessage();
 }
-var CityList;
-// var city_styled_wordlist;
-// var city_plus_wordList;
 var pendingPosition;
 var pendingWords;
 var wordList;
@@ -339,150 +437,126 @@ var wordList;
 // const PURE_WCODE_CITY_PICKED;
 // const PURE_WCODE_CITY_FAILED;
 
-function getCityFromPosition(latLng) {
-	var nearCity;
-	CityList.forEach (function(city) {
-		var dLat = Math.abs(city.center.lat - latLng.lat);
-		var dLng = Math.abs(city.center.lng - latLng.lng);
-		if(dLat < 0.25) {
-			if(dLng < 0.25) {
-				var dSquare = dLat * dLat + dLng * dLng;
-				if(nearCity == null || nearCity.dLng > dLng)
-					nearCity = {'city':city, 'dLng':dLng};
-			}
-		}
-	} );
-	
-	if(nearCity == null)
-		return null;
-	else
-		return nearCity.city;
-}
-
-function getCityFromName(cityName) {
-	var city;
-	for(var i = 0; i < CityList.length; i++) {
-		if(CityList[i].name.toLowerCase().localeCompare(cityName) == 0)
-			return CityList[i];
-	}
-	return null;
-}
-
 function encode(position) {
-	clearWcode();
-	if(CityList != null) {
-		var city = getCityFromPosition(position);
-		if(city == null) {
-			if(!pendingCity) {
-				pendingPosition = position;
-				noCity(position);
-			}
-		}
-		else {
-			if(pendingCity) {
-				hideNoCityMessage();
-				infoWindow_setContent(MESSAGE_LOADING);
-				pendingCity = false;
-			}
-			encode_(city, position);
+	clearCode();
+	getCityFromPositionThenEncode(position);
+}
+
+function encode_continue(city, position) {
+	if(city == null) {
+		if(!pendingCity) {
+			pendingPosition = position;
+			noCity(position);
 		}
 	}
-	else
-		pendingPosition = position;
+	else {
+		if(pendingCity) {
+			hideNoCityMessage();
+			infoWindow_setContent(MESSAGE_LOADING);
+			pendingCity = false;
+		}
+		encode_(city, position);
+	}
 }
 
 function decode(words) {
-	if(CityList != null) {
-		var city;
-		var valid = false;
-		
-		var city_words_length = words.length-3;
-		if(words.length > 3) {
-			var ipCityName = words.slice(0, city_words_length).join(' ');
-			city = getCityFromName(ipCityName);
-			valid = true;
-		}
-		else if (words.length == 3) {
-			var position;
-			if(myLocDot == null) {
-				if(marker != null && marker.position != null) {
-					position = marker.position;
-					focus_(position);
-					showNotification(PURE_WCODE_CITY_PICKED);
-				}
-				else
-					showNotification(PURE_WCODE_CITY_FAILED);
-				return;
-			}
-			else {
-				position = myLocDot.position;
-			}
-			
-			if(position != null)
-				city = getCityFromPosition(resolveLatLng(position));
-			if(city != null)
-				valid = true;
-			else
-				valid = false;
-		}
+	var city_words_length = words.length-3;
 
-		if(valid) {
-			for (var i = 0; i < 3; i++) {
-				if (wordList.includes(words[city_words_length+i]) != true) {
-					valid = false;
-					break;
-				}
+	var valid = true;
+
+	if(words.length >= 3) {
+		for (var i = 0; i < 3; i++) {
+			if (wordList.includes(words[city_words_length+i]) != true) {
+				valid = false;
+				break;
 			}
 		}
-		
-		if(valid) {
-			decode_(city, words.slice(city_words_length, words.length));
-		}
-		else {
-			showNotification(INCORRECT_WCODE);
-		}			
+	}
+
+	if(valid) {
+
+			if(city_words_length > 0) {
+				var ipCityName = words.slice(0, city_words_length).join(' ');
+				getCityFromName(ipCityName, function(city) {
+					if(city == null)
+						decode_continue(null, words.slice(city_words_length, words.length));
+					else
+						refCityCenter.child(city.id).once('value', function(snapshot) {
+							var location = snapshot.val().l;
+							city.center = { lat: location[0], lng: location[1]};
+							decode_continue(city, words.slice(city_words_length, words.length));
+						});
+				});
+			}
+			else if (words.length == 3) {
+				var position;
+				if(myLocDot == null) {
+					if(marker != null && marker.position != null) {
+						position = marker.position;
+						focus_(position);
+						showNotification(PURE_WCODE_CITY_PICKED);
+					}
+					else
+						showNotification(PURE_WCODE_CITY_FAILED);
+					return;
+				}
+				else {
+					position = myLocDot.position;
+				}
+
+				if(position != null)
+					getCityFromPositionThenDecode(resolveLatLng(position), words);
+			}
+
 	}
 	else
-		pendingWords = words;
-}
-var wcode_city;
-var wcode_code;
-var wcode_postition;
-
-function setWcode(wcode, latLng) {
-	wcode_city = wcode[0];
-	wcode_code = wcode.slice(1, wcode.length);
-	wcode_postition = latLng;
-	
-	setInfoWindowText(wcode, latLng);
+		showNotification(INCORRECT_WCODE);
 }
 
-function clearWcode() {
-	wcode_postition = null;
+function decode_continue(city, wcode) {
+	if(city != null)
+		decode_(city, wcode);
+	else
+		showNotification(INCORRECT_WCODE);
+}
+var code_city;
+var code_wcode;
+var code_postition;
+
+function setCode(city, wcode, latLng) {
+	code_city = city;
+	code_wcode = wcode;
+	code_postition = latLng;
+
+	setInfoWindowText(getProperCityAccent(city), city.name, wcode.join(' '), latLng);
 }
 
-function getWcodeFull() {
-	return [wcode_city].concat(wcode_code);
+function clearCode() {
+	code_postition = null;
 }
 
-function formatWcode(wcode) {
-	return ["\\"].concat(wcode).concat(["/"]); 
+function getCodeFull() {
+	return [code_city.name].concat(code_wcode);
 }
 
 function getWcodeFull_formatted() {
-	return formatWcode(getWcodeFull());
+	return formatWcode(getCodeFull());
 }
 
-function getWcodeCode() {
-	return wcode_code;
+function getCodeWCode() {
+	return code_wcode;
 }
 
-function getWcodeCode_formatted() {
-	return formatWcode(getWcodeCode());
+function getCodeWcode_formatted() {
+	return formatWcode(getCodeWCode());
 }
 
-function getWcodeCity() {
-	return wcode_city;	
+function getCodeCity() {
+	return code_city.name;
+}
+
+function formatWcode(code) {
+	return ["\\"].concat(code).concat(["/"]);
 }
 function WordList(list) {
 	this.wordList = list;
@@ -515,29 +589,13 @@ function WordList(list) {
 	};
 	
 }
-firebase.database().ref('WordList').on('value', function(snapshot) {
+database.ref('WordList').on('value', function(snapshot) {
 	wordList = new WordList(snapshot.val());
-	if(CityList != null)
-		initData();
-});
-
-firebase.database().ref('CityList').on('value', function(snapshot) {
-	
-	CityList = snapshot.val();
-	
-	CityList.forEach (function(city){
-		city_styled_wordlist.push(city.name);
-		city_plus_wordList.push(city.name.toLowerCase());
-	});
-	
-	if(wordList != null)
-		initData();
+	city_styled_wordlist = wordList.curList;
+	initData();
 });
 
 function initData() {
-	city_styled_wordlist = city_styled_wordlist.concat(wordList.curList);
-	city_plus_wordList = city_plus_wordList.concat(wordList.curList);
-	
 	if(pendingPosition != null) {
 		encode(pendingPosition);
 	}
@@ -545,15 +603,15 @@ function initData() {
 		decode(pendingWords);
 	}
 }
-function focus__(pos, code) {
+function focus__(city, pos, code) {
 	focus_(pos);
-	setWcode(code, pos);
+	setCode(city, code, pos);
 }
 
 const ZOOM_ANIMATION_SPEED = 250;
 var firstFocus = true;
 function focus_(pos, bounds) {
-	
+
 	hideNoCityMessage();
 
 	if(typeof marker === 'undefined') {
@@ -582,7 +640,7 @@ function focus_(pos, bounds) {
 
 	map.panTo(pos);
 	map.panBy(0, getPanByOffset());
-	
+
 	var idleListenerPan = map.addListener('idle', function() {
 		idleListenerPan.remove();
 		var newZoom;
@@ -600,7 +658,7 @@ function focus_(pos, bounds) {
 			firstFocus = false;
 		}
 	});
-	
+
 	infoWindow_setContent(MESSAGE_LOADING);
 	infoWindow.open(map, marker);
 	infoWindow_open = true;
@@ -624,7 +682,7 @@ function smoothZoomToBounds(bounds, map, max, current) {
 				if(typeof bounds !== 'undefined')
 					setTimeout(function() {
 							map.fitBounds(bounds, ZOOM_BOUND_PADDING);
-					}, ZOOM_ANIMATION_SPEED);			
+					}, ZOOM_ANIMATION_SPEED);
 			}
 		}, ZOOM_ANIMATION_SPEED);
 	}
@@ -635,15 +693,15 @@ function getZoomByBounds( map, bounds ) {
 	var MIN_ZOOM = map.mapTypes.get(map.getMapTypeId()).minZoom || 0;
 
 	var ne = map.getProjection().fromLatLngToPoint( bounds.getNorthEast() );
-	var sw = map.getProjection().fromLatLngToPoint( bounds.getSouthWest() ); 
+	var sw = map.getProjection().fromLatLngToPoint( bounds.getSouthWest() );
 
 	var worldCoordWidth = Math.abs(ne.x-sw.x);
 	var worldCoordHeight = Math.abs(ne.y-sw.y);
 
 	var FIT_PAD = 10;
 
-	for(var zoom = MAX_ZOOM; zoom >= MIN_ZOOM; --zoom) { 
-		if( worldCoordWidth*(1<<zoom)+2*FIT_PAD < document.getElementById('map').scrollWidth && 
+	for(var zoom = MAX_ZOOM; zoom >= MIN_ZOOM; --zoom) {
+		if( worldCoordWidth*(1<<zoom)+2*FIT_PAD < document.getElementById('map').scrollWidth &&
 				worldCoordHeight*(1<<zoom)+2*FIT_PAD < document.getElementById('map').scrollHeight )
 			return zoom;
 	}
@@ -655,8 +713,8 @@ function infoWindow_setContent(string) {
 	infoWindow.setContent(string);
 }
 
-function setInfoWindowText(code, latLng) {
-	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'>" + code[0] + "</span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code.slice(1, code.length).join(' ') + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' onclick='toggleAddress();' src=" + svg_address + " ><a href='"+ getIntentURL(latLng, code) + "'><img id='external_map_button' class='control' onclick='' src=" + svg_map + " ></a><img id='copy_code_button' class='control' onclick='showCopyWcodeMessage();' src=" + svg_copy + " ></div>")
+function setInfoWindowText(city_accent, city_name, code_string, latLng) {
+	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'>" + city_accent + "</span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code_string + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' onclick='toggleAddress();' src=" + svg_address + " ><a href='"+ getIntentURL(latLng, city_name + ' ' + code_string) + "'><img id='external_map_button' class='control' onclick='' src=" + svg_map + " ></a><img id='copy_code_button' class='control' onclick='showCopyWcodeMessage();' src=" + svg_copy + " ></div>")
 }
 function initLocate(override_dnd) {
 	if(!locationAccessCheck()) {
@@ -772,6 +830,7 @@ function locateRight_deny() {
 	wait_loader.classList.add('hide');
 	hideLocateRightMessage();
 	locateRight_DND_check();
+	showNotification("Choose a place on the map");
 }
 
 function locateRight_DND_check() {
@@ -888,16 +947,16 @@ function initMap() {
 	map_type_button.addEventListener('click', function() {
 		toggleMapType(true);
 	});
-	
+
 	location_button.addEventListener('click', function() {
 		syncLocate(true);
 	});
 
-	document.getElementById('pac-input').addEventListener('input', suggestComplete);
+	document.getElementById('pac-input').addEventListener('input', suggestWrapper);
 	clickHandler = new ClickEventHandler(map);
-	
+
 	postMap();
-	
+
 }
 
 function resolveLatLng(latLng) {
@@ -946,9 +1005,9 @@ function getPanByOffset() {
 		return 0;
 }
 
-function getIntentURL(latLng, code) {
+function getIntentURL(latLng, code_string) {
 	if((navigator.userAgent.match(/android/i)))
-		return 'geo:0,0?q='+latLng.lat+','+latLng.lng+'(\\ '+code.join(' ')+' /)';
+		return 'geo:0,0?q='+latLng.lat+','+latLng.lng+'(\\ '+code_string+' /)';
 	else
 		return 'https://maps.google.com/maps?q=loc:'+latLng.lat+','+latLng.lng+'&t=h';
 }
@@ -1019,7 +1078,18 @@ function postMap() {
 	if(pendingLocate)
 		syncLocate();
 }
-function suggestComplete(event) {
+function suggestWrapper(event) {
+	cityNameList = [];
+	getCitiesFromName(document.getElementById('pac-input').value.toLowerCase(), function(cityList) {
+		for(let key in cityList)
+			cityNameList.push(getProperCityAccent(cityList[key]));
+		city_styled_wordlist = cityNameList.concat(wordList.curList);
+		suggestComplete();
+	});
+	suggestComplete();
+}
+
+function suggestComplete() {
 	var input_array = document.getElementById('pac-input').value.toLowerCase().split(' ');
 	var curList;
 	if(input_array.length > 0)
@@ -1044,14 +1114,14 @@ function suggestComplete(event) {
 
 function getPossibleList(code) {
 	var list;
-	
+
 	if(code.length == 0)
 		list = city_styled_wordlist;
 	else {
 		var i;
 		for(i = code.length; i > 0; i--) {
 			var cityName = code.slice(0, i).join(' ');
-			if(getCityFromName(cityName)) {
+			if(cityNameList.includes(cityName)) {
 				list = wordList.curList;
 				break;
 			}
@@ -1111,6 +1181,10 @@ function clearURL() {
 	if(window.location.pathname.substr(1) != '')
 		window.history.pushState({"html":'',"pageTitle":''}, '', '/');
 }
+
+function capitalizeWords(s) {
+	return s.replace(/(^|\s)\S/g, l => l.toUpperCase());
+}
 function initLoad () {
 	if(!initLoadDone && document.readyState === 'interactive') {
 		versionCheck();
@@ -1135,7 +1209,7 @@ function setupControls() {
 	document.getElementById('no_city_submit_wait_continue').addEventListener('click', noCityWait_continue);
 	document.getElementById('no_city_submit_wait_stop').addEventListener('click', noCityWait_stop);
 	document.getElementById('notification_top').addEventListener('click', tryDefaultCity);
-	document.getElementById('copy_wcode_message_close').addEventListener('click', hideCopyWcodeMessage);
+	document.getElementById('copy_wcode_message_close').addEventListener('click', hideCopyCodeMessage);
 	document.getElementById('copy_wcode_submit_yes').addEventListener('click', copyWcodeFull);
 	document.getElementById('copy_wcode_submit_no').addEventListener('click', copyWcodeCode);
 	document.getElementById('copy_link_button').addEventListener('click', copyWcodeLink);
@@ -1877,5 +1951,5 @@ UMB.Widget = function () {
     };
 }();const svg_address = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjgnIHdpZHRoPScyOCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTE0IDE3SDR2MmgxMHYtMnptNi04SDR2MmgxNlY5ek00IDE1aDE2di0ySDR2MnpNNCA1djJoMTZWNUg0eiIgLz4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPC9zdmc+IA==";
 const svg_copy = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjAnIHdpZHRoPScyMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTE2IDFINGMtMS4xIDAtMiAuOS0yIDJ2MTRoMlYzaDEyVjF6bTMgNEg4Yy0xLjEgMC0yIC45LTIgMnYxNGMwIDEuMS45IDIgMiAyaDExYzEuMSAwIDItLjkgMi0yVjdjMC0xLjEtLjktMi0yLTJ6bTAgMTZIOFY3aDExdjE0eiIgLz4gPC9zdmc+IA==";
-const svg_link = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMicgaGVpZ2h0PScyMCcgdmlld0JveD0iMCA0IDI0IDE1Ij4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTMuOSAxMmMwLTEuNzEgMS4zOS0zLjEgMy4xLTMuMWg0VjdIN2MtMi43NiAwLTUgMi4yNC01IDVzMi4yNCA1IDUgNWg0di0xLjlIN2MtMS43MSAwLTMuMS0xLjM5LTMuMS0zLjF6TTggMTNoOHYtMkg4djJ6bTktNmgtNHYxLjloNGMxLjcxIDAgMy4xIDEuMzkgMy4xIDMuMXMtMS4zOSAzLjEtMy4xIDMuMWgtNFYxN2g0YzIuNzYgMCA1LTIuMjQgNS01cy0yLjI0LTUtNS01eiIgLz4gPC9zdmc+IA==";
+const svg_link = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjYnIHdpZHRoPSc2Micgdmlld0JveD0iMCA0IDQ2LjQ5OTk5OSAxOS40OTk5OTkiPiA8cGF0aCBzdHlsZT0iZmlsbDpub25lIiBkPSJNIC0wLjAwMzE3NzI5LDUuOTk5OTk5NSBIIDIzLjk5NjgyMyBWIDMwIEggLTAuMDAzMTc3MjkgWiIgLz4gPHBhdGggc3R5bGU9ImZpbGw6IzY5YjdjZjtzdHJva2Utd2lkdGg6MC45NDQzODUzNSIgZD0ibSAxNS4xNDMyODUsMTMuNzUgYyAwLC0xLjUyMzgyNCAxLjM5MTE1MywtMi43NjI0ODggMy4xMDI1NzEsLTIuNzYyNDg4IGggNC4wMDMzMTYgViA5LjI5NDM3NTEgaCAtNC4wMDMzMTYgYyAtMi43NjIyODksMCAtNS4wMDQxNDYsMS45OTYxMTk5IC01LjAwNDE0Niw0LjQ1NTYyNDkgMCwyLjQ1OTUwNCAyLjI0MTg1Nyw0LjQ1NTYyNCA1LjAwNDE0Niw0LjQ1NTYyNCBoIDQuMDAzMzE2IHYgLTEuNjkzMTM3IGggLTQuMDAzMzE2IGMgLTEuNzExNDE4LDAgLTMuMTAyNTcxLC0xLjIzODY2NCAtMy4xMDI1NzEsLTIuNzYyNDg3IHogbSA0LjEwMzQsMC44OTExMjUgaCA4LjAwNjYzMiB2IC0xLjc4MjI1IEggMTkuMjQ2Njg1IFogTSAyOC4yNTQxNDYsOS4yOTQzNzUxIEggMjQuMjUwODMgdiAxLjY5MzEzNjkgaCA0LjAwMzMxNiBjIDEuNzExNDE4LDAgMy4xMDI1NzEsMS4yMzg2NjQgMy4xMDI1NzEsMi43NjI0ODggMCwxLjUyMzgyMyAtMS4zOTExNTMsMi43NjI0ODcgLTMuMTAyNTcxLDIuNzYyNDg3IEggMjQuMjUwODMgdiAxLjY5MzEzNyBoIDQuMDAzMzE2IGMgMi43NjIyODksMCA1LjAwNDE0NiwtMS45OTYxMiA1LjAwNDE0NiwtNC40NTU2MjQgMCwtMi40NTk1MDUgLTIuMjQxODU3LC00LjQ1NTYyNDkgLTUuMDA0MTQ2LC00LjQ1NTYyNDkgeiIgLz4gPHJlY3Qgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzY5YjdjZjtzdHJva2Utd2lkdGg6MC42NTc5NDM0OTtzdHJva2Utb3BhY2l0eToxIiB5PSI0LjMyODk3MjMiIHg9IjAuMzI4OTcxNzQiIGhlaWdodD0iMTguODQyMDU2IiB3aWR0aD0iNDUuODQyMDYiIC8+IDwvc3ZnPiA=";
 const svg_map = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyMCcgaGVpZ2h0PScyMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTIwLjUgM2wtLjE2LjAzTDE1IDUuMSA5IDMgMy4zNiA0LjljLS4yMS4wNy0uMzYuMjUtLjM2LjQ4VjIwLjVjMCAuMjguMjIuNS41LjVsLjE2LS4wM0w5IDE4LjlsNiAyLjEgNS42NC0xLjljLjIxLS4wNy4zNi0uMjUuMzYtLjQ4VjMuNWMwLS4yOC0uMjItLjUtLjUtLjV6TTE1IDE5bC02LTIuMTFWNWw2IDIuMTFWMTl6IiAvPiA8cGF0aCBmaWxsPSdub25lJyBkPSdNMCAwaDI0djI0SDB6JyAvPiA8L3N2Zz4g";
