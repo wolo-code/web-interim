@@ -115,7 +115,7 @@ function syncMarkEntry(lat_lng) {
 }
 	</script>
 	<script src="/console.js" async></script>
-	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyD3qtN-ejbFTrkes1Y5j3qRY8PmQrxYHDQ&libraries=places&callback=syncInitMap' async defer></script></head>
+	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyCYD7Q0f4ZR0cH0EOi29wVV2Edgb_j5i_s&libraries=places&callback=syncInitMap' async defer></script></head>
 	<style>
 #address_text {
 	position: absolute;
@@ -198,7 +198,9 @@ input {
 button {
 	-webkit-appearance: none;
 	background: white;
-	box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
+}
+
+button.border {
 	border: 1px solid;
 }
 
@@ -388,7 +390,8 @@ button {
 
 .blue {
 	color: #69B7CF;
-}@media (max-width: 662px) {
+}
+@media (max-width: 662px) {
 	
 		#pac-input {
 			top: 100px !important;
@@ -446,10 +449,6 @@ button {
 
 #infowindow_code_right_code {
 	font-size: x-large;
-}
-
-.gm-style-iw + button {
-	display: none !important;
 }
 
 .gm-style-iw {
@@ -565,6 +564,10 @@ button {
 	margin-top: 88px;
 	margin-bottom: 20px;
 	border-top: 1px solid #CCCCCC;
+}
+
+h2.message_dialog_label {
+	margin: 0.5em;
 }
 @media (max-width: 512px) {
 
@@ -904,6 +907,7 @@ input:valid {
 		</div>
 		<input id='pac-input' type='text' placeholder='Search' tabindex='3' >
 		<form id='city_submit_panel'>
+			<input id='city_gpid' type='hidden' >
 			<input id='city_lat' type='hidden' >
 			<input id='city_lng' type='hidden' >
 			<input id='city_name' class='city_form_field' type='text' placeholder='Name' required tabindex='4' autocomplete='new-password' >
@@ -915,7 +919,7 @@ input:valid {
 		<div id='notification_bottom' class='hide'></div>
 		<div id='file_container'>
 			<input id='file_input' type='file'>
-			<button id='file_upload' type='button' onclick="upload_data();">Upload</button>
+			<button id='file_upload' type='button' class='border' onclick="upload_data();">Upload</button>
 		</div>
  	</div>
 </div>

@@ -57,6 +57,7 @@ if(typeof initLoad !== 'undefined')
 function getAddress(latLng) {
 	var geocoder = new google.maps.Geocoder;
 	geocoder.geocode({'location': latLng}, function(results, status) {
+		address_results = results;
 			latLng_p = latLng;
 			if (status === 'OK') {
 				if (results[0]) {
@@ -165,7 +166,7 @@ function versionCheck() {
 
 function urlDecode() {
 	if(window.location.pathname.substr(1) != '') {
-		var code = window.location.pathname.substr(1).toLowerCase();
+		var code = window.location.pathname.substr(1).toLowerCase().replace('_', ' ');
 		pendingWords = code.split('.');
 		initWCode = true;
 		return true;
@@ -173,16 +174,66 @@ function urlDecode() {
 	else
 		return false;
 }
+var chooseCityCallback;
+var chooseCityList;
+
+function showChooseCityMessage() {
+	clearChooseCityList();
+	choose_city_message.classList.remove('hide');
+	var container = document.getElementById('choose_city_message_list');
+	for(let key in chooseCityList) {
+		var row = document.createElement('div');
+		row.innerHTML = getFullCity(chooseCityList[key]);
+		container.appendChild(row);
+		row.addEventListener('click', chooseCityContinue);
+		row.data_id = key;
+	}
+}
+
+function hideChooseCityMessage() {
+	choose_city_message.classList.add('hide');
+	clearChooseCityList();
+}
+
+function clearChooseCityList() {
+	document.getElementById('choose_city_message_list').innerHTML = '';
+}
+
+function chooseCity(list, callback) {
+	chooseCityList = list;
+	chooseCityCallback = callback;
+	showChooseCityMessage();
+}
+
+function chooseCityContinue(e) {
+	hideChooseCityMessage();
+	var id = e.target.data_id;
+	var city = chooseCityList[id];
+	city.id = id;
+	chooseCityCallback(city);
+}
+
+function getFullCity(city) {
+	var fullCity = city.country + ' \\ ';
+	if(typeof (city.group) != 'undefined' && city.group != null && city.group.length > 0)
+		fullCity += city.group + ' ~ ';
+	fullCity += city.accent;
+	return fullCity;
+}
 // const DEFAULT_WCODE;
 // var pendingCity;
 // var pendingCitySubmit;
+var multiple_city;
+var multiple_country;
+var multiple_group;
 
 function getProperCityAccent(city) {
-	var city_accent_normalized = city.accent.normalize('NFD').replace(/[\u0300-\u036f]/g, "");
-	if(city.name.localeCompare(city_accent_normalized.toLocaleLowerCase()) == 0)
-		return city_accent_normalized;
-	else
-		return capitalizeWords(city.name);
+	if(typeof city.accent != 'undefined') {
+		var city_accent_normalized = city.accent.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+		if(city.name.localeCompare(city_accent_normalized.toLocaleLowerCase()) == 0)
+			return city_accent_normalized;
+	}
+	return capitalizeWords(city.name);
 }
 
 function getCityFromPositionThenEncode(latLng) {
@@ -193,24 +244,30 @@ function getCityFromPositionThenEncode(latLng) {
 		radius: CITY_RANGE_RADIUS
 	});
 
-	geoQuery.on("ready", function() {
+	wait_loader.classList.remove('hide');;
+	geoQuery.on('ready', function() {
+		wait_loader.classList.add('hide');
 		geoQuery.cancel();
 		if(Object.keys(nearCity).length === 0)
 			encode_continue(null, latLng);
 		else
-			getCityFromId(nearCity.city.id, function(city) {
-				city.center = nearCity.city.center;
-				encode_continue(city, latLng);
-			});
+			getCityFromIdThenEncode(nearCity.city.id, nearCity.city.center, latLng);
 	});
 
-	geoData = geoQuery.on("key_entered", function(key, location, distance) {
+	geoData = geoQuery.on('key_entered', function(key, location, distance) {
 		if(typeof nearCity.distance == 'undefined' || distance < nearCity.distance) {
 			nearCity.city = {id:key, center:{ lat: location[0], lng: location[1]} };
 			nearCity.distance = distance;
 		}
 	});
 
+}
+
+function getCityFromIdThenEncode(city_id, city_center, latLng) {
+	getCityFromId(city_id, function(city) {
+		city.center = city_center;
+		encode_continue(city, latLng);
+	});
 }
 
 function getCityFromPositionThenDecode(latLng, wcode) {
@@ -221,7 +278,9 @@ function getCityFromPositionThenDecode(latLng, wcode) {
 	  radius: CITY_RANGE_RADIUS
 	});
 
-	geoQuery.on("ready", function() {
+	wait_loader.classList.remove('hide');
+	geoQuery.on('ready', function() {
+		wait_loader.classList.add('hide');
 	  geoQuery.cancel();
 		if(nearCity == null)
 			decode_continue(null, wcode);
@@ -229,7 +288,7 @@ function getCityFromPositionThenDecode(latLng, wcode) {
 			decode_continue(nearCity.city, wcode);
 	});
 
-	geoData = geoQuery.on("key_entered", function(key, location, distance) {
+	geoData = geoQuery.on('key_entered', function(key, location, distance) {
 		if(typeof nearCity.distance == 'undefined' || distance < nearCity.distance) {
 			nearCity.city = {name:CityList[key].name, center:{ lat: location[0], lng: location[1]} };
 			nearCity.distance = distance;
@@ -240,31 +299,59 @@ function getCityFromPositionThenDecode(latLng, wcode) {
 
 function getCityFromId(id, callback) {
 	var ref = database.ref('CityDetail'+'/'+id);
+	wait_loader.classList.remove('hide');
 	ref.once('value').then(function(snapshot) {
-		callback(snapshot.val());
+		wait_loader.classList.add('hide');
+		var city = snapshot.val();
+		city.id = id;
+		callback(city);
 	});
 }
 
 function getCityFromName(name, callback) {
 	var ref = database.ref('CityDetail');
-	ref.orderByChild('name').equalTo(name).on("child_added", function(snapshot) {
-		var city = snapshot.val();
-		city.id = snapshot.key;
-    callback(city);
+	wait_loader.classList.remove('hide');
+	ref.orderByChild('name_id').equalTo(name).on('value', function(snapshot) {
+		wait_loader.classList.add('hide');
+		var list = snapshot.val();
+		if(list == null)
+			decode_continue();
+		else {
+			if (Object.keys(list).length > 1)
+				chooseCity(list, callback);
+			else {
+				var id = Object.keys(list)[0];
+				var city = list[id];
+				city.id = id;
+				callback(city);
+			}
+		}
+	});
+}
+
+function getCityCenterFromId(city, callback) {
+	refCityCenter.child(city.id).once('value', function(snapshot) {
+		var location = snapshot.val().l;
+		city.center = { lat: location[0], lng: location[1]};
+		callback(city);
 	});
 }
 
 function getCitiesFromName(name, callback) {
 	var ref = database.ref('CityDetail');
-	ref.orderByChild('name').startAt(name).limitToFirst(10).on("value", function(snapshot) {
-    callback(snapshot.val());
+	wait_loader.classList.remove('hide');;
+	ref.orderByChild('name').startAt(name).endAt(name+'\uf8ff').limitToFirst(10).on('value', function(snapshot) {
+		wait_loader.classList.add('hide');
+		callback(snapshot.val());
 	});
 }
 
 function getCityIdFromName(name, callback) {
 	var ref = database.ref('CityDetail');
-	ref.orderByChild('name').equalTo(name).on("child_added", function(snapshot) {
-    callback(snapshot.key);
+	wait_loader.classList.remove('hide');;
+	ref.orderByChild('name_id').equalTo(name).on('child_added', function(snapshot) {
+		wait_loader.classList.add('hide');
+		callback(snapshot.key);
 	});
 }
 
@@ -282,7 +369,7 @@ function noCity(position) {
 }
 
 function submitCity() {
-	if(address == "")
+	if(address == '')
 		pendingCitySubmit = true;
 	else {
 		execSubmitCity();
@@ -313,6 +400,7 @@ function tryDefaultCity() {
 // const FUNCTIONS_BASE_URL;
 // var curEncRequestId;
 // var curDecRequestId;
+// var curAddCityRequestId;
 
 function encode_(city, position) {
 	var http = new XMLHttpRequest();
@@ -399,12 +487,75 @@ function setCodeCoord(city, codeIndex, code) {
 	var object = JSON.parse(codeIndex);
 	focus__(city, object, code);
 }
+
+function addCity(gp_id, callback) {
+
+	var http = new XMLHttpRequest();
+	http.open('POST', FUNCTIONS_BASE_URL+'/'+'add-city', true);
+
+	http.setRequestHeader('Content-type', 'application/json');
+	http.setRequestHeader('version', '1');
+	http.requestId = ++curAddCityRequestId;
+
+	wait_loader.classList.remove('hide');
+	http.onreadystatechange = function() {
+		if(http.readyState == 4 && http.status == 200) {
+			if(http.requestId == curAddCityRequestId) {
+				callback(JSON.parse(http.responseText).added);
+				wait_loader.classList.add('hide');
+			}
+		}
+	}
+
+	http.send( stringifyAddCityData(gp_id) );
+
+}
+
+function stringifyAddCityData(gp_id) {
+	var object = {};
+	object['place_id'] = gp_id;
+	return JSON.stringify(object);
+}
 // const WCODE_CODE_COPIED_MESSAGE;
 // const WCODE_LINK_COPIED_MESSAGE;
 
 function showCopyWcodeMessage() {
-	copy_wcode_message_city_name.innerText = getCodeCity();
-	copy_wcode_message.classList.remove('hide');
+	var city_name = getCodeCityName();
+	var country_name = getCodeCityCountryName();
+	var group_name = getCodeCityGroupName();
+	var country_repeat_count = 0;
+	var group_repeat_count = 0;
+	var city_repeat_count = 0;
+	getCitiesFromName(city_name, function(cities) {
+		for(let key in cities) {
+			if(cities[key].country == country_name)
+				country_repeat_count++;
+			if(cities[key].group == group_name)
+				group_repeat_count++;
+			city_repeat_count++;
+		}
+		var prefix = '';
+		if(country_repeat_count != city_repeat_count) {
+			prefix = country_name + '\\';
+			multiple_country = true;
+		}
+		else
+			multiple_country = false;
+
+		if(group_repeat_count != city_repeat_count) {
+			prefix += group_name + '\\';
+			multiple_group = true;
+		}
+		else
+			multiple_group = false;
+		if(city_repeat_count)
+			multiple_city = true;
+		else
+			multiple_city = false;
+
+		copy_wcode_message_city_name.innerText = prefix+getCodeCityProperCityAccent();
+		copy_wcode_message.classList.remove('hide');
+	} );
 }
 
 function hideCopyCodeMessage() {
@@ -425,8 +576,8 @@ function copyWcodeCode() {
 }
 
 function copyWcodeLink() {
-	var code_url = location.hostname + '/' + getCodeFull().join('.');
-	showAndCopy(code_url.toLowerCase());
+	var code_url = location.hostname + '/' + getCodeFull().join('.').toLowerCase().replace(' ', '_');
+	showAndCopy(code_url);
 	showNotification(WCODE_LINK_COPIED_MESSAGE);
 	hideCopyCodeMessage();
 }
@@ -446,7 +597,15 @@ function encode_continue(city, position) {
 	if(city == null) {
 		if(!pendingCity) {
 			pendingPosition = position;
-			noCity(position);
+			var city_gp_id = getCityGpId(address_results);
+			if(city_gp_id != null)
+				addCity(city_gp_id, function(city_id) {
+					getCityFromId(city_id, function(city) {
+						getCityCenterFromId(city, function(city) {
+							encode_(city, position);
+						});
+					});
+				});
 		}
 	}
 	else {
@@ -456,6 +615,28 @@ function encode_continue(city, position) {
 			pendingCity = false;
 		}
 		encode_(city, position);
+	}
+}
+
+function getCityGpId(address_components) {
+	var found_city_i;
+	for(var i = results.length-1; i >= 0; i--) {
+		if ( address_components[i].types.includes('administrative_area_level_1') || address_components[i].types.includes('administrative_area_level_2') ) {
+			found_city_i = i;
+		} else if(address_components[i].types.includes('locality')) {
+			found_city_i = i;
+			break;
+		} else if ( found_city_i == null && (address_components[i].types.includes('sublocality') || address_components[i].types.includes('sublocality_level_1')) ) {
+			found_city_i = i;
+			break;
+		}
+	}
+
+	if(found_city_i != null)
+		return address_components[found_city_i].place_id;
+	else {
+		noCity(latLng_p);
+		return null;
 	}
 }
 
@@ -481,11 +662,7 @@ function decode(words) {
 					if(city == null)
 						decode_continue(null, words.slice(city_words_length, words.length));
 					else
-						refCityCenter.child(city.id).once('value', function(snapshot) {
-							var location = snapshot.val().l;
-							city.center = { lat: location[0], lng: location[1]};
-							decode_continue(city, words.slice(city_words_length, words.length));
-						});
+						getCityCenterFromId(city, function(city) { decode_continue(city, words.slice(city_words_length, words.length)); });
 				});
 			}
 			else if (words.length == 3) {
@@ -528,7 +705,7 @@ function setCode(city, wcode, latLng) {
 	code_wcode = wcode;
 	code_postition = latLng;
 
-	setInfoWindowText(getProperCityAccent(city), city.name, wcode.join(' '), latLng);
+	setInfoWindowText(city.name, city.name_id, wcode.join(' '), latLng);
 }
 
 function clearCode() {
@@ -536,7 +713,20 @@ function clearCode() {
 }
 
 function getCodeFull() {
-	return [code_city.name].concat(code_wcode);
+	var codeFull_city_part = [code_city.name].concat(code_wcode);
+	var prefix;
+
+	if(!multiple_country)
+		prefix = [];
+	else
+		prefix = [code_city.country.toLowerCase()];
+	if(multiple_group)
+		prefix = prefix.concat([code_city.group.toLowerCase()]);
+
+	if(multiple_city)
+		return prefix.concat(codeFull_city_part);
+	else
+		return codeFull_city_part;
 }
 
 function getWcodeFull_formatted() {
@@ -551,12 +741,32 @@ function getCodeWcode_formatted() {
 	return formatWcode(getCodeWCode());
 }
 
-function getCodeCity() {
+function getCodeCityName() {
 	return code_city.name;
+}
+
+function getCodeGroupName() {
+	return code_city.group;
+}
+
+function getCodeCityCountryName() {
+	return code_city.country;
+}
+
+function getCodeCityGroupName() {
+	return code_city.group;
+}
+
+function getCodeCity() {
+	return code_city;
 }
 
 function formatWcode(code) {
 	return ["\\"].concat(code).concat(["/"]);
+}
+
+function getCodeCityProperCityAccent() {
+	return getProperCityAccent(code_city);
 }
 function WordList(list) {
 	this.wordList = list;
@@ -621,15 +831,11 @@ function focus_(pos, bounds) {
 			title: 'Hello World!'
 		});
 		marker.addListener('click', function() {
-			if(infoWindow_open == false) {
+			if(!isInfoWindowOpen())
 				infoWindow.open(map, marker);
-				infoWindow_open = true;
-			}
-			else {
+			else
 				infoWindow.close();
-				infoWindow_open = false;
-			}
-		})
+		});
 	}
 	else {
 		marker.setPosition(pos);
@@ -639,13 +845,13 @@ function focus_(pos, bounds) {
 		marker.setMap(map);
 
 	map.panTo(pos);
-	map.panBy(0, getPanByOffset());
 
 	var idleListenerPan = map.addListener('idle', function() {
 		idleListenerPan.remove();
 		var newZoom;
 		if(typeof bounds !== 'undefined') {
 			newZoom = getZoomByBounds(map, bounds);
+			console.log(newZoom);
 		}
 		else {
 			newZoom = DEFAULT_LOCATE_ZOOM;
@@ -661,48 +867,50 @@ function focus_(pos, bounds) {
 
 	infoWindow_setContent(MESSAGE_LOADING);
 	infoWindow.open(map, marker);
-	infoWindow_open = true;
 
 }
 
 const ZOOM_ANIMATION_INCREMENT = 1;
 const ZOOM_BOUND_PADDING = 36;
+var smoothZoomToBounds_callCount = 0;
 function smoothZoomToBounds(bounds, map, max, current) {
 	if (current >= max) {
+		if(smoothZoomToBounds_callCount-- == 0) {
+			if(typeof bounds !== 'undefined')
+				setTimeout(function() {
+					map.fitBounds(bounds, ZOOM_BOUND_PADDING);
+					map.panBy(0, getPanByOffset());
+				}, ZOOM_ANIMATION_SPEED);
+		}
 		return;
 	}
 	else {
+		smoothZoomToBounds_callCount++;
 		var z = google.maps.event.addListener(map, 'zoom_changed', function(event) {
 			google.maps.event.removeListener(z);
 			smoothZoomToBounds(bounds, map, max, current + ZOOM_ANIMATION_INCREMENT);
 		});
 		setTimeout(function() {
 			map.setZoom(current);
-			if (current+ZOOM_ANIMATION_INCREMENT >= max) {
-				if(typeof bounds !== 'undefined')
-					setTimeout(function() {
-							map.fitBounds(bounds, ZOOM_BOUND_PADDING);
-					}, ZOOM_ANIMATION_SPEED);
-			}
 		}, ZOOM_ANIMATION_SPEED);
 	}
 }
 
-function getZoomByBounds( map, bounds ) {
+function getZoomByBounds(map, bounds) {
 	var MAX_ZOOM = map.mapTypes.get(map.getMapTypeId()).maxZoom || DEFAULT_LOCATE_ZOOM;
 	var MIN_ZOOM = map.mapTypes.get(map.getMapTypeId()).minZoom || 0;
 
 	var ne = map.getProjection().fromLatLngToPoint( bounds.getNorthEast() );
 	var sw = map.getProjection().fromLatLngToPoint( bounds.getSouthWest() );
 
-	var worldCoordWidth = Math.abs(ne.x-sw.x);
-	var worldCoordHeight = Math.abs(ne.y-sw.y);
+	var worldCoordWidth = Math.abs(ne.x-sw.x)/2;
+	var worldCoordHeight = Math.abs(ne.y-sw.y)/2;
 
 	var FIT_PAD = 10;
 
 	for(var zoom = MAX_ZOOM; zoom >= MIN_ZOOM; --zoom) {
-		if( worldCoordWidth*(1<<zoom)+2*FIT_PAD < document.getElementById('map').scrollWidth &&
-				worldCoordHeight*(1<<zoom)+2*FIT_PAD < document.getElementById('map').scrollHeight )
+		if( worldCoordWidth*(1<<zoom)+2*FIT_PAD < document.body.scrollWidth &&
+				worldCoordHeight*(1<<zoom)+2*FIT_PAD < document.body.scrollHeight )
 			return zoom;
 	}
 	return 0;
@@ -715,6 +923,11 @@ function infoWindow_setContent(string) {
 
 function setInfoWindowText(city_accent, city_name, code_string, latLng) {
 	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'>" + city_accent + "</span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code_string + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' onclick='toggleAddress();' src=" + svg_address + " ><a href='"+ getIntentURL(latLng, city_name + ' ' + code_string) + "'><img id='external_map_button' class='control' onclick='' src=" + svg_map + " ></a><img id='copy_code_button' class='control' onclick='showCopyWcodeMessage();' src=" + svg_copy + " ></div>")
+}
+
+function isInfoWindowOpen() {
+	var map = infoWindow.getMap();
+	return (map !== null && typeof map !== "undefined");
 }
 function initLocate(override_dnd) {
 	if(!locationAccessCheck()) {
@@ -733,66 +946,72 @@ function locateExec() {
 	wait_loader.classList.remove('hide');
 	if (navigator.geolocation) {
 		wait_loader.classList.add('hide');
-		navigator.geolocation.getCurrentPosition(function(position) {
-			setLocationAccess(true);
-			var pos = {
-				lat: position.coords.latitude,
-				lng: position.coords.longitude
-			};
-			if(typeof accuCircle === 'undefined') {
-				accuCircle = new google.maps.Circle({
-					strokeColor: '#69B7CF',
-					strokeOpacity: 0,
-					strokeWeight: 0,
-					fillColor: '#69B7CF',
-					fillOpacity: 0.35,
-					map: map,
-					center: pos,
-					radius: position.coords.accuracy,
-					clickable: false
-				});
-			}
-			else {
-				accuCircle.setOptions({'fillOpacity': 0.35});
-				accuCircle.setCenter(pos);
-				accuCircle.setRadius(position.coords.accuracy);
-			}
+		navigator.geolocation.getCurrentPosition(
+			function(position) {
 
-			if(typeof myLocDot === 'undefined') {
-				myLocDot = new google.maps.Marker({
-					clickable: false,
-					icon: new google.maps.MarkerImage('https://maps.gstatic.com/mapfiles/mobile/mobileimgs2.png',
-							new google.maps.Size(22,22),
-							new google.maps.Point(0,18),
-							new google.maps.Point(11,11)),
-					shadow: null,
-					zIndex: 999,
-					map: map,
-					position: pos
-				});
-			}
-			else {
-				myLocDot.setPosition(pos);
-			}
-			if(initWCode == false) {
-				focus_(pos, accuCircle.getBounds());
-				encode(pos);
-				getAddress(pos);
-			}
-			else {
-				initWCode = false;
-			}
-		}, function(error) {
-			if(error.code = error.PERMISSION_DENIED) {
-				showNotification(LOCATION_PERMISSION_DENIED);
-				setLocationAccess(false);
-				wait_loader.classList.add('hide');
-			}
-			else
-				handleLocationError(true, infoWindow, map.getCenter());
-			
-			syncCheckIncompatibleBrowserMessage();	
-		});
+				setLocationAccess(true);
+				var pos = {
+					lat: position.coords.latitude,
+					lng: position.coords.longitude
+				};
+				if(typeof accuCircle === 'undefined') {
+					accuCircle = new google.maps.Circle({
+						strokeColor: '#69B7CF',
+						strokeOpacity: 0,
+						strokeWeight: 0,
+						fillColor: '#69B7CF',
+						fillOpacity: 0.35,
+						map: map,
+						center: pos,
+						radius: position.coords.accuracy,
+						clickable: false
+					});
+				}
+				else {
+					accuCircle.setOptions({'fillOpacity': 0.35});
+					accuCircle.setCenter(pos);
+					accuCircle.setRadius(position.coords.accuracy);
+				}
+
+				if(typeof myLocDot === 'undefined') {
+					myLocDot = new google.maps.Marker({
+						clickable: false,
+						icon: new google.maps.MarkerImage('https://maps.gstatic.com/mapfiles/mobile/mobileimgs2.png',
+								new google.maps.Size(22,22),
+								new google.maps.Point(0,18),
+								new google.maps.Point(11,11)),
+						shadow: null,
+						zIndex: 999,
+						map: map,
+						position: pos
+					});
+				}
+				else {
+					myLocDot.setPosition(pos);
+				}
+				if(initWCode == false) {
+					focus_(pos, accuCircle.getBounds());
+					encode(pos);
+					getAddress(pos);
+				}
+				else {
+					initWCode = false;
+				}
+
+			},
+			function(error) {
+				if(error.code = error.PERMISSION_DENIED) {
+					showNotification(LOCATION_PERMISSION_DENIED);
+					setLocationAccess(false);
+					wait_loader.classList.add('hide');
+				}
+				else
+					handleLocationError(true, infoWindow, map.getCenter());
+
+				syncCheckIncompatibleBrowserMessage();
+			},
+			{ maximumAge:10000, timeout:5000, enableHighAccuracy:true }
+		);
 	} else {
 		// Browser doesn't support Geolocation
 		handleLocationError(false, infoWindow, map.getCenter());
@@ -846,7 +1065,6 @@ var infoWindow;
 var accuCircle;
 var myLocDot;
 var poiPlace;
-// var infoWindow_open;
 
 // const INCORRECT_WCODE;
 // const MESSAGE_LOADING;
@@ -874,13 +1092,11 @@ function initMap() {
 		}
 
 		clearMap();
-		// Clear out the old markers.
 		markers.forEach(function(marker) {
 			marker.setMap(null);
 		});
 		markers = [];
 
-		// For each place, get the icon, name and location.
 		var bounds = new google.maps.LatLngBounds();
 		if(places.length == 1) {
 			clearAddress();
@@ -903,7 +1119,6 @@ function initMap() {
 					scaledSize: new google.maps.Size(25, 25)
 				};
 
-				// Create a marker for each place.
 				var resultMarker = new google.maps.Marker({
 					map: map,
 					icon: icon,
@@ -916,7 +1131,6 @@ function initMap() {
 				markers.push(resultMarker);
 
 				if (place.geometry.viewport) {
-					// Only geocodes have viewport.
 					bounds.union(place.geometry.viewport);
 				} else {
 					bounds.extend(place.geometry.location);
@@ -991,7 +1205,6 @@ function load(marker) {
 	focus_(marker.position);
 	window.marker.title = marker.title;
 	infoWindow.open(map, window.marker);
-	infoWindow_open = true;
 	marker.setVisible(false);
 	lastMarker = marker;
 	infoWindow_setContent(MESSAGE_LOADING);
@@ -1217,6 +1430,7 @@ function setupControls() {
 	document.getElementById('incompatible_browser_message_continue').addEventListener('click', hideIncompatibleBrowserMessage);
 	document.getElementById('address_text_close').addEventListener('click', hideAddress);
 	document.getElementById('address_text_copy').addEventListener('click', copyAddress);
+	document.getElementById('choose_city_message_close').addEventListener('click', hideChooseCityMessage);
 }
 
 function showAndCopy(message) {

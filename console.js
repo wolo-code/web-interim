@@ -64,7 +64,7 @@ function getAddress(latLng) {
 					gpId = results[0].place_id;
 					refreshAddress();
 					if(pendingFillForm) {
-						fillForm(latLng.lat, latLng.lng, address.split(' ').pop());
+						getAddressCity(results)
 						pendingFillForm = null;
 					}
 				} else {
@@ -74,6 +74,42 @@ function getAddress(latLng) {
 				console.log('Geocoder failed due to: ' + status);
 			}
 		});
+}
+
+function getAddressCity(address_components) {
+	var found_city_i;
+	var found_group_i;
+	var found_country_i;
+	for(var i = address_components.length-1; i >= 0; i--) {
+		if(address_components[i].types.includes('locality')) {
+			found_city_i = i;
+			break;
+		} else if (address_components[i].types.includes('administrative_area_level_1')) {
+			found_group_i = i;
+			found_city_i = i;
+		} else if (address_components[i].types.includes('administrative_area_level_2')) {
+			found_city_i = i;
+		} else if ( found_city_i == null && (address_components[i].types.includes('sublocality') || address_components[i].types.includes('sublocality_level_1')) ) {
+			found_city_i = i;
+		} else if (address_components[i].types.includes('country')) {
+			found_country_i = i;
+		}
+	}
+	var gp_id;
+	var city_lat;
+	var city_lng;
+	var city_name;
+	var city_accent;
+	if(found_city_i != null) {
+		gp_id = address_components[found_city_i].place_id;
+		city_lat = address_components[found_city_i].geometry['location']['lat']();
+		city_lng = address_components[found_city_i].geometry['location']['lng']();
+		city_name = address_components[found_city_i].address_components[0].short_name;
+		city_accent = address_components[found_city_i].address_components[0].long_name;
+	}
+	var group = found_group_i != null? address_components[found_group_i].address_components[0].long_name : null;
+	var country = found_country_i != null? address_components[found_country_i].address_components[0].long_name : null;
+	fillForm(gp_id, city_lat, city_lng, city_name, city_accent, group, country);
 }
 
 function toggleAddress() {
@@ -176,13 +212,15 @@ function process_entry(key) {
 	ref.update(updates);
 }
 
-function submit_city(lat, lng, country, group, name, accent, callback) {
+function submit_city(gp_id, lat, lng, name, accent, group, country, callback) {
 	var refCityDetail = database.ref('CityDetail').push();
 	refCityDetail.set({
-		'country': country,
-		'group': group,
+		'gp_id': gp_id,
 		'name': name,
-		'accent': accent
+		'name_id': name.toLocaleLowerCase(),
+		'accent': accent == null? name : accent,
+		'group': group,
+		'country': country
 	});
 	geoFire.set(refCityDetail.key, [lat, lng]).then( function() {
 			if(typeof callback == 'function')
@@ -260,13 +298,18 @@ function focus(position) {
 	pendingFillForm = true;
 	getAddress(resolveLatLng(position));
 }
-function fillForm(lat, lng, country) {
+function fillForm(gpid, lat, lng, city, accent, group, country) {
+	city_gpid.value = gpid;
 	city_lat.value = lat;
 	city_lng.value = lng;
+	city_name.value = city;
+	city_accent.value = accent;
+	city_group.value = group;
 	city_country.value = country;
 }
 
 function clearForm() {
+	city_gpid.value = '';
 	city_lat.value = '';
 	city_lng.value = '';
 	city_country.value = '';
@@ -322,7 +365,7 @@ function updateList() {
 	clearForm();
 }
 function beginLoader() {
-	idLoader = setTimeout(function(){endLoader('unauthenticated')}, 2500);
+	idLoader = setTimeout(function(){ endLoader('unauthenticated'); }, 2500);
 }
 
 function endLoader(status) {
@@ -342,7 +385,7 @@ function initialize() {
 	var input = document.getElementById('pac-input');
 	var searchBox = new google.maps.places.SearchBox(input);
 	map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
-	
+
 	// Bias the SearchBox results towards current map's viewport.
 	map.addListener('bounds_changed', function() {
 		searchBox.setBounds(map.getBounds());
@@ -402,10 +445,10 @@ function initialize() {
 			map.fitBounds(bounds);
 		}
 	});
-		
+
 	map.addListener('click', function(event) {
 		clearAddress();
-		focus_(event.latLng);
+		focus(event.latLng);
 		//encode(resolveLatLng(event.latLng));
 	});
 	var clickHandler = new ClickEventHandler(map);
@@ -436,7 +479,7 @@ function reverseGeoCode(latLng) {
 				showNotification("Oops something got wrong!");
 			}
 		}
-	);	
+	);
 }
 
 var entryMarker;
@@ -496,34 +539,45 @@ function postMap() {
 var upload_data_index = 0;
 var upload_data_rows;
 
+var upload_on = false;
+var upload_completed_id = "in_tiruttangal";
+
 function upload_data () {
-  var file = document.getElementById('file_input').files[0];
-  if(file != null) {
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      upload_data_rows = e.target.result.split("\n");
-      upload_entry();
-    }
-    reader.readAsText(file);
-  }
+	var file = document.getElementById('file_input').files[0];
+	if(file != null) {
+		var reader = new FileReader();
+		reader.onload = function(e) {
+			upload_data_rows = e.target.result.split("\n");
+			while(!upload_on)
+				upload_entry();
+			upload_entry();
+		}
+		reader.readAsText(file);
+	}
 }
 
 function upload_entry() {
-  if (upload_data_index < upload_data_rows.length) {
-    var cells = unquote(upload_data_rows[upload_data_index]).split('\",\"');
-    if (cells.length > 1) {
-      var lat = parseFloat(unquote(cells[3]));
-      var lng = parseFloat(unquote(cells[4]));
-      var country_iso = unquote(cells[0]);
-      var group = null;
-      var name = unquote(cells[1]);
-      var accent = unquote(cells[2]);
-      submit_city(lat, lng, country_iso, group, name, accent, upload_entry);
-    }
-    upload_data_index++;
-  }
-  else
-    console.log("Upload completed");
+	if (upload_data_index < upload_data_rows.length) {
+		var cells = unquote(upload_data_rows[upload_data_index]).split('\",\"');
+		if (cells.length > 1) {
+			var gp_id = null;
+			var lat = parseFloat(unquote(cells[3]));
+			var lng = parseFloat(unquote(cells[4]));
+			var name = unquote(cells[1]);
+			var accent = unquote(cells[2]);
+			var group = null;
+			var country_iso = unquote(cells[0]);
+			if(upload_on)
+				submit_city(gp_id, lat, lng, name, accent, group, country_iso, upload_entry);
+			else {
+				if(upload_completed_id == country_iso+'_'+name)
+					upload_on = true;
+			}
+		}
+		upload_data_index++;
+	}
+	else
+		console.log("Upload completed");
 }
 function formatNumber(number) {
 	WIDTH = 2;
@@ -638,7 +692,15 @@ function setupControls() {
 	submit_city_button.addEventListener('click', function() {
 		if(city_lat.value != '' && city_lng.value != '')
 			if(city_submit_panel.checkValidity()) {
-				submit_city(parseFloat(city_lat.value), parseFloat(city_lng.value), city_country.value.trim(), city_group.value.trim(), city_name.value.trim(), city_accent.value.trim());
+				submit_city (
+					city_gpid.value,
+					parseFloat(city_lat.value),
+					parseFloat(city_lng.value),
+					city_name.value.trim(),
+					city_accent.value.trim(),
+					city_group.value.trim(),
+					city_country.value.trim()
+				);
 				if(data_process_checkbox.checked)
 					process_entry(data[data_index].id);
 				showNotification("Request submitted");

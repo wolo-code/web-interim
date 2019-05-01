@@ -90,6 +90,7 @@ var FUNCTIONS_BASE_URL = 'https://location.wcodes.org/api';
 //'http://localhost:5000/waddress-5f30b/us-central1';
 var curEncRequestId = 0;
 var curDecRequestId = 0;
+var curAddCityRequestId = 0;
 
 // Code\Copy_wcode
 var city_styled_wordlist = [];
@@ -116,9 +117,6 @@ var DEFAULT_WCODE = ['bangalore', 'diesel', 'hall', 'planet'];
 var pendingCity = false;
 var pendingCitySubmit = false;
 
-// Map
-var infoWindow_open = false;
-
 var INCORRECT_WCODE = 'INCORRECT INPUT! Should be at least 3 WCode words, optionally preceded by a city. E.g: "Bangalore cat apple tomato"';
 var MESSAGE_LOADING = 'Loading ..';
 var LOCATION_PERMISSION_DENIED = "Location permission was denied. Click to point or retry with the locate button";
@@ -140,7 +138,7 @@ function syncCheckIncompatibleBrowserMessage() {
 }
 	</script>
 	<script src="/root.js" async></script>
-	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyD3qtN-ejbFTrkes1Y5j3qRY8PmQrxYHDQ&libraries=places&callback=syncInitMap' async defer></script></head>
+	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyCYD7Q0f4ZR0cH0EOi29wVV2Edgb_j5i_s&libraries=places&callback=syncInitMap' async defer></script></head>
 	<style>
 #address_text {
 	position: absolute;
@@ -223,7 +221,9 @@ input {
 button {
 	-webkit-appearance: none;
 	background: white;
-	box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
+}
+
+button.border {
 	border: 1px solid;
 }
 
@@ -413,7 +413,8 @@ button {
 
 .blue {
 	color: #69B7CF;
-}@media (max-width: 662px) {
+}
+@media (max-width: 662px) {
 	
 		#pac-input {
 			top: 100px !important;
@@ -471,10 +472,6 @@ button {
 
 #infowindow_code_right_code {
 	font-size: x-large;
-}
-
-.gm-style-iw + button {
-	display: none !important;
 }
 
 .gm-style-iw {
@@ -591,6 +588,10 @@ button {
 	margin-bottom: 20px;
 	border-top: 1px solid #CCCCCC;
 }
+
+h2.message_dialog_label {
+	margin: 0.5em;
+}
 @media (max-width: 512px) {
 
 	.dialog_message_primary {
@@ -652,6 +653,37 @@ button {
 }
 	</style>
 	<style>
+#choose_city_message {
+	position: absolute;
+	left: 0;
+	right: 0;
+	max-width: 360px;
+	width: 360px;
+	margin: auto;
+	font-family: 'Abel';
+	background-color: #FFFFFF;
+	z-index: 1;
+}
+
+#choose_city_message_list {
+	padding-left: 6px;
+}
+
+#choose_city_message_list div {
+	background-color: #69B7CF;
+	color: #ffffff;
+	font-size: larger;
+	border-radius: 5px;
+	padding: 2px 0 2px 8px;
+}
+
+#choose_city_message_list div:hover {
+	cursor: pointer;
+}
+
+#choose_city_message_list div:not(:last-child) {
+	margin-bottom: 10px;
+}
 #copy_wcode_message_city_name {
 	display: block;
 	text-align: center;
@@ -677,10 +709,6 @@ button {
 	margin-right: 4px;
 	-webkit-appearance: checkbox !important;
 }
-h2.message_dialog_label {
-	margin: 0.5em;
-}
-
 #no_city_message {
 	position: absolute;
 	left: 0;
@@ -737,7 +765,7 @@ h2.message_dialog_label {
 }
 
 #software_info {
-	padding: 6px 0 20px;	
+	padding: 6px 0 20px;
 }
 
 #version {
@@ -764,7 +792,12 @@ h2.message_dialog_label {
 .button_highlight {
 	color: white !important;
 	background: #69B7CF !important;
-	border-color: #69b7cf;
+	border-color: #69b7cf !important;
+}
+
+.button_highlight .indicator {
+	margin-left: -5px;
+	margin-right: 4px;
 }
 @media (max-width: 662px) {
 	#overlay {
@@ -850,13 +883,13 @@ h2.message_dialog_label {
 	border-radius: 2px;
 }
 @media (max-width: 662px) {
-	
+
 	#decode_button {
 		top: 100px !important;
-		left: 320px !important;
-		right: auto !important;
+		left: auto !important;
+		right: 10px !important;
 	}
-	
+
 	#suggestion_result {
 		top: 74px !important;
 	}
@@ -875,40 +908,15 @@ h2.message_dialog_label {
 	#decode_button {
 		top: 126px !important;
 	}
-	
+
 	#suggestion_result {
 		top: 100px !important;
 	}
 
-}	</style>
+}
+	</style>
 <body>
-	<div id='locate_right_message' class="message_dialog hide">
-	<h2 class='message_dialog_label'>
-		Location access
-	</h2>
-	<div id='locate_right_message_close' class="message_dialog_close control">
-		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
-	 height='38' width='38' viewBox="0 0 24 24">
-	<path fill='#BEBEBE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-	<path fill='none' d="M0 0h24v24H0z" />
-</svg>
-</span>
-	</div>
-	<div class='message_dialog_body'>
-		<p>
-			Do you wish to allow this app to access your location?
-		</p>
-		<div class="center message_dialog_control">
-			<button id='locate_right_message_yes' class="dialog_message_primary button_highlight" type='button'>Yes</button>
-			<button id='locate_right_message_no' class='dialog_message_secondary' type='button'>No</button>
-		</div>
-		<div id='locate_right_message_dnd' class='hide'>
-			<input id='locate_right_message_dnd_input' type='checkbox' >
-			<label for='locate_right_message_dnd_input'>Do not ask again</label>
-		</div>
-	</div>
-</div>
-<div id='no_city_message' class="message_dialog hide">
+	<div id='no_city_message' class="message_dialog hide">
 	<h2 class='message_dialog_label'>
 		Add city
 	</h2>
@@ -926,8 +934,8 @@ h2.message_dialog_label {
 			Do you want it to be added?
 		</p>
 		<div class="center message_dialog_control">
-			<button id='no_city_submit_yes' type='button'>Yes</button>
-			<button id='no_city_submit_no' type='button'>No</button>
+			<button id='no_city_submit_yes' class='border' type='button'>Yes</button>
+			<button id='no_city_submit_no' class='border' type='button'>No</button>
 		</div>
 	</div>
 	<div id='no_city_message_wait' class="message_dialog_body hide">
@@ -938,8 +946,8 @@ h2.message_dialog_label {
 			Do you wish to stop or continue waiting?
 		</p>
 		<div class="center message_dialog_control">
-			<button id='no_city_submit_wait_continue' type='button'>Continue</button>
-			<button id='no_city_submit_wait_stop' type='button'>Stop</button>
+			<button id='no_city_submit_wait_continue' class='border' type='button'>Continue</button>
+			<button id='no_city_submit_wait_stop' class='border' type='button'>Stop</button>
 		</div>
 	</div>
 </div>
@@ -961,14 +969,60 @@ h2.message_dialog_label {
 			<span id='copy_wcode_message_city_name'></span>
 		</p>
 		<div class="center message_dialog_control">
-			<button id='copy_wcode_submit_yes' class='dialog_message_primary' type='button'>Yes</button>
-			<button id='copy_wcode_submit_no' class='dialog_message_secondary' type='button'>No</button>
+			<button id='copy_wcode_submit_yes' class="border dialog_message_primary button_highlight" type='button'>Yes</button>
+			<button id='copy_wcode_submit_no' class="border dialog_message_secondary" type='button'>No</button>
 		</div>
 		<div class="center message_dialog_separator"></div>
 		<p class='secondary'>
 			<span>copy link:</span>
 		</p>
 		<img id='copy_link_button' class="center control" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjYnIHdpZHRoPSc2Micgdmlld0JveD0iMCA0IDQ2LjQ5OTk5OSAxOS40OTk5OTkiPiA8cGF0aCBzdHlsZT0iZmlsbDpub25lIiBkPSJNIC0wLjAwMzE3NzI5LDUuOTk5OTk5NSBIIDIzLjk5NjgyMyBWIDMwIEggLTAuMDAzMTc3MjkgWiIgLz4gPHBhdGggc3R5bGU9ImZpbGw6IzY5YjdjZjtzdHJva2Utd2lkdGg6MC45NDQzODUzNSIgZD0ibSAxNS4xNDMyODUsMTMuNzUgYyAwLC0xLjUyMzgyNCAxLjM5MTE1MywtMi43NjI0ODggMy4xMDI1NzEsLTIuNzYyNDg4IGggNC4wMDMzMTYgViA5LjI5NDM3NTEgaCAtNC4wMDMzMTYgYyAtMi43NjIyODksMCAtNS4wMDQxNDYsMS45OTYxMTk5IC01LjAwNDE0Niw0LjQ1NTYyNDkgMCwyLjQ1OTUwNCAyLjI0MTg1Nyw0LjQ1NTYyNCA1LjAwNDE0Niw0LjQ1NTYyNCBoIDQuMDAzMzE2IHYgLTEuNjkzMTM3IGggLTQuMDAzMzE2IGMgLTEuNzExNDE4LDAgLTMuMTAyNTcxLC0xLjIzODY2NCAtMy4xMDI1NzEsLTIuNzYyNDg3IHogbSA0LjEwMzQsMC44OTExMjUgaCA4LjAwNjYzMiB2IC0xLjc4MjI1IEggMTkuMjQ2Njg1IFogTSAyOC4yNTQxNDYsOS4yOTQzNzUxIEggMjQuMjUwODMgdiAxLjY5MzEzNjkgaCA0LjAwMzMxNiBjIDEuNzExNDE4LDAgMy4xMDI1NzEsMS4yMzg2NjQgMy4xMDI1NzEsMi43NjI0ODggMCwxLjUyMzgyMyAtMS4zOTExNTMsMi43NjI0ODcgLTMuMTAyNTcxLDIuNzYyNDg3IEggMjQuMjUwODMgdiAxLjY5MzEzNyBoIDQuMDAzMzE2IGMgMi43NjIyODksMCA1LjAwNDE0NiwtMS45OTYxMiA1LjAwNDE0NiwtNC40NTU2MjQgMCwtMi40NTk1MDUgLTIuMjQxODU3LC00LjQ1NTYyNDkgLTUuMDA0MTQ2LC00LjQ1NTYyNDkgeiIgLz4gPHJlY3Qgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzY5YjdjZjtzdHJva2Utd2lkdGg6MC42NTc5NDM0OTtzdHJva2Utb3BhY2l0eToxIiB5PSI0LjMyODk3MjMiIHg9IjAuMzI4OTcxNzQiIGhlaWdodD0iMTguODQyMDU2IiB3aWR0aD0iNDUuODQyMDYiIC8+IDwvc3ZnPiA=" >
+	</div>
+</div>
+<div id='choose_city_message' class="message_dialog hide">
+	<h2 class='message_dialog_label'>
+		Choose the city
+	</h2>
+	<div id='choose_city_message_close' class="message_dialog_close control">
+		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+	 height='38' width='38' viewBox="0 0 24 24">
+	<path fill='#BEBEBE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+	<path fill='none' d="M0 0h24v24H0z" />
+</svg>
+</span>
+	</div>
+	<div id='choose_city_message_prompt' class='message_dialog_body'>
+		<p>
+			There are multiple cities with this name<br>
+			Please select the correct one:
+		</p>
+		<div id='choose_city_message_list'></div>
+	</div>
+</div>
+<div id='locate_right_message' class="message_dialog hide">
+	<h2 class='message_dialog_label'>
+		Location access
+	</h2>
+	<div id='locate_right_message_close' class="message_dialog_close control">
+		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+	 height='38' width='38' viewBox="0 0 24 24">
+	<path fill='#BEBEBE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+	<path fill='none' d="M0 0h24v24H0z" />
+</svg>
+</span>
+	</div>
+	<div class='message_dialog_body'>
+		<p>
+			Do you wish to allow this app to access your location?
+		</p>
+		<div class="center message_dialog_control">
+			<button id='locate_right_message_yes' class="border dialog_message_primary button_highlight" type='button'>Yes</button>
+			<button id='locate_right_message_no' class="border dialog_message_secondary" type='button'>No</button>
+		</div>
+		<div id='locate_right_message_dnd' class='hide'>
+			<input id='locate_right_message_dnd_input' type='checkbox' >
+			<label for='locate_right_message_dnd_input'>Do not ask again</label>
+		</div>
 	</div>
 </div>
 <div id='overlay' class='hide'>
@@ -982,20 +1036,19 @@ h2.message_dialog_label {
 </span>
 		</div>
 		<h1>
-			WCode location
+			<a class='link' href="//wcodes.org/location">WCode location</a>
 		</h1>
 <div id='info_intro'>
 	<ul>
-	<li>This is a word based geocoding system</li>
-	<li>The first part specifies the city, the last three words are from a limited dictionary of 1024 easy common nouns</li>
-	<li>Incase if your city is not in the database, please submit a request</li>
+	<li>This is a word based simplified global addressing system</li>
+	<li>The first part specifies the city, the last three words are from a limited dictionary of 1024 easy common words</li>
 </ul>
 <h2>
 	Steps
 </h2>
 <ul>
-	<li>Point a location to generate the corresponding WCode; Or</li>
-	<li>Enter a WCode and hit 'Decode' to go to that location</li>
+	<li>Point a location to generate the corresponding WCode address. Or,</li>
+	<li>Enter a WCode address and hit 'Decode' to go to that location</li>
 </ul>
 	<div class='message_dialog_control_container'>
 		<div class='message_dialog_control'>
@@ -1005,16 +1058,15 @@ h2.message_dialog_label {
 </div>
 <div id='info_full' class='hide'>
 	<ul>
-	<li>This is a word based geocoding system</li>
-	<li>The first part specifies the city, the last three words are from a limited dictionary of 1024 easy common nouns</li>
-	<li>Incase if your city is not in the database, please submit a request</li>
+	<li>This is a word based simplified global addressing system</li>
+	<li>The first part specifies the city, the last three words are from a limited dictionary of 1024 easy common words</li>
 </ul>
 <h2>
 	Steps
 </h2>
 <ul>
-	<li>Point a location to generate the corresponding WCode; Or</li>
-	<li>Enter a WCode and hit 'Decode' to go to that location</li>
+	<li>Point a location to generate the corresponding WCode address. Or,</li>
+	<li>Enter a WCode address and hit 'Decode' to go to that location</li>
 </ul>
 	<h2>
 		Info
@@ -1025,7 +1077,7 @@ h2.message_dialog_label {
 	</ul>
 	<div class='message_dialog_control_container'>
 		<div class='message_dialog_control'>
-			<button id='info_full_close_button' class='button_highlight' type='button'>&#x25C1; return</button>
+			<button id='info_full_close_button' class='button_highlight' type='button'><span class='indicator'>&#x25C4;</span> return</button>
 		</div>
 	</div>
 	<div id='software_info'>
@@ -1033,10 +1085,10 @@ h2.message_dialog_label {
 			Version: 0.1 beta
 		</div>
 		<div id='updated'>Updated:
-	2019-Feb-09 00:34:25		</div>
+	2019-May-01 15:33:53		</div>
 	</div>
 	<div id='contact'>
-		for any related query contact me: <a class="content-link" href="mailto:ujjwal@wcodes.org?subject=WCode location">ujjwal@wcodes.org</a>
+		contact: <a class='link' href="mailto:ujjwal@wcodes.org?subject=WCode location">ujjwal@wcodes.org</a>
 	</div>
 </div>
 		<div id='agency'>
@@ -1067,7 +1119,7 @@ h2.message_dialog_label {
 			You may be able to choose "<strong class='blue'>Open in Chrome / Safari</strong>" from the browser menu.
 		</p>
 		<div class="center message_dialog_control">
-			<button id='incompatible_browser_message_continue' class='dialog_message_secondary' type='button'>Continue</button>
+			<button id='incompatible_browser_message_continue' class="border dialog_message_secondary" type='button'>Continue</button>
 		</div>
 	</div>
 </div>
