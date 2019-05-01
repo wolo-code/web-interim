@@ -705,7 +705,7 @@ function setCode(city, wcode, latLng) {
 	code_wcode = wcode;
 	code_postition = latLng;
 
-	setInfoWindowText(city.name, city.name_id, wcode.join(' '), latLng);
+	setInfoWindowText(getProperCityAccent(city.accent), city.name_id, wcode.join(' '), latLng);
 }
 
 function clearCode() {
@@ -849,10 +849,8 @@ function focus_(pos, bounds) {
 	var idleListenerPan = map.addListener('idle', function() {
 		idleListenerPan.remove();
 		var newZoom;
-		if(typeof bounds !== 'undefined') {
+		if(typeof bounds !== 'undefined')
 			newZoom = getZoomByBounds(map, bounds);
-			console.log(newZoom);
-		}
 		else {
 			newZoom = DEFAULT_LOCATE_ZOOM;
 			if (typeof accuCircle !== 'undefined') {
