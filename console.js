@@ -565,6 +565,8 @@ function upload_entry() {
 			var lng = parseFloat(unquote(cells[4]));
 			var name = unquote(cells[1]);
 			var accent = unquote(cells[2]);
+			if(accent.length == 0 || accent.localeCompare(name) == 0)
+				accent = null;
 			var group = null;
 			var country_iso = unquote(cells[0]);
 			if(upload_on)

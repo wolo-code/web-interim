@@ -230,10 +230,10 @@ var multiple_group;
 function getProperCityAccent(city) {
 	if(typeof city.accent != 'undefined') {
 		var city_accent_normalized = city.accent.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-		if(city.name.localeCompare(city_accent_normalized.toLocaleLowerCase()) == 0)
+		if(city.name.toLocaleLowerCase().localeCompare(city_accent_normalized.toLocaleLowerCase()) == 0)
 			return city_accent_normalized;
 	}
-	return capitalizeWords(city.name);
+	return city.name;
 }
 
 function getCityFromPositionThenEncode(latLng) {
@@ -705,7 +705,7 @@ function setCode(city, wcode, latLng) {
 	code_wcode = wcode;
 	code_postition = latLng;
 
-	setInfoWindowText(getProperCityAccent(city.accent), city.name_id, wcode.join(' '), latLng);
+	setInfoWindowText(getProperCityAccent(city), city.name_id, wcode.join(' '), latLng);
 }
 
 function clearCode() {
