@@ -54,28 +54,28 @@ if(typeof initLoad !== 'undefined')
 // var address;
 // var gpId;
 
-function getAddress(latLng) {
+function getAddress(latLng, callback) {
 	var geocoder = new google.maps.Geocoder;
-	geocoder.geocode({'location': latLng}, function(results, status) {
-		address_results = results;
-			latLng_p = latLng;
-			if (status === 'OK') {
-				if (results[0]) {
-					address = results[0].formatted_address;
-					gpId = results[0].place_id;
-					refreshAddress();
-
-				} else {
-					console.log('No geoCoding results found');
-				}
+	geocoder.geocode({'location': latLng}, function(address_components, status) {
+		latLng_p = latLng;
+		if (status === 'OK') {
+			if (address_components[0]) {
+				address = address_components[0].formatted_address;
+				gpId = address_components[0].place_id;
+				refreshAddress();
+				if(typeof callback != 'undefined')
+					callback(address_components);
 			} else {
-				console.log('Geocoder failed due to: ' + status);
+				console.log('No geoCoding results found');
 			}
-			if(pendingCitySubmit) {
-				execSubmitCity();
-				pendingCitySubmit = false;
-			}
-		});
+		} else {
+			console.log('Geocoder failed due to: ' + status);
+		}
+		if(pendingCitySubmit) {
+			execSubmitCity();
+			pendingCitySubmit = false;
+		}
+	});
 }
 
 function toggleAddress() {
@@ -96,8 +96,8 @@ function hideAddress() {
 }
 
 function clearAddress() {
-	address = '';
-	gpId = '';
+	address = null;
+	gpId = null;
 	address_text_content.innerText = '';
 }
 
@@ -597,15 +597,17 @@ function encode_continue(city, position) {
 	if(city == null) {
 		if(!pendingCity) {
 			pendingPosition = position;
-			var city_gp_id = getCityGpId(address_results);
-			if(city_gp_id != null)
-				addCity(city_gp_id, function(city_id) {
-					getCityFromId(city_id, function(city) {
-						getCityCenterFromId(city, function(city) {
-							encode_(city, position);
+			getAddress(position, function(address_components) {
+				var city_gp_id = getCityGpId(address_components);
+				if(city_gp_id != null)
+					addCity(city_gp_id, function(city_id) {
+						getCityFromId(city_id, function(city) {
+							getCityCenterFromId(city, function(city) {
+								encode_(city, position);
+							});
 						});
 					});
-				});
+			});
 		}
 	}
 	else {
@@ -620,7 +622,7 @@ function encode_continue(city, position) {
 
 function getCityGpId(address_components) {
 	var found_city_i;
-	for(var i = results.length-1; i >= 0; i--) {
+	for(var i = address_components.length-1; i >= 0; i--) {
 		if ( address_components[i].types.includes('administrative_area_level_1') || address_components[i].types.includes('administrative_area_level_2') ) {
 			found_city_i = i;
 		} else if(address_components[i].types.includes('locality')) {
@@ -990,6 +992,7 @@ function locateExec() {
 				if(initWCode == false) {
 					focus_(pos, accuCircle.getBounds());
 					encode(pos);
+					clearAddress();
 					getAddress(pos);
 				}
 				else {
@@ -1101,6 +1104,7 @@ function initMap() {
 			var pos = resolveLatLng(places[0].geometry.location);
 			focus_(pos);
 			encode(pos);
+			clearAddress();
 			getAddress(pos);
 		}
 		else {
