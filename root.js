@@ -285,13 +285,22 @@ function getCityFromPositionThenDecode(latLng, wcode) {
 		if(nearCity == null)
 			decode_continue(null, wcode);
 		else
-			decode_continue(nearCity.city, wcode);
+			getCityFromId(nearCity.id, function(city) {
+				city.center = nearCity.center;
+				decode_continue(city, wcode);
+			});
 	});
 
 	geoData = geoQuery.on('key_entered', function(key, location, distance) {
 		if(typeof nearCity.distance == 'undefined' || distance < nearCity.distance) {
-			nearCity.city = {name:CityList[key].name, center:{ lat: location[0], lng: location[1]} };
-			nearCity.distance = distance;
+			nearCity = {
+				id:key,
+				center: {
+					lat: location[0],
+					lng: location[1]
+				},
+				distance: distance
+			};
 		}
 	});
 
@@ -353,13 +362,6 @@ function getCityIdFromName(name, callback) {
 		wait_loader.classList.add('hide');
 		callback(snapshot.key);
 	});
-}
-
-function getCityAccentFromId(id) {
-	if(typeof (CityList[id].accent) != 'undefined')
-		return CityList[id].accent;
-	else
-		return CityList[id].name;
 }
 
 function noCity(position) {
