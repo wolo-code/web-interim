@@ -576,6 +576,7 @@ button.border {
 	color: #69B7CF;
 	position: relative;
 	left: 50%;
+	box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
 }
 
 .message_dialog_separator {
@@ -689,10 +690,11 @@ h2.message_dialog_label {
 	text-align: center;
 	color: #69B7CF;
 	padding-top: 8px;
+	font-weight: bold
 }
 
 #copy_wcode_message_city_name_question {
-	color: #CCCCCC;
+	color: #CCCCCC
 }
 #locate_right_message_body {
 	padding: 2px 16px 8px;
@@ -776,6 +778,10 @@ h2.message_dialog_label {
 	font-size: smaller;
 }
 
+#version > span, #updated > span {
+	font-weight: bold;
+}
+
 #overlay .message_dialog_control {
 	font-size: smaller;
 	padding: 10px 0 18px;
@@ -815,9 +821,10 @@ h2.message_dialog_label {
 	background-color: #FFFFFF;
 	border-radius: 20px;
 	color: #69B7CF;
-	padding: 2px 8px;
-	margin: 0 4px;
+	padding: 1px 8px 2px 8px;
+	margin: 0 2px;
 	cursor: pointer;
+	border: 1px solid #CDCDCD
 }
 
 #decode_button {
@@ -1082,10 +1089,12 @@ h2.message_dialog_label {
 	</div>
 	<div id='software_info'>
 		<div id='version'>
-			Version: 0.1 beta
+			Version: <span>0.1 beta</span>
 		</div>
 		<div id='updated'>Updated:
-	2019-May-03 21:11:33		</div>
+			<span>
+	2019 May 15 - 23:55:44			</span>
+		</div>
 	</div>
 	<div id='contact'>
 		contact: <a class='link' href="mailto:ujjwal@wcodes.org?subject=WCode location">ujjwal@wcodes.org</a>

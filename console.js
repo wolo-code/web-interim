@@ -5,6 +5,7 @@ var ClickEventHandler = function(map) {
 };
 
 ClickEventHandler.prototype.handleClick = function(event) {
+	document.getElementById('pac-input').blur();
 	if (event.placeId) {
 		// Calling e.stop() on the event prevents the default info window from showing.
 		// If you call stop here when there is no placeId you will prevent some other map click event handlers from receiving the event.
@@ -447,6 +448,7 @@ function initialize() {
 	});
 
 	map.addListener('click', function(event) {
+		document.getElementById('pac-input').blur();
 		clearAddress();
 		focus(event.latLng);
 		//encode(resolveLatLng(event.latLng));

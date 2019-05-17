@@ -5,6 +5,7 @@ var ClickEventHandler = function(map) {
 };
 
 ClickEventHandler.prototype.handleClick = function(event) {
+	document.getElementById('pac-input').blur();
 	if (event.placeId) {
 		// Calling e.stop() on the event prevents the default info window from showing.
 		// If you call stop here when there is no placeId you will prevent some other map click event handlers from receiving the event.
@@ -346,19 +347,19 @@ function getCityCenterFromId(city, callback) {
 	});
 }
 
-function getCitiesFromName(name, callback) {
+function getCitiesFromNameId(name_id, callback) {
 	var ref = database.ref('CityDetail');
-	wait_loader.classList.remove('hide');;
-	ref.orderByChild('name').startAt(name).endAt(name+'\uf8ff').limitToFirst(10).on('value', function(snapshot) {
+	wait_loader.classList.remove('hide');
+	ref.orderByChild('name_id').startAt(name_id).endAt(name_id+'\uf8ff').limitToFirst(10).on('value', function(snapshot) {
 		wait_loader.classList.add('hide');
 		callback(snapshot.val());
 	});
 }
 
-function getCityIdFromName(name, callback) {
+function getCityIdFromNameId(name_id, callback) {
 	var ref = database.ref('CityDetail');
-	wait_loader.classList.remove('hide');;
-	ref.orderByChild('name_id').equalTo(name).on('child_added', function(snapshot) {
+	wait_loader.classList.remove('hide');
+	ref.orderByChild('name_id').equalTo(name_id).on('child_added', function(snapshot) {
 		wait_loader.classList.add('hide');
 		callback(snapshot.key);
 	});
@@ -522,13 +523,13 @@ function stringifyAddCityData(gp_id) {
 // const WCODE_LINK_COPIED_MESSAGE;
 
 function showCopyWcodeMessage() {
-	var city_name = getCodeCityName();
+	var city_name_id = getCodeCityNameId();
 	var country_name = getCodeCityCountryName();
 	var group_name = getCodeCityGroupName();
 	var country_repeat_count = 0;
 	var group_repeat_count = 0;
 	var city_repeat_count = 0;
-	getCitiesFromName(city_name, function(cities) {
+	getCitiesFromNameId(city_name_id, function(cities) {
 		for(let key in cities) {
 			if(cities[key].country == country_name)
 				country_repeat_count++;
@@ -747,6 +748,10 @@ function getCodeWcode_formatted() {
 
 function getCodeCityName() {
 	return code_city.name;
+}
+
+function getCodeCityNameId() {
+	return code_city.name_id;
 }
 
 function getCodeGroupName() {
@@ -1297,7 +1302,7 @@ function postMap() {
 }
 function suggestWrapper(event) {
 	cityNameList = [];
-	getCitiesFromName(document.getElementById('pac-input').value.toLowerCase(), function(cityList) {
+	getCitiesFromNameId(document.getElementById('pac-input').value.toLowerCase(), function(cityList) {
 		for(let key in cityList)
 			cityNameList.push(getProperCityAccent(cityList[key]));
 		city_styled_wordlist = cityNameList.concat(wordList.curList);
