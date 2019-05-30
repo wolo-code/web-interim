@@ -120,10 +120,18 @@ function setLocationAccess(status) {
 	}
 }
 
-function locationAccessCheck() {
-	if (typeof(Storage) !== 'undefined' && typeof(localStorage.location_access) !== 'undefined' && localStorage.location_access != '' && JSON.parse(localStorage.location_access) === true)
+function locationAccessInitCheck() {
+	if(typeof(Storage) !== 'undefined' && typeof(localStorage.location_access) !== 'undefined')
 		return true;
-	return false;
+	else
+		return false;
+}
+
+function locationAccessCheck() {
+	if (locationAccessInitCheck() === true && localStorage.location_access != '' && JSON.parse(localStorage.location_access) === true)
+		return true;
+	else
+		return false;
 }
 
 function setLocationAccessDND(status) {
@@ -135,7 +143,8 @@ function setLocationAccessDND(status) {
 function locationAccessDNDcheck() {
 	if(locationAccessDNDstatus() && JSON.parse(localStorage.location_access_dnd) === true)
 		return true;
-	return false;
+	else
+		return false;
 }
 
 function locationAccessDNDstatus() {
@@ -159,10 +168,13 @@ function versionCheck() {
 		localStorage.note_version = CURRENT_VERSION;
 		showOverlay();
 	}
-	else {
-		info_intro.classList.add('hide');
-		info_full.classList.remove('hide');
-	}
+	else
+		activateOverlayInfo_full();
+}
+
+function activateOverlayInfo_full() {
+	info_intro.classList.add('hide');
+	info_full.classList.remove('hide');
 }
 
 function urlDecode() {
@@ -937,19 +949,22 @@ function isInfoWindowOpen() {
 	return (map !== null && typeof map !== "undefined");
 }
 function initLocate(override_dnd) {
-	if(!locationAccessCheck()) {
-		var hide_dnd = override_dnd || !locationAccessDNDstatus();
-		if(override_dnd || !locationAccessDNDcheck()) {
-			showLocateRightMessage(hide_dnd);
-		}
-		else
-			wait_loader.classList.add('hide');
-	}
+	if(!locationAccessInitCheck())
+		showLocateRightMessage(true);
 	else
-		locateExec();
+		locateExec(function() {
+			if(!locationAccessCheck()) {
+				var hide_dnd = typeof override_dnd == 'undefined' || override_dnd || !locationAccessDNDstatus();
+				if(override_dnd || !locationAccessDNDcheck()) {
+					showLocateRightMessage(hide_dnd);
+				}
+				else
+					wait_loader.classList.add('hide');
+			}
+		});
 }
 
-function locateExec() {
+function locateExec(failure) {
 	wait_loader.classList.remove('hide');
 	if (navigator.geolocation) {
 		wait_loader.classList.add('hide');
@@ -1012,18 +1027,16 @@ function locateExec() {
 					showNotification(LOCATION_PERMISSION_DENIED);
 					setLocationAccess(false);
 					wait_loader.classList.add('hide');
+					failure();
 				}
 				else
 					handleLocationError(true, infoWindow, map.getCenter());
-
-				syncCheckIncompatibleBrowserMessage();
 			},
 			{ maximumAge:10000, timeout:5000, enableHighAccuracy:true }
 		);
 	} else {
 		// Browser doesn't support Geolocation
 		handleLocationError(false, infoWindow, map.getCenter());
-		syncCheckIncompatibleBrowserMessage();
 	}
 }
 
@@ -1048,7 +1061,7 @@ function hideLocateRightMessage() {
 
 function locateRight_grant() {
 	setLocationAccess(true);
-	initLocate();
+	initLocate(false);
 	hideLocateRightMessage();
 	locateRight_DND_check();
 }
@@ -1291,6 +1304,7 @@ function noCityWait_stop() {
 }
 function hideOverlay() {
 	document.getElementById('overlay').classList.add('hide');
+	activateOverlayInfo_full();
 }
 
 function showOverlay() {
@@ -2174,5 +2188,5 @@ UMB.Widget = function () {
     };
 }();const svg_address = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjgnIHdpZHRoPScyOCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTE0IDE3SDR2MmgxMHYtMnptNi04SDR2MmgxNlY5ek00IDE1aDE2di0ySDR2MnpNNCA1djJoMTZWNUg0eiIgLz4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPC9zdmc+IA==";
 const svg_copy = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjAnIHdpZHRoPScyMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTE2IDFINGMtMS4xIDAtMiAuOS0yIDJ2MTRoMlYzaDEyVjF6bTMgNEg4Yy0xLjEgMC0yIC45LTIgMnYxNGMwIDEuMS45IDIgMiAyaDExYzEuMSAwIDItLjkgMi0yVjdjMC0xLjEtLjktMi0yLTJ6bTAgMTZIOFY3aDExdjE0eiIgLz4gPC9zdmc+IA==";
-const svg_link = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjYnIHdpZHRoPSc2Micgdmlld0JveD0iMCA0IDQ2LjQ5OTk5OSAxOS40OTk5OTkiPiA8cGF0aCBzdHlsZT0iZmlsbDpub25lIiBkPSJNIC0wLjAwMzE3NzI5LDUuOTk5OTk5NSBIIDIzLjk5NjgyMyBWIDMwIEggLTAuMDAzMTc3MjkgWiIgLz4gPHBhdGggc3R5bGU9ImZpbGw6IzY5YjdjZjtzdHJva2Utd2lkdGg6MC45NDQzODUzNSIgZD0ibSAxNS4xNDMyODUsMTMuNzUgYyAwLC0xLjUyMzgyNCAxLjM5MTE1MywtMi43NjI0ODggMy4xMDI1NzEsLTIuNzYyNDg4IGggNC4wMDMzMTYgViA5LjI5NDM3NTEgaCAtNC4wMDMzMTYgYyAtMi43NjIyODksMCAtNS4wMDQxNDYsMS45OTYxMTk5IC01LjAwNDE0Niw0LjQ1NTYyNDkgMCwyLjQ1OTUwNCAyLjI0MTg1Nyw0LjQ1NTYyNCA1LjAwNDE0Niw0LjQ1NTYyNCBoIDQuMDAzMzE2IHYgLTEuNjkzMTM3IGggLTQuMDAzMzE2IGMgLTEuNzExNDE4LDAgLTMuMTAyNTcxLC0xLjIzODY2NCAtMy4xMDI1NzEsLTIuNzYyNDg3IHogbSA0LjEwMzQsMC44OTExMjUgaCA4LjAwNjYzMiB2IC0xLjc4MjI1IEggMTkuMjQ2Njg1IFogTSAyOC4yNTQxNDYsOS4yOTQzNzUxIEggMjQuMjUwODMgdiAxLjY5MzEzNjkgaCA0LjAwMzMxNiBjIDEuNzExNDE4LDAgMy4xMDI1NzEsMS4yMzg2NjQgMy4xMDI1NzEsMi43NjI0ODggMCwxLjUyMzgyMyAtMS4zOTExNTMsMi43NjI0ODcgLTMuMTAyNTcxLDIuNzYyNDg3IEggMjQuMjUwODMgdiAxLjY5MzEzNyBoIDQuMDAzMzE2IGMgMi43NjIyODksMCA1LjAwNDE0NiwtMS45OTYxMiA1LjAwNDE0NiwtNC40NTU2MjQgMCwtMi40NTk1MDUgLTIuMjQxODU3LC00LjQ1NTYyNDkgLTUuMDA0MTQ2LC00LjQ1NTYyNDkgeiIgLz4gPHJlY3Qgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzY5YjdjZjtzdHJva2Utd2lkdGg6MC42NTc5NDM0OTtzdHJva2Utb3BhY2l0eToxIiB5PSI0LjMyODk3MjMiIHg9IjAuMzI4OTcxNzQiIGhlaWdodD0iMTguODQyMDU2IiB3aWR0aD0iNDUuODQyMDYiIC8+IDwvc3ZnPiA=";
+const svg_link = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjYnIHdpZHRoPSc2Micgdmlld0JveD0iMCA0IDQ2LjQ5OTk5OSAxOS40OTk5OTkiPiA8cGF0aCBzdHlsZT0nZmlsbDpub25lJyBkPSJNIC0wLjAwMzE3NzI5LDUuOTk5OTk5NSBIIDIzLjk5NjgyMyBWIDMwIEggLTAuMDAzMTc3MjkgWiIgLz4gPHBhdGggc3R5bGU9ImZpbGw6IzY5YjdjZjtzdHJva2Utd2lkdGg6MC45IiBkPSJtIDE1LjE0MzI4NSwxMy43NSBjIDAsLTEuNTIzODI0IDEuMzkxMTUzLC0yLjc2MjQ4OCAzLjEwMjU3MSwtMi43NjI0ODggaCA0LjAwMzMxNiBWIDkuMjk0Mzc1MSBoIC00LjAwMzMxNiBjIC0yLjc2MjI4OSwwIC01LjAwNDE0NiwxLjk5NjExOTkgLTUuMDA0MTQ2LDQuNDU1NjI0OSAwLDIuNDU5NTA0IDIuMjQxODU3LDQuNDU1NjI0IDUuMDA0MTQ2LDQuNDU1NjI0IGggNC4wMDMzMTYgdiAtMS42OTMxMzcgaCAtNC4wMDMzMTYgYyAtMS43MTE0MTgsMCAtMy4xMDI1NzEsLTEuMjM4NjY0IC0zLjEwMjU3MSwtMi43NjI0ODcgeiBtIDQuMTAzNCwwLjg5MTEyNSBoIDguMDA2NjMyIHYgLTEuNzgyMjUgSCAxOS4yNDY2ODUgWiBNIDI4LjI1NDE0Niw5LjI5NDM3NTEgSCAyNC4yNTA4MyB2IDEuNjkzMTM2OSBoIDQuMDAzMzE2IGMgMS43MTE0MTgsMCAzLjEwMjU3MSwxLjIzODY2NCAzLjEwMjU3MSwyLjc2MjQ4OCAwLDEuNTIzODIzIC0xLjM5MTE1MywyLjc2MjQ4NyAtMy4xMDI1NzEsMi43NjI0ODcgSCAyNC4yNTA4MyB2IDEuNjkzMTM3IGggNC4wMDMzMTYgYyAyLjc2MjI4OSwwIDUuMDA0MTQ2LC0xLjk5NjEyIDUuMDA0MTQ2LC00LjQ1NTYyNCAwLC0yLjQ1OTUwNSAtMi4yNDE4NTcsLTQuNDU1NjI0OSAtNS4wMDQxNDYsLTQuNDU1NjI0OSB6IiAvPiA8cmVjdCBzdHlsZT0iZmlsbDpub25lO3N0cm9rZTojRENEQ0RDO3N0cm9rZS13aWR0aDowLjY1Nzk0MzQ5O3N0cm9rZS1vcGFjaXR5OjEiIHk9JzQuMzI4OTcyMycgeD0nMC4zMjg5NzE3NCcgaGVpZ2h0PScxOC44NDIwNTYnIHdpZHRoPSc0NS44NDIwNicgLz4gPC9zdmc+IA==";
 const svg_map = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyMCcgaGVpZ2h0PScyMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTIwLjUgM2wtLjE2LjAzTDE1IDUuMSA5IDMgMy4zNiA0LjljLS4yMS4wNy0uMzYuMjUtLjM2LjQ4VjIwLjVjMCAuMjguMjIuNS41LjVsLjE2LS4wM0w5IDE4LjlsNiAyLjEgNS42NC0xLjljLjIxLS4wNy4zNi0uMjUuMzYtLjQ4VjMuNWMwLS4yOC0uMjItLjUtLjUtLjV6TTE1IDE5bC02LTIuMTFWNWw2IDIuMTFWMTl6IiAvPiA8cGF0aCBmaWxsPSdub25lJyBkPSdNMCAwaDI0djI0SDB6JyAvPiA8L3N2Zz4g";
