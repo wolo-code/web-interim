@@ -20,7 +20,7 @@
 ga('create', 'UA-96994409-1', 'auto');
 ga('send', 'pageview');
 </script>
-		<script src='https://browser.sentry-cdn.com/4.0.6/bundle.min.js' crossorigin='anonymous'
+		<script src='https://browser.sentry-cdn.com/5.6.3/bundle.min.js' crossorigin='anonymous'
 ></script>
 		<script>Sentry.init({ dsn: 'https://67af341ea58c4424ab4af921f0583573@sentry.io/187322' });
 </script>
@@ -79,6 +79,10 @@ function syncInitMap() {
 document.addEventListener('DOMContentLoaded', function() {
 	if(typeof initLoad != 'undefined')
 		initLoad();
+	if( typeof CSS == 'undefined' || !CSS.supports("backdrop-filter: blur(8px)") ) {
+		document.getElementById('logo').classList.add('plain_background');
+		document.getElementById('footer-content').classList.add('plain_background');
+	}
 });
 	</script>
 	<script>
@@ -274,12 +278,11 @@ button.border {
 	position: absolute;
 	right: 10px;
 	top: 10px;
-	width: 152px;
+	width: 160px;
 }
 
 #logo a {
 	display: inline-block;
-	background: rgba(241, 241, 241, 0.75);
 	border-radius: 6px;
 	border-width: thin;
 	border-color: #e8e8e8;
@@ -407,7 +410,7 @@ button.border {
 	color: #69B7CF;
 }
 
-#footer-content {
+#footer-content-container {
 	position: absolute;
 	left: 0;
 	right: 0;
@@ -416,10 +419,17 @@ button.border {
 	font-size: 0.9em;
 }
 
-#footer-content div {
+#footer-content {
 	display: inline-block;
 	padding: 0 4px;
 	border-radius: 5px;
+}
+
+.blur_background {
+	backdrop-filter: blur(8px)
+}
+
+.plain_background {
 	background: rgba(241, 241, 241, 0.75)
 }
 @media (max-width: 662px) {
@@ -504,6 +514,10 @@ button.border {
 	margin-left: auto;
 	margin-right: auto;
 	text-align: center;
+}
+
+.gm-style-iw-d {
+	overflow: hidden
 }
 
 #show_address_button {
@@ -1140,7 +1154,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span>
-	2019 Sep 14 - 11:32:01			</span>
+	2019 Sep 15 - 23:27:27			</span>
 		</div>
 	</div>
 	<div>
@@ -1186,7 +1200,7 @@ h2.message_dialog_label {
 </div>
 <div id='map'></div>
 <div id='wait_loader'></div>
-<div id='logo'>
+<div id='logo' class='blur_background'>
 	<a id=logo_wcode href='//wcodes.org' tabindex='1'>
 		<span class='image'><svg xmlns='http://www.w3.org/2000/svg' x='0px' y='0px'
 	 viewBox="-55 -18 306 100">
@@ -1272,8 +1286,8 @@ h2.message_dialog_label {
 </div>
 <div id='notification_top' class="notification_bar hide">Try: Bengaluru, India</div>
 <div id='notification_bottom' class="notification_bar hide"></div>
-<div id='footer-content' class='center'>
-	<div>
+<div id='footer-content-container' class='center'>
+	<div id='footer-content' class='blur_background'>
 		<a class="link-gray" href='wcodes.org/license'>Copyright &copy; 2019</a>
 		<a class="link" href='wcodes.org/about_me'>Ujjwal Singh</a><a class='content-link' target='_blank' href='/about_me' rel='author'></a>
 	</div>

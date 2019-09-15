@@ -21,7 +21,7 @@
 ga('create', 'UA-96994409-1', 'auto');
 ga('send', 'pageview');
 </script>
-		<script src='https://browser.sentry-cdn.com/4.0.6/bundle.min.js' crossorigin='anonymous'
+		<script src='https://browser.sentry-cdn.com/5.6.3/bundle.min.js' crossorigin='anonymous'
 ></script>
 		<script>Sentry.init({ dsn: 'https://67af341ea58c4424ab4af921f0583573@sentry.io/187322' });
 </script>
@@ -80,6 +80,10 @@ function syncInitMap() {
 document.addEventListener('DOMContentLoaded', function() {
 	if(typeof initLoad != 'undefined')
 		initLoad();
+	if( typeof CSS == 'undefined' || !CSS.supports("backdrop-filter: blur(8px)") ) {
+		document.getElementById('logo').classList.add('plain_background');
+		document.getElementById('footer-content').classList.add('plain_background');
+	}
 });
 	</script>
 	<script>
@@ -251,12 +255,11 @@ button.border {
 	position: absolute;
 	right: 10px;
 	top: 10px;
-	width: 152px;
+	width: 160px;
 }
 
 #logo a {
 	display: inline-block;
-	background: rgba(241, 241, 241, 0.75);
 	border-radius: 6px;
 	border-width: thin;
 	border-color: #e8e8e8;
@@ -384,7 +387,7 @@ button.border {
 	color: #69B7CF;
 }
 
-#footer-content {
+#footer-content-container {
 	position: absolute;
 	left: 0;
 	right: 0;
@@ -393,10 +396,17 @@ button.border {
 	font-size: 0.9em;
 }
 
-#footer-content div {
+#footer-content {
 	display: inline-block;
 	padding: 0 4px;
 	border-radius: 5px;
+}
+
+.blur_background {
+	backdrop-filter: blur(8px)
+}
+
+.plain_background {
 	background: rgba(241, 241, 241, 0.75)
 }
 @media (max-width: 662px) {
@@ -481,6 +491,10 @@ button.border {
 	margin-left: auto;
 	margin-right: auto;
 	text-align: center;
+}
+
+.gm-style-iw-d {
+	overflow: hidden
 }
 
 #show_address_button {
