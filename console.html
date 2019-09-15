@@ -5,15 +5,12 @@
 	<meta http-equiv='Content-Type' content="text/html; charset=UTF-8" >
 	<meta name='title' content="WCode location" >
 	<meta itemprop='name' content="WCode location" >
-	<meta name='robots' content='noindex' >
 	<meta name='author' content="Ujjwal Singh" >
 	<meta name='viewport' content='initial-scale=1.0, viewport-fit=cover' >
+	<meta name='theme-color' content='#ffffff' >
 	<link rel="shortcut icon" type='image/x-icon' href='/favicon.ico' >
 	<link href='https://location.wcodes.org' rel='canonical' >
 	<title>WCode based addressing system - WCode location</title>
-	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-app.js"></script>
-	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-database.js"></script>
-	<script src="https://cdn.firebase.com/libs/geofire/4.1.2/geofire.min.js"></script>
 <link rel="manifest" href="/manifest-console.json">
 <script src='https://www.gstatic.com/firebasejs/5.5.2/firebase-auth.js'></script>
 		<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -44,6 +41,9 @@ var FIREBASE_CONFIG = {
 	storageBucket: "waddress-5f30b.appspot.com",
 	messagingSenderId: "744968913043"
 };
+var database;
+var refCityCenter;
+var geoFire;
 
 //Script
 var initLoadDone = false;
@@ -115,7 +115,6 @@ function syncMarkEntry(lat_lng) {
 }
 	</script>
 	<script src="/console.js" async></script>
-	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyCYD7Q0f4ZR0cH0EOi29wVV2Edgb_j5i_s&libraries=places&callback=syncInitMap' async defer></script></head>
 	<style>
 #address_text {
 	position: absolute;
@@ -202,6 +201,7 @@ input {
 button {
 	-webkit-appearance: none;
 	background: white;
+	border-radius: 5px
 }
 
 button.border {
@@ -251,7 +251,7 @@ button.border {
 	position: absolute;
 	right: 10px;
 	top: 10px;
-	width: 153px;
+	width: 152px;
 }
 
 #logo a {
@@ -316,6 +316,12 @@ button.border {
 	text-decoration: none;
 }
 
+.link-gray {
+	text-decoration: none;
+	color: #bbb!important;
+	transition: all ease-out .3s;
+}
+
 .hide {
 	display: none;
 }
@@ -353,6 +359,7 @@ button.border {
 #notification_top {
 	top: 118px;
 	width: 182px;
+	cursor: pointer
 }
 
 #notification_bottom {
@@ -375,6 +382,22 @@ button.border {
 
 .blue {
 	color: #69B7CF;
+}
+
+#footer-content {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 4px;
+	font-family: Roboto, Arial, sans-serif;
+	font-size: 0.9em;
+}
+
+#footer-content div {
+	display: inline-block;
+	padding: 0 4px;
+	border-radius: 5px;
+	background: rgba(241, 241, 241, 0.75)
 }
 @media (max-width: 662px) {
 	
@@ -465,7 +488,7 @@ button.border {
 	vertical-align: bottom;
 }
 
-#copy_code_button {
+#share_code_button {
 	width: 24px;
 	vertical-align: bottom;
 }
@@ -474,6 +497,7 @@ button.border {
 	display: block;
 	width: 100px;
 	box-shadow: rgba(0, 0, 0, 0.2) 0px 1px 4px -1px;
+	border-radius: 5px
 }
 
 #external_map_button {
@@ -517,7 +541,7 @@ button.border {
 }
 
 .message_dialog_label {
-	color: #69B7CF;
+	color: #c2c2c2;
 	text-align: center;
 	font-family: 'Roboto Condensed', Abel, sans-serif;
 }
@@ -570,6 +594,10 @@ button.border {
 	margin-top: 88px;
 	margin-bottom: 20px;
 	border-top: 1px solid #E0E0E0;
+}
+
+.message_dialog_control_right {
+	float: right
 }
 
 h2.message_dialog_label {
@@ -874,13 +902,17 @@ input:valid {
 </svg>
 </span>
 			</a><a id='logo_location' href='https://location.wcodes.org' tabindex='2'>
-				<span class='image'><svg xmlns='http://www.w3.org/2000/svg' x='0px' y='0px'
+				<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
 	 viewBox="0 0 152 8">
-	<g font-family='Abel' font-size='16px'>
-		<text text-anchor='middle' transform="matrix(1 0 0 1 78 8)">
-			<tspan fill='#69B7CF'>Location</tspan>
-			<tspan fill='#A8A8A8'>(beta)</tspan>
-		</text>
+	<g transform="translate(78,8)" fill="#69b7cf" aria-label="LOCATION">
+		<path d="m-26.865 0h-5.8496v-9.4434h1.25v8.3203h4.5996z"/>
+		<path d="m-21.279-9.6094q0.97656 0 1.8066 0.35156t1.4258 0.99609q0.60547 0.63477 0.9375 1.543 0.3418 0.89844 0.3418 1.9922 0 1.084-0.33203 1.9824-0.33203 0.89844-0.9375 1.5527-0.5957 0.64453-1.4258 1.0059-0.82031 0.35156-1.8164 0.35156t-1.8262-0.35156q-0.83008-0.35156-1.4355-0.99609-0.5957-0.64453-0.92773-1.543-0.33203-0.9082-0.33203-2.002 0-1.1035 0.33203-2.002 0.3418-0.9082 0.94727-1.543 0.60547-0.64453 1.4258-0.98633 0.83008-0.35156 1.8164-0.35156zm-0.0098 8.7012q0.70312 0 1.2988-0.25391 0.5957-0.26367 1.0254-0.75195 0.42969-0.49805 0.66406-1.2012 0.24414-0.71289 0.24414-1.6113 0-0.9082-0.24414-1.6113-0.24414-0.70312-0.67383-1.1914-0.41992-0.48828-1.0156-0.74219-0.58594-0.25391-1.2695-0.25391-0.70312 0-1.3086 0.26367-0.5957 0.25391-1.0254 0.74219-0.42969 0.48828-0.67383 1.1914t-0.24414 1.6016 0.23438 1.6113q0.24414 0.70312 0.67383 1.2012 0.42969 0.48828 1.0156 0.75195 0.5957 0.25391 1.2988 0.25391z"/>
+		<path d="m-7.3047-6.582h-1.2793q-0.029297-0.44922-0.23438-0.81055-0.20508-0.36133-0.54688-0.61523-0.33203-0.25391-0.79102-0.39062-0.44922-0.13672-0.9668-0.13672-0.71289 0-1.2891 0.25391-0.57617 0.24414-0.98633 0.73242-0.40039 0.47852-0.625 1.1914-0.21484 0.71289-0.21484 1.6309t0.21484 1.6309q0.22461 0.70312 0.625 1.1914 0.40039 0.48828 0.9668 0.74219 0.57617 0.25391 1.2793 0.25391 1.1133 0 1.7969-0.53711 0.68359-0.53711 0.77148-1.5527h1.2793q-0.068359 0.75195-0.38086 1.3379-0.30273 0.58594-0.81055 0.99609-0.49805 0.40039-1.1719 0.61523-0.67383 0.21484-1.4648 0.21484-1.0156 0-1.8262-0.3418-0.81055-0.35156-1.3867-0.98633-0.56641-0.63477-0.87891-1.543-0.30274-0.9082-0.30274-2.0215t0.3125-2.0215q0.3125-0.9082 0.87891-1.543 0.57617-0.63477 1.3867-0.97656 0.81055-0.35156 1.8164-0.35156 0.75195 0 1.416 0.21484 0.67383 0.21484 1.1816 0.61523 0.51758 0.40039 0.83984 0.9668 0.32227 0.55664 0.39062 1.2402z"/>
+		<path d="m-0.67383-3.8672-1.6699-4.375-1.582 4.375zm2.8711 3.8672h-1.416l-1.0938-2.8711h-3.9551l-1.0449 2.8711h-1.3184l3.623-9.4434h1.3574z"/>
+		<path d="m9.9805-8.3203h-3.125v8.3203h-1.25v-8.3203h-3.1055v-1.123h7.4805z"/>
+		<path d="m12.764 0h-1.25v-9.4434h1.25z"/>
+		<path d="m19.111-9.6094q0.97656 0 1.8066 0.35156t1.4258 0.99609q0.60547 0.63477 0.9375 1.543 0.3418 0.89844 0.3418 1.9922 0 1.084-0.33203 1.9824-0.33203 0.89844-0.9375 1.5527-0.5957 0.64453-1.4258 1.0059-0.82031 0.35156-1.8164 0.35156t-1.8262-0.35156q-0.83008-0.35156-1.4355-0.99609-0.5957-0.64453-0.92773-1.543-0.33203-0.9082-0.33203-2.002 0-1.1035 0.33203-2.002 0.3418-0.9082 0.94727-1.543 0.60547-0.64453 1.4258-0.98633 0.83008-0.35156 1.8164-0.35156zm-0.0098 8.7012q0.70312 0 1.2988-0.25391 0.5957-0.26367 1.0254-0.75195 0.42969-0.49805 0.66406-1.2012 0.24414-0.71289 0.24414-1.6113 0-0.9082-0.24414-1.6113-0.24414-0.70312-0.67383-1.1914-0.41992-0.48828-1.0156-0.74219-0.58594-0.25391-1.2695-0.25391-0.70312 0-1.3086 0.26367-0.5957 0.25391-1.0254 0.74219-0.42969 0.48828-0.67383 1.1914-0.24414 0.70312-0.24414 1.6016t0.23438 1.6113q0.24414 0.70312 0.67383 1.2012 0.42969 0.48828 1.0156 0.75195 0.5957 0.25391 1.2988 0.25391z"/>
+		<path d="m32.715 0h-1.2793l-4.9609-7.4512v7.4512h-1.1816v-9.4434h1.2891l4.9414 7.4609v-7.4609h1.1914z"/>
 	</g>
 </svg>
 </span>
@@ -893,7 +925,7 @@ input:valid {
 			</h2>
 			<div id='details_close' class="message_dialog_close control">
 				<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
-	 height='38' width='38' viewBox="0 0 24 24">
+	 height='22' width='22' viewBox="0 0 24 24">
 	<path fill='#CECECE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
 	<path fill='none' d="M0 0h24v24H0z" />
 </svg>
@@ -929,5 +961,9 @@ input:valid {
 		</div>
  	</div>
 </div>
+	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyCYD7Q0f4ZR0cH0EOi29wVV2Edgb_j5i_s&libraries=places&callback=syncInitMap' async defer></script></head>
+	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-app.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-database.js"></script>
+	<script src="/geofire.min.js"></script>
 </body>
 </html>

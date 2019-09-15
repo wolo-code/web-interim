@@ -27,10 +27,16 @@ ClickEventHandler.prototype.getPlaceInformation = function(placeId) {
 		}
 	});
 };
-firebase.initializeApp(FIREBASE_CONFIG);
-var database = firebase.database();
-var refCityCenter = database.ref('CityCenter');
-var geoFire = new GeoFire(refCityCenter);
+// var database;
+// var refCityCenter;
+// var geoFire;
+
+function firebaseInit() {
+	firebase.initializeApp(FIREBASE_CONFIG);
+	database = firebase.database();
+	refCityCenter = database.ref('CityCenter');
+	geoFire = new GeoFire(refCityCenter);
+}
 function showIncompatibleBrowserMessage() {
 	document.getElementById('incompatible_browser_message').classList.remove('hide');
 }
@@ -113,6 +119,7 @@ function copyAddress() {
 }
 // const CURRENT_VERSION;
 // var initWCode;
+// var initWCode_jumpToMap;
 
 function setLocationAccess(status) {
 	if (typeof(Storage) !== 'undefined') {
@@ -179,7 +186,16 @@ function activateOverlayInfo_full() {
 
 function urlDecode() {
 	if(window.location.pathname.substr(1) != '') {
-		var code = window.location.pathname.substr(1).toLowerCase().replace('_', ' ');
+		var code_string;
+		if(window.location.pathname.substr(1).endsWith('/')) {
+			code_string = window.location.pathname.substr(1, window.location.pathname.length-2);
+			initWCode_jumpToMap = true;
+		}
+		else {
+			code_string = window.location.pathname.substr(1);
+			initWCode_jumpToMap = false;
+		}
+		var code = code_string.toLowerCase().replace('_', ' ');
 		pendingWords = code.split('.');
 		initWCode = true;
 		return true;
@@ -412,6 +428,34 @@ function tryDefaultCity() {
 	notification_top.classList.add('hide');
 	infoWindow.close();
 }
+function addCity(gp_id, callback) {
+
+	var http = new XMLHttpRequest();
+	http.open('POST', FUNCTIONS_BASE_URL+'/'+'add-city', true);
+
+	http.setRequestHeader('Content-type', 'application/json');
+	http.setRequestHeader('version', '1');
+	http.requestId = ++curAddCityRequestId;
+
+	wait_loader.classList.remove('hide');
+	http.onreadystatechange = function() {
+		if(http.readyState == 4 && http.status == 200) {
+			if(http.requestId == curAddCityRequestId) {
+				callback(JSON.parse(http.responseText).added);
+				wait_loader.classList.add('hide');
+			}
+		}
+	}
+
+	http.send( stringifyAddCityData(gp_id) );
+
+}
+
+function stringifyAddCityData(gp_id) {
+	var object = {};
+	object['place_id'] = gp_id;
+	return JSON.stringify(object);
+}
 // const FUNCTIONS_BASE_URL;
 // var curEncRequestId;
 // var curDecRequestId;
@@ -499,37 +543,14 @@ function stringifyDecodeData(city_center, code) {
 }
 
 function setCodeCoord(city, codeIndex, code) {
-	var object = JSON.parse(codeIndex);
-	focus__(city, object, code);
-}
-
-function addCity(gp_id, callback) {
-
-	var http = new XMLHttpRequest();
-	http.open('POST', FUNCTIONS_BASE_URL+'/'+'add-city', true);
-
-	http.setRequestHeader('Content-type', 'application/json');
-	http.setRequestHeader('version', '1');
-	http.requestId = ++curAddCityRequestId;
-
-	wait_loader.classList.remove('hide');
-	http.onreadystatechange = function() {
-		if(http.readyState == 4 && http.status == 200) {
-			if(http.requestId == curAddCityRequestId) {
-				callback(JSON.parse(http.responseText).added);
-				wait_loader.classList.add('hide');
-			}
-		}
+	var latLng = JSON.parse(codeIndex);
+	if(initWCode_jumpToMap) {
+		initWCode_jumpToMap = false;
+		window.location.replace(getIntentURL(latLng, city.name + ' ' + code.join(' ')));
+		return;
 	}
-
-	http.send( stringifyAddCityData(gp_id) );
-
-}
-
-function stringifyAddCityData(gp_id) {
-	var object = {};
-	object['place_id'] = gp_id;
-	return JSON.stringify(object);
+	getAddress(latLng);
+	focus__(city, latLng, code);
 }
 // const WCODE_CODE_COPIED_MESSAGE;
 // const WCODE_LINK_COPIED_MESSAGE;
@@ -595,6 +616,27 @@ function copyWcodeLink() {
 	showAndCopy(code_url);
 	showNotification(WCODE_LINK_COPIED_MESSAGE);
 	hideCopyCodeMessage();
+}
+
+function copyWcodeJumpLink() {
+	var code_url = location.hostname + '/' + getCodeFull().join('.').toLowerCase().replace(' ', '_') + '/';
+	showAndCopy(code_url);
+	showNotification(WCODE_LINK_COPIED_MESSAGE);
+	hideCopyCodeMessage();
+}
+
+function shareWCodeCopy() {
+	if(share_include_city.checked)
+		copyWcodeFull();
+	else
+		copyWcodeCode();
+}
+
+function shareWCodeLink() {
+	if(share_jumto_map.checked)
+		copyWcodeJumpLink();
+	else
+		copyWcodeLink();
 }
 var pendingPosition;
 var pendingWords;
@@ -730,7 +772,7 @@ function clearCode() {
 }
 
 function getCodeFull() {
-	var codeFull_city_part = [code_city.name].concat(code_wcode);
+	var codeFull_city_part = [code_city.name_id].concat(code_wcode);
 	var prefix;
 
 	if(!multiple_country)
@@ -820,11 +862,13 @@ function WordList(list) {
 	};
 	
 }
-database.ref('WordList').on('value', function(snapshot) {
-	wordList = new WordList(snapshot.val());
-	city_styled_wordlist = wordList.curList;
-	initData();
-});
+function dbInit() {
+	database.ref('WordList').on('value', function(snapshot) {
+		wordList = new WordList(snapshot.val());
+		city_styled_wordlist = wordList.curList;
+		initData();
+	});
+}
 
 function initData() {
 	if(pendingPosition != null) {
@@ -941,7 +985,7 @@ function infoWindow_setContent(string) {
 }
 
 function setInfoWindowText(city_accent, city_name, code_string, latLng) {
-	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'>" + city_accent + "</span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code_string + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' onclick='toggleAddress();' src=" + svg_address + " ><a href='"+ getIntentURL(latLng, city_name + ' ' + code_string) + "'><img id='external_map_button' class='control' onclick='' src=" + svg_map + " ></a><img id='copy_code_button' class='control' onclick='showCopyWcodeMessage();' src=" + svg_copy + " ></div>")
+	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'>" + city_accent + "</span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code_string + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' onclick='toggleAddress();' src=" + svg_address + " ><a href='"+ getIntentURL(latLng, city_name + ' ' + code_string) + "'><img id='external_map_button' class='control' onclick='' src=" + svg_map + " ></a><img id='share_code_button' class='control' onclick='showCopyWcodeMessage();' src=" + svg_share + " ></div>")
 }
 
 function isInfoWindowOpen() {
@@ -1175,6 +1219,7 @@ function initMap() {
 
 	decode_button.addEventListener('click', function() {
 		clearMap();
+		firstFocus = true;
 		suggestion_result.setInnerText = '';
 		var code = document.getElementById('pac-input').value;
 		execDecode(code);
@@ -1423,6 +1468,8 @@ function capitalizeWords(s) {
 }
 function initLoad () {
 	if(!initLoadDone && document.readyState === 'interactive') {
+		firebaseInit();
+		dbInit();
 		versionCheck();
 		if(!urlDecode())
 			syncLocate();
@@ -1445,15 +1492,14 @@ function setupControls() {
 	document.getElementById('no_city_submit_wait_continue').addEventListener('click', noCityWait_continue);
 	document.getElementById('no_city_submit_wait_stop').addEventListener('click', noCityWait_stop);
 	document.getElementById('notification_top').addEventListener('click', tryDefaultCity);
-	document.getElementById('copy_wcode_message_close').addEventListener('click', hideCopyCodeMessage);
-	document.getElementById('copy_wcode_submit_yes').addEventListener('click', copyWcodeFull);
-	document.getElementById('copy_wcode_submit_no').addEventListener('click', copyWcodeCode);
-	document.getElementById('copy_link_button').addEventListener('click', copyWcodeLink);
+	document.getElementById('share_wcode_message_close').addEventListener('click', hideCopyCodeMessage);
 	document.getElementById('incompatible_browser_message_close').addEventListener('click', hideIncompatibleBrowserMessage);
 	document.getElementById('incompatible_browser_message_continue').addEventListener('click', hideIncompatibleBrowserMessage);
 	document.getElementById('address_text_close').addEventListener('click', hideAddress);
 	document.getElementById('address_text_copy').addEventListener('click', copyAddress);
 	document.getElementById('choose_city_message_close').addEventListener('click', hideChooseCityMessage);
+	document.getElementById('share_copy_button').addEventListener('click', shareWCodeCopy);
+	document.getElementById('share_link_button').addEventListener('click', shareWCodeLink);
 }
 
 function showAndCopy(message) {
@@ -2188,5 +2234,6 @@ UMB.Widget = function () {
     };
 }();const svg_address = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjgnIHdpZHRoPScyOCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTE0IDE3SDR2MmgxMHYtMnptNi04SDR2MmgxNlY5ek00IDE1aDE2di0ySDR2MnpNNCA1djJoMTZWNUg0eiIgLz4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPC9zdmc+IA==";
 const svg_copy = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjAnIHdpZHRoPScyMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTE2IDFINGMtMS4xIDAtMiAuOS0yIDJ2MTRoMlYzaDEyVjF6bTMgNEg4Yy0xLjEgMC0yIC45LTIgMnYxNGMwIDEuMS45IDIgMiAyaDExYzEuMSAwIDItLjkgMi0yVjdjMC0xLjEtLjktMi0yLTJ6bTAgMTZIOFY3aDExdjE0eiIgLz4gPC9zdmc+IA==";
-const svg_link = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjYnIHdpZHRoPSc2Micgdmlld0JveD0iMCA0IDQ2LjQ5OTk5OSAxOS40OTk5OTkiPiA8cGF0aCBzdHlsZT0nZmlsbDpub25lJyBkPSJNIC0wLjAwMzE3NzI5LDUuOTk5OTk5NSBIIDIzLjk5NjgyMyBWIDMwIEggLTAuMDAzMTc3MjkgWiIgLz4gPHBhdGggc3R5bGU9ImZpbGw6IzY5YjdjZjtzdHJva2Utd2lkdGg6MC45IiBkPSJtIDE1LjE0MzI4NSwxMy43NSBjIDAsLTEuNTIzODI0IDEuMzkxMTUzLC0yLjc2MjQ4OCAzLjEwMjU3MSwtMi43NjI0ODggaCA0LjAwMzMxNiBWIDkuMjk0Mzc1MSBoIC00LjAwMzMxNiBjIC0yLjc2MjI4OSwwIC01LjAwNDE0NiwxLjk5NjExOTkgLTUuMDA0MTQ2LDQuNDU1NjI0OSAwLDIuNDU5NTA0IDIuMjQxODU3LDQuNDU1NjI0IDUuMDA0MTQ2LDQuNDU1NjI0IGggNC4wMDMzMTYgdiAtMS42OTMxMzcgaCAtNC4wMDMzMTYgYyAtMS43MTE0MTgsMCAtMy4xMDI1NzEsLTEuMjM4NjY0IC0zLjEwMjU3MSwtMi43NjI0ODcgeiBtIDQuMTAzNCwwLjg5MTEyNSBoIDguMDA2NjMyIHYgLTEuNzgyMjUgSCAxOS4yNDY2ODUgWiBNIDI4LjI1NDE0Niw5LjI5NDM3NTEgSCAyNC4yNTA4MyB2IDEuNjkzMTM2OSBoIDQuMDAzMzE2IGMgMS43MTE0MTgsMCAzLjEwMjU3MSwxLjIzODY2NCAzLjEwMjU3MSwyLjc2MjQ4OCAwLDEuNTIzODIzIC0xLjM5MTE1MywyLjc2MjQ4NyAtMy4xMDI1NzEsMi43NjI0ODcgSCAyNC4yNTA4MyB2IDEuNjkzMTM3IGggNC4wMDMzMTYgYyAyLjc2MjI4OSwwIDUuMDA0MTQ2LC0xLjk5NjEyIDUuMDA0MTQ2LC00LjQ1NTYyNCAwLC0yLjQ1OTUwNSAtMi4yNDE4NTcsLTQuNDU1NjI0OSAtNS4wMDQxNDYsLTQuNDU1NjI0OSB6IiAvPiA8cmVjdCBzdHlsZT0iZmlsbDpub25lO3N0cm9rZTojRENEQ0RDO3N0cm9rZS13aWR0aDowLjY1Nzk0MzQ5O3N0cm9rZS1vcGFjaXR5OjEiIHk9JzQuMzI4OTcyMycgeD0nMC4zMjg5NzE3NCcgaGVpZ2h0PScxOC44NDIwNTYnIHdpZHRoPSc0NS44NDIwNicgLz4gPC9zdmc+IA==";
-const svg_map = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyMCcgaGVpZ2h0PScyMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTIwLjUgM2wtLjE2LjAzTDE1IDUuMSA5IDMgMy4zNiA0LjljLS4yMS4wNy0uMzYuMjUtLjM2LjQ4VjIwLjVjMCAuMjguMjIuNS41LjVsLjE2LS4wM0w5IDE4LjlsNiAyLjEgNS42NC0xLjljLjIxLS4wNy4zNi0uMjUuMzYtLjQ4VjMuNWMwLS4yOC0uMjItLjUtLjUtLjV6TTE1IDE5bC02LTIuMTFWNWw2IDIuMTFWMTl6IiAvPiA8cGF0aCBmaWxsPSdub25lJyBkPSdNMCAwaDI0djI0SDB6JyAvPiA8L3N2Zz4g";
+const svg_share = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyNCcgaGVpZ2h0PScyNCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZD0iTTAgMGgyNHYyNEgweiIgZmlsbD0nbm9uZScvPiA8cGF0aCBkPSJNMTggMTYuMDhjLS43NiAwLTEuNDQuMy0xLjk2Ljc3TDguOTEgMTIuN2MuMDUtLjIzLjA5LS40Ni4wOS0uN3MtLjA0LS40Ny0uMDktLjdsNy4wNS00LjExYy41NC41IDEuMjUuODEgMi4wNC44MSAxLjY2IDAgMy0xLjM0IDMtM3MtMS4zNC0zLTMtMy0zIDEuMzQtMyAzYzAgLjI0LjA0LjQ3LjA5LjdMOC4wNCA5LjgxQzcuNSA5LjMxIDYuNzkgOSA2IDljLTEuNjYgMC0zIDEuMzQtMyAzczEuMzQgMyAzIDNjLjc5IDAgMS41LS4zMSAyLjA0LS44MWw3LjEyIDQuMTZjLS4wNS4yMS0uMDguNDMtLjA4LjY1IDAgMS42MSAxLjMxIDIuOTIgMi45MiAyLjkyIDEuNjEgMCAyLjkyLTEuMzEgMi45Mi0yLjkycy0xLjMxLTIuOTItMi45Mi0yLjkyeiIgZmlsbD0nIzY5YjdjZicvPiA8L3N2Zz4g";
+const svg_link = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMCIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCA0IDIyLjUgMTIiPiA8cGF0aCBkPSJtLTAuMDAzMTc3My0xLjVoMjR2MjRoLTI0eiIgZmlsbD0ibm9uZSIvPiA8cGF0aCBkPSJtMy4xNDMzIDEwYzAtMS41MjM4IDEuMzkxMi0yLjc2MjUgMy4xMDI2LTIuNzYyNWg0LjAwMzN2LTEuNjkzMWgtNC4wMDMzYy0yLjc2MjMgMC01LjAwNDEgMS45OTYxLTUuMDA0MSA0LjQ1NTYgMCAyLjQ1OTUgMi4yNDE5IDQuNDU1NiA1LjAwNDEgNC40NTU2aDQuMDAzM3YtMS42OTMxaC00LjAwMzNjLTEuNzExNCAwLTMuMTAyNi0xLjIzODctMy4xMDI2LTIuNzYyNXptNC4xMDM0IDAuODkxMTJoOC4wMDY2di0xLjc4MjJoLTguMDA2NnptOS4wMDc1LTUuMzQ2N2gtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMS43MTE0IDAgMy4xMDI2IDEuMjM4NyAzLjEwMjYgMi43NjI1IDAgMS41MjM4LTEuMzkxMiAyLjc2MjUtMy4xMDI2IDIuNzYyNWgtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMi43NjIzIDAgNS4wMDQxLTEuOTk2MSA1LjAwNDEtNC40NTU2IDAtMi40NTk1LTIuMjQxOS00LjQ1NTYtNS4wMDQxLTQuNDU1NnoiIGZpbGw9IiM2OWI3Y2YiIHN0cm9rZS13aWR0aD0iLjkiLz4gPC9zdmc+IA==";
+const svg_map = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyMCcgaGVpZ2h0PScyMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZD0ibTIwLjUgMy43Ni0wLjE2IDAuMDMtNS4zNCAyLjA3LTYtMi4xLTUuNjQgMS45Yy0wLjIxIDAuMDctMC4zNiAwLjI1LTAuMzYgMC40OHYxNS4xMmMwIDAuMjggMC4yMiAwLjUgMC41IDAuNWwwLjE2LTAuMDMgNS4zNC0yLjA3IDYgMi4xIDUuNjQtMS45YzAuMjEtMC4wNyAwLjM2LTAuMjUgMC4zNi0wLjQ4di0xNS4xMmMwLTAuMjgtMC4yMi0wLjUtMC41LTAuNXptLTUuNSAxNi02LTIuMTF2LTExLjg5bDYgMi4xMXoiIGZpbGw9IiM2OWI3Y2YiLz4gPHBhdGggZD0iTTAgMGgyNHYyNEgweiIgZmlsbD0nbm9uZScvPiA8L3N2Zz4g";

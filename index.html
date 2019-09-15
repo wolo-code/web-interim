@@ -5,15 +5,12 @@
 	<meta http-equiv='Content-Type' content="text/html; charset=UTF-8" >
 	<meta name='title' content="WCode location" >
 	<meta itemprop='name' content="WCode location" >
-	<meta name='robots' content='noindex' >
 	<meta name='author' content="Ujjwal Singh" >
 	<meta name='viewport' content='initial-scale=1.0, viewport-fit=cover' >
+	<meta name='theme-color' content='#ffffff' >
 	<link rel="shortcut icon" type='image/x-icon' href='/favicon.ico' >
 	<link href='https://location.wcodes.org' rel='canonical' >
 	<title>WCode based addressing system - WCode location</title>
-	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-app.js"></script>
-	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-database.js"></script>
-	<script src="https://cdn.firebase.com/libs/geofire/4.1.2/geofire.min.js"></script>
 <link rel='manifest' href='/manifest.json' >
 		<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
 	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
@@ -43,6 +40,9 @@ var FIREBASE_CONFIG = {
 	storageBucket: "waddress-5f30b.appspot.com",
 	messagingSenderId: "744968913043"
 };
+var database;
+var refCityCenter;
+var geoFire;
 
 //Script
 var initLoadDone = false;
@@ -111,7 +111,7 @@ var gpId = '';
 // Base
 var CURRENT_VERSION = 1;
 var initWCode = false;
-
+var initWCode_jumpToMap = false;
 // City
 var DEFAULT_WCODE = ['bengaluru', 'diesel', 'hall', 'planet'];
 var pendingCity = false;
@@ -138,7 +138,6 @@ function syncCheckIncompatibleBrowserMessage() {
 }
 	</script>
 	<script src="/root.js" async></script>
-	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyCYD7Q0f4ZR0cH0EOi29wVV2Edgb_j5i_s&libraries=places&callback=syncInitMap' async defer></script></head>
 	<style>
 #address_text {
 	position: absolute;
@@ -225,6 +224,7 @@ input {
 button {
 	-webkit-appearance: none;
 	background: white;
+	border-radius: 5px
 }
 
 button.border {
@@ -274,7 +274,7 @@ button.border {
 	position: absolute;
 	right: 10px;
 	top: 10px;
-	width: 153px;
+	width: 152px;
 }
 
 #logo a {
@@ -339,6 +339,12 @@ button.border {
 	text-decoration: none;
 }
 
+.link-gray {
+	text-decoration: none;
+	color: #bbb!important;
+	transition: all ease-out .3s;
+}
+
 .hide {
 	display: none;
 }
@@ -376,6 +382,7 @@ button.border {
 #notification_top {
 	top: 118px;
 	width: 182px;
+	cursor: pointer
 }
 
 #notification_bottom {
@@ -398,6 +405,22 @@ button.border {
 
 .blue {
 	color: #69B7CF;
+}
+
+#footer-content {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 4px;
+	font-family: Roboto, Arial, sans-serif;
+	font-size: 0.9em;
+}
+
+#footer-content div {
+	display: inline-block;
+	padding: 0 4px;
+	border-radius: 5px;
+	background: rgba(241, 241, 241, 0.75)
 }
 @media (max-width: 662px) {
 	
@@ -488,7 +511,7 @@ button.border {
 	vertical-align: bottom;
 }
 
-#copy_code_button {
+#share_code_button {
 	width: 24px;
 	vertical-align: bottom;
 }
@@ -497,6 +520,7 @@ button.border {
 	display: block;
 	width: 100px;
 	box-shadow: rgba(0, 0, 0, 0.2) 0px 1px 4px -1px;
+	border-radius: 5px
 }
 
 #external_map_button {
@@ -540,7 +564,7 @@ button.border {
 }
 
 .message_dialog_label {
-	color: #69B7CF;
+	color: #c2c2c2;
 	text-align: center;
 	font-family: 'Roboto Condensed', Abel, sans-serif;
 }
@@ -593,6 +617,10 @@ button.border {
 	margin-top: 88px;
 	margin-bottom: 20px;
 	border-top: 1px solid #E0E0E0;
+}
+
+.message_dialog_control_right {
+	float: right
 }
 
 h2.message_dialog_label {
@@ -690,17 +718,27 @@ h2.message_dialog_label {
 #choose_city_message_list div:not(:last-child) {
 	margin-bottom: 10px;
 }
+#share_include_city, #share_jumto_map {
+	-webkit-appearance: checkbox !important
+}
+
 #copy_wcode_message_city_name {
-	display: block;
 	text-align: center;
-	color: #69B7CF;
+	color: #585858;
 	padding-top: 8px;
-	font-weight: bold;
 	font-family: 'Roboto Condensed', Abel, sans-serif
 }
 
 #copy_wcode_message_city_name_question {
 	color: #CCCCCC
+}
+
+#share_copy_button {
+	padding-top: 4px
+}
+
+#share_link_button {
+	padding-top: 8px
 }
 #locate_right_message_body {
 	padding: 2px 16px 8px;
@@ -936,7 +974,7 @@ h2.message_dialog_label {
 	</h2>
 	<div id='no_city_message_close' class="message_dialog_close control">
 		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
-	 height='38' width='38' viewBox="0 0 24 24">
+	 height='22' width='22' viewBox="0 0 24 24">
 	<path fill='#CECECE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
 	<path fill='none' d="M0 0h24v24H0z" />
 </svg>
@@ -967,30 +1005,32 @@ h2.message_dialog_label {
 </div>
 <div id='copy_wcode_message' class="message_dialog hide">
 	<h2 class='message_dialog_label'>
-		Copy WCode
+		Share
 	</h2>
-	<div id='copy_wcode_message_close' class="message_dialog_close control">
+	<div id='share_wcode_message_close' class="message_dialog_close control">
 		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
-	 height='38' width='38' viewBox="0 0 24 24">
+	 height='22' width='22' viewBox="0 0 24 24">
 	<path fill='#CECECE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
 	<path fill='none' d="M0 0h24v24H0z" />
 </svg>
 </span>
 	</div>
 	<div class='message_dialog_body'>
-		<p class='secondary'>
-			<span>copy text with the city name?</span>
+		<p>
+			<input id='share_include_city' type='checkbox'>
+			include 
 			<span id='copy_wcode_message_city_name'></span>
+			<span class='message_dialog_control_right'>
+				<img id='share_copy_button' class="center control" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4gPHN2ZyB3aWR0aD0iMzAiIGhlaWdodD0iMTgiIHZlcnNpb249IjEuMSIgdmlld0JveD0iLTIwIC0yOCAxNjMuNjQgODEuODE4IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPiA8ZyB0cmFuc2Zvcm09Im1hdHJpeCgxLjAxMzEgMCAwIDEuMDEzMSAzNi4wMzQgLTE2LjQ3MSkiPiA8cGF0aCBkPSJtLTIwLjggNzMuOS0zMS4yLTg5LjhoOC41bDMxLjEgODkuOHoiIGZpbGw9IiNkOWQ5ZDkiLz4gPGcgdHJhbnNmb3JtPSJtYXRyaXgoLjk5OTgyIDAgMCAuOTk5ODIgLS41NzcyNyAuMDEwNzA5KSI+IDxwYXRoIGQ9Im0tMy42IDY2LjEtMjUuMi03Mi44aDEzLjVsMjUuMSA3Mi44eiIgZmlsbD0iIzY5YjdjZiIvPiA8cGF0aCBkPSJtMjYuMyAxMi42LTE1LjIgNDYuOS01LjctMTguNiAxNS4yLTQ3LjZoMTIuNmwxNy4xIDUxIDE4LjEtNTFoMTMuNGwtMjUuMyA3Mi44aC0xMi42eiIgZmlsbD0iIzY5YjdjZiIvPiA8L2c+IDxwYXRoIGQ9Im05NC40LTE1LjloOC41bC0zMC43IDg5LjhoLTguNXoiIGZpbGw9IiNkOWQ5ZDkiLz4gPC9nPiA8L3N2Zz4g" >
+			</span>
 		</p>
-		<div class="center message_dialog_control">
-			<button id='copy_wcode_submit_yes' class="border dialog_message_primary button_highlight" type='button'>Yes</button>
-			<button id='copy_wcode_submit_no' class="border dialog_message_secondary" type='button'>No</button>
-		</div>
-		<div class="center message_dialog_separator"></div>
-		<p class='secondary'>
-			<span>copy link:</span>
+		<p>
+			<input id='share_jumto_map' type='checkbox'>
+			jump directly to map
+			<span class='message_dialog_control_right'>
+				<img id='share_link_button' class="center control" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMCIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCA0IDIyLjUgMTIiPiA8cGF0aCBkPSJtLTAuMDAzMTc3My0xLjVoMjR2MjRoLTI0eiIgZmlsbD0ibm9uZSIvPiA8cGF0aCBkPSJtMy4xNDMzIDEwYzAtMS41MjM4IDEuMzkxMi0yLjc2MjUgMy4xMDI2LTIuNzYyNWg0LjAwMzN2LTEuNjkzMWgtNC4wMDMzYy0yLjc2MjMgMC01LjAwNDEgMS45OTYxLTUuMDA0MSA0LjQ1NTYgMCAyLjQ1OTUgMi4yNDE5IDQuNDU1NiA1LjAwNDEgNC40NTU2aDQuMDAzM3YtMS42OTMxaC00LjAwMzNjLTEuNzExNCAwLTMuMTAyNi0xLjIzODctMy4xMDI2LTIuNzYyNXptNC4xMDM0IDAuODkxMTJoOC4wMDY2di0xLjc4MjJoLTguMDA2NnptOS4wMDc1LTUuMzQ2N2gtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMS43MTE0IDAgMy4xMDI2IDEuMjM4NyAzLjEwMjYgMi43NjI1IDAgMS41MjM4LTEuMzkxMiAyLjc2MjUtMy4xMDI2IDIuNzYyNWgtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMi43NjIzIDAgNS4wMDQxLTEuOTk2MSA1LjAwNDEtNC40NTU2IDAtMi40NTk1LTIuMjQxOS00LjQ1NTYtNS4wMDQxLTQuNDU1NnoiIGZpbGw9IiM2OWI3Y2YiIHN0cm9rZS13aWR0aD0iLjkiLz4gPC9zdmc+IA==" >
+			</span>
 		</p>
-		<img id='copy_link_button' class="center control" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjYnIHdpZHRoPSc2Micgdmlld0JveD0iMCA0IDQ2LjQ5OTk5OSAxOS40OTk5OTkiPiA8cGF0aCBzdHlsZT0nZmlsbDpub25lJyBkPSJNIC0wLjAwMzE3NzI5LDUuOTk5OTk5NSBIIDIzLjk5NjgyMyBWIDMwIEggLTAuMDAzMTc3MjkgWiIgLz4gPHBhdGggc3R5bGU9ImZpbGw6IzY5YjdjZjtzdHJva2Utd2lkdGg6MC45IiBkPSJtIDE1LjE0MzI4NSwxMy43NSBjIDAsLTEuNTIzODI0IDEuMzkxMTUzLC0yLjc2MjQ4OCAzLjEwMjU3MSwtMi43NjI0ODggaCA0LjAwMzMxNiBWIDkuMjk0Mzc1MSBoIC00LjAwMzMxNiBjIC0yLjc2MjI4OSwwIC01LjAwNDE0NiwxLjk5NjExOTkgLTUuMDA0MTQ2LDQuNDU1NjI0OSAwLDIuNDU5NTA0IDIuMjQxODU3LDQuNDU1NjI0IDUuMDA0MTQ2LDQuNDU1NjI0IGggNC4wMDMzMTYgdiAtMS42OTMxMzcgaCAtNC4wMDMzMTYgYyAtMS43MTE0MTgsMCAtMy4xMDI1NzEsLTEuMjM4NjY0IC0zLjEwMjU3MSwtMi43NjI0ODcgeiBtIDQuMTAzNCwwLjg5MTEyNSBoIDguMDA2NjMyIHYgLTEuNzgyMjUgSCAxOS4yNDY2ODUgWiBNIDI4LjI1NDE0Niw5LjI5NDM3NTEgSCAyNC4yNTA4MyB2IDEuNjkzMTM2OSBoIDQuMDAzMzE2IGMgMS43MTE0MTgsMCAzLjEwMjU3MSwxLjIzODY2NCAzLjEwMjU3MSwyLjc2MjQ4OCAwLDEuNTIzODIzIC0xLjM5MTE1MywyLjc2MjQ4NyAtMy4xMDI1NzEsMi43NjI0ODcgSCAyNC4yNTA4MyB2IDEuNjkzMTM3IGggNC4wMDMzMTYgYyAyLjc2MjI4OSwwIDUuMDA0MTQ2LC0xLjk5NjEyIDUuMDA0MTQ2LC00LjQ1NTYyNCAwLC0yLjQ1OTUwNSAtMi4yNDE4NTcsLTQuNDU1NjI0OSAtNS4wMDQxNDYsLTQuNDU1NjI0OSB6IiAvPiA8cmVjdCBzdHlsZT0iZmlsbDpub25lO3N0cm9rZTojRENEQ0RDO3N0cm9rZS13aWR0aDowLjY1Nzk0MzQ5O3N0cm9rZS1vcGFjaXR5OjEiIHk9JzQuMzI4OTcyMycgeD0nMC4zMjg5NzE3NCcgaGVpZ2h0PScxOC44NDIwNTYnIHdpZHRoPSc0NS44NDIwNicgLz4gPC9zdmc+IA==" >
 	</div>
 </div>
 <div id='choose_city_message' class="message_dialog hide">
@@ -999,7 +1039,7 @@ h2.message_dialog_label {
 	</h2>
 	<div id='choose_city_message_close' class="message_dialog_close control">
 		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
-	 height='38' width='38' viewBox="0 0 24 24">
+	 height='22' width='22' viewBox="0 0 24 24">
 	<path fill='#CECECE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
 	<path fill='none' d="M0 0h24v24H0z" />
 </svg>
@@ -1019,7 +1059,7 @@ h2.message_dialog_label {
 	</h2>
 	<div id='locate_right_message_close' class="message_dialog_close control">
 		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
-	 height='38' width='38' viewBox="0 0 24 24">
+	 height='22' width='22' viewBox="0 0 24 24">
 	<path fill='#CECECE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
 	<path fill='none' d="M0 0h24v24H0z" />
 </svg>
@@ -1043,7 +1083,7 @@ h2.message_dialog_label {
 	<div id='overlay_message'>
 		<div id='overlay_message_close' class="message_dialog_close control">
 			<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
-	 height='38' width='38' viewBox="0 0 24 24">
+	 height='22' width='22' viewBox="0 0 24 24">
 	<path fill='#CECECE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
 	<path fill='none' d="M0 0h24v24H0z" />
 </svg>
@@ -1100,11 +1140,16 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span>
-	2019 May 30 - 14:22:52			</span>
+	2019 Sep 14 - 11:32:01			</span>
 		</div>
 	</div>
-	<div id='contact'>
-		contact: <a class='link' href="mailto:ujjwal@wcodes.org?subject=WCode location">ujjwal@wcodes.org</a>
+	<div>
+		<p>
+			website: <a class='link' href='//wcodes.org/location'>wcodes.org/location</a>
+		</p>
+		<p id='contact'>
+			contact: <a class='link' href="mailto:ujjwal@wcodes.org?subject=WCode location">ujjwal@wcodes.org</a>
+		</p>
 	</div>
 </div>
 		<div id='agency'>
@@ -1118,7 +1163,7 @@ h2.message_dialog_label {
 	</h2>
 	<div id='incompatible_browser_message_close' class="message_dialog_close control">
 		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
-	 height='38' width='38' viewBox="0 0 24 24">
+	 height='22' width='22' viewBox="0 0 24 24">
 	<path fill='#CECECE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
 	<path fill='none' d="M0 0h24v24H0z" />
 </svg>
@@ -1189,13 +1234,17 @@ h2.message_dialog_label {
 </svg>
 </span>
 	</a><a id=logo_location href='//location.wcodes.org' tabindex='2'>
-		<span class='image'><svg xmlns='http://www.w3.org/2000/svg' x='0px' y='0px'
+		<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
 	 viewBox="0 0 152 8">
-	<g font-family='Abel' font-size='16px'>
-		<text text-anchor='middle' transform="matrix(1 0 0 1 78 8)">
-			<tspan fill='#69B7CF'>Location</tspan>
-			<tspan fill='#A8A8A8'>(beta)</tspan>
-		</text>
+	<g transform="translate(78,8)" fill="#69b7cf" aria-label="LOCATION">
+		<path d="m-26.865 0h-5.8496v-9.4434h1.25v8.3203h4.5996z"/>
+		<path d="m-21.279-9.6094q0.97656 0 1.8066 0.35156t1.4258 0.99609q0.60547 0.63477 0.9375 1.543 0.3418 0.89844 0.3418 1.9922 0 1.084-0.33203 1.9824-0.33203 0.89844-0.9375 1.5527-0.5957 0.64453-1.4258 1.0059-0.82031 0.35156-1.8164 0.35156t-1.8262-0.35156q-0.83008-0.35156-1.4355-0.99609-0.5957-0.64453-0.92773-1.543-0.33203-0.9082-0.33203-2.002 0-1.1035 0.33203-2.002 0.3418-0.9082 0.94727-1.543 0.60547-0.64453 1.4258-0.98633 0.83008-0.35156 1.8164-0.35156zm-0.0098 8.7012q0.70312 0 1.2988-0.25391 0.5957-0.26367 1.0254-0.75195 0.42969-0.49805 0.66406-1.2012 0.24414-0.71289 0.24414-1.6113 0-0.9082-0.24414-1.6113-0.24414-0.70312-0.67383-1.1914-0.41992-0.48828-1.0156-0.74219-0.58594-0.25391-1.2695-0.25391-0.70312 0-1.3086 0.26367-0.5957 0.25391-1.0254 0.74219-0.42969 0.48828-0.67383 1.1914t-0.24414 1.6016 0.23438 1.6113q0.24414 0.70312 0.67383 1.2012 0.42969 0.48828 1.0156 0.75195 0.5957 0.25391 1.2988 0.25391z"/>
+		<path d="m-7.3047-6.582h-1.2793q-0.029297-0.44922-0.23438-0.81055-0.20508-0.36133-0.54688-0.61523-0.33203-0.25391-0.79102-0.39062-0.44922-0.13672-0.9668-0.13672-0.71289 0-1.2891 0.25391-0.57617 0.24414-0.98633 0.73242-0.40039 0.47852-0.625 1.1914-0.21484 0.71289-0.21484 1.6309t0.21484 1.6309q0.22461 0.70312 0.625 1.1914 0.40039 0.48828 0.9668 0.74219 0.57617 0.25391 1.2793 0.25391 1.1133 0 1.7969-0.53711 0.68359-0.53711 0.77148-1.5527h1.2793q-0.068359 0.75195-0.38086 1.3379-0.30273 0.58594-0.81055 0.99609-0.49805 0.40039-1.1719 0.61523-0.67383 0.21484-1.4648 0.21484-1.0156 0-1.8262-0.3418-0.81055-0.35156-1.3867-0.98633-0.56641-0.63477-0.87891-1.543-0.30274-0.9082-0.30274-2.0215t0.3125-2.0215q0.3125-0.9082 0.87891-1.543 0.57617-0.63477 1.3867-0.97656 0.81055-0.35156 1.8164-0.35156 0.75195 0 1.416 0.21484 0.67383 0.21484 1.1816 0.61523 0.51758 0.40039 0.83984 0.9668 0.32227 0.55664 0.39062 1.2402z"/>
+		<path d="m-0.67383-3.8672-1.6699-4.375-1.582 4.375zm2.8711 3.8672h-1.416l-1.0938-2.8711h-3.9551l-1.0449 2.8711h-1.3184l3.623-9.4434h1.3574z"/>
+		<path d="m9.9805-8.3203h-3.125v8.3203h-1.25v-8.3203h-3.1055v-1.123h7.4805z"/>
+		<path d="m12.764 0h-1.25v-9.4434h1.25z"/>
+		<path d="m19.111-9.6094q0.97656 0 1.8066 0.35156t1.4258 0.99609q0.60547 0.63477 0.9375 1.543 0.3418 0.89844 0.3418 1.9922 0 1.084-0.33203 1.9824-0.33203 0.89844-0.9375 1.5527-0.5957 0.64453-1.4258 1.0059-0.82031 0.35156-1.8164 0.35156t-1.8262-0.35156q-0.83008-0.35156-1.4355-0.99609-0.5957-0.64453-0.92773-1.543-0.33203-0.9082-0.33203-2.002 0-1.1035 0.33203-2.002 0.3418-0.9082 0.94727-1.543 0.60547-0.64453 1.4258-0.98633 0.83008-0.35156 1.8164-0.35156zm-0.0098 8.7012q0.70312 0 1.2988-0.25391 0.5957-0.26367 1.0254-0.75195 0.42969-0.49805 0.66406-1.2012 0.24414-0.71289 0.24414-1.6113 0-0.9082-0.24414-1.6113-0.24414-0.70312-0.67383-1.1914-0.41992-0.48828-1.0156-0.74219-0.58594-0.25391-1.2695-0.25391-0.70312 0-1.3086 0.26367-0.5957 0.25391-1.0254 0.74219-0.42969 0.48828-0.67383 1.1914-0.24414 0.70312-0.24414 1.6016t0.23438 1.6113q0.24414 0.70312 0.67383 1.2012 0.42969 0.48828 1.0156 0.75195 0.5957 0.25391 1.2988 0.25391z"/>
+		<path d="m32.715 0h-1.2793l-4.9609-7.4512v7.4512h-1.1816v-9.4434h1.2891l4.9414 7.4609v-7.4609h1.1914z"/>
 	</g>
 </svg>
 </span>
@@ -1223,11 +1272,17 @@ h2.message_dialog_label {
 </div>
 <div id='notification_top' class="notification_bar hide">Try: Bengaluru, India</div>
 <div id='notification_bottom' class="notification_bar hide"></div>
+<div id='footer-content' class='center'>
+	<div>
+		<a class="link-gray" href='wcodes.org/license'>Copyright &copy; 2019</a>
+		<a class="link" href='wcodes.org/about_me'>Ujjwal Singh</a><a class='content-link' target='_blank' href='/about_me' rel='author'></a>
+	</div>
+</div>
 <div id='address_text' class='hide'>
 	<div id='address_text_label'>Address</div>
 	<div id='address_text_close' class='control'>
 		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
-	 height='38' width='38' viewBox="0 0 24 24">
+	 height='22' width='22' viewBox="0 0 24 24">
 	<path fill='#CECECE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
 	<path fill='none' d="M0 0h24v24H0z" />
 </svg>
@@ -1247,5 +1302,9 @@ h2.message_dialog_label {
 		<span class='address_text_button_spacer'></span>
 	</div>
 </div>
+	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyCYD7Q0f4ZR0cH0EOi29wVV2Edgb_j5i_s&libraries=places&callback=syncInitMap' async defer></script></head>
+	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-app.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-database.js"></script>
+	<script src="/geofire.min.js"></script>
 </body>
 </html>
