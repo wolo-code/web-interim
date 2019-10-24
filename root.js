@@ -187,10 +187,16 @@ function activateOverlayInfo_full() {
 function urlDecode() {
 	if(window.location.pathname.substr(1) != '') {
 		var code_string;
-		if(window.location.pathname.substr(1).endsWith('/')) {
+		var end_flag_char = window.location.pathname.substr(-1);
+		if(end_flag_char == '/') {
 			code_string = window.location.pathname.substr(1, window.location.pathname.length-2);
 			initWCode_jumpToMap = true;
 		}
+		else if (end_flag_char == '_') {
+			init_map_mode = 'satellite';
+			code_string = window.location.pathname.substr(1, window.location.pathname.length-2);
+			initWCode_jumpToMap = false;
+		} 
 		else {
 			code_string = window.location.pathname.substr(1);
 			initWCode_jumpToMap = false;
@@ -303,14 +309,14 @@ function getCityFromPositionThenDecode(latLng, wcode) {
 	var nearCity = new Object;
 
 	var geoQuery = geoFire.query({
-	  center: [latLng.lat, latLng.lng],
-	  radius: CITY_RANGE_RADIUS
+		center: [latLng.lat, latLng.lng],
+		radius: CITY_RANGE_RADIUS
 	});
 
 	wait_loader.classList.remove('hide');
 	geoQuery.on('ready', function() {
 		wait_loader.classList.add('hide');
-	  geoQuery.cancel();
+		geoQuery.cancel();
 		if(nearCity == null)
 			decode_continue(null, wcode);
 		else
@@ -554,6 +560,22 @@ function setCodeCoord(city, codeIndex, code) {
 }
 // const WCODE_CODE_COPIED_MESSAGE;
 // const WCODE_LINK_COPIED_MESSAGE;
+
+function handleShareWCode() {
+	if (navigator.share)
+		shareWCode();
+	else
+		copyWcodeJumpLink();
+}
+
+function shareWCode() {
+	navigator.share( {
+		title: "WCode Location",
+		text: "WCode Location for: " + ' ' + address + ' ' + '|',
+		url: '/' + getCodeFull().join('.').toLowerCase().replace(' ', '_') + '/'
+	} )
+	.catch((error) => console.log('Error sharing', error));
+}
 
 function showCopyWcodeMessage() {
 	var city_name_id = getCodeCityNameId();
@@ -893,7 +915,7 @@ function focus_(pos, bounds) {
 		marker = new google.maps.Marker({
 			position: pos,
 			map: map,
-			title: 'Hello World!'
+			title: pos.lat + " | " + pos.lng
 		});
 		marker.addListener('click', function() {
 			if(!isInfoWindowOpen())
@@ -985,7 +1007,11 @@ function infoWindow_setContent(string) {
 }
 
 function setInfoWindowText(city_accent, city_name, code_string, latLng) {
-	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'>" + city_accent + "</span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code_string + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' onclick='toggleAddress();' src=" + svg_address + " ><a href='"+ getIntentURL(latLng, city_name + ' ' + code_string) + "'><img id='external_map_button' class='control' onclick='' src=" + svg_map + " ></a><img id='share_code_button' class='control' onclick='showCopyWcodeMessage();' src=" + svg_share + " ></div>")
+	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'>" + city_accent + "</span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code_string + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' onclick='toggleAddress();' src=" + svg_address + " ><a href='"+ getIntentURL(latLng, city_name + ' ' + code_string) + "'><img id='external_map_button' class='control' src=" + svg_map + " ></a><div id='share_code_button' class='control'><div class='shield'></div><img src=" + svg_share + " ></div></div>");
+	var infoWindow_share_longpress_handle = google.maps.event.addListener(infoWindow, 'domready', function() {
+		google.maps.event.removeListener(infoWindow_share_longpress_handle);	
+		addLongpressListener(document.getElementById('share_code_button'));
+	});
 }
 
 function isInfoWindowOpen() {
@@ -1236,6 +1262,9 @@ function initMap() {
 	document.getElementById('pac-input').addEventListener('input', suggestWrapper);
 	clickHandler = new ClickEventHandler(map);
 
+	if(init_map_mode == 'satellite')
+		toggleMapType();
+
 	postMap();
 
 }
@@ -1359,6 +1388,96 @@ function postMap() {
 	if(pendingLocate)
 		syncLocate();
 }
+function showQR() {
+	document.getElementById('qr_title_main').value = document.getElementById('qr_pre_title_main').value;
+	document.getElementById('qr_title_segment').value = document.getElementById('qr_pre_title_segment').value;
+	
+	var city_accent = getProperCityAccent(code_city);
+	var code_string = code_wcode.join(' ');
+	document.getElementById('qr_wcode_city').innerHTML = city_accent;
+	document.getElementById('qr_wcode_code').innerHTML = code_string;
+	document.getElementById('qr_image').setAttribute( 'src', src="https://chart.googleapis.com/chart?cht=qr&chs=380x380&chl=https://"+location.hostname + '/' + getCodeFull().join('.').toLowerCase().replace(' ', '_') + "&chld=L|2" );
+	document.getElementById('qr').classList.remove('hide');
+}
+
+function closeQR() {
+	document.getElementById('qr').classList.add('hide');
+	previewQR_deactivate()
+	document.getElementById('qr_address').innerHTML = "&nbsp;&nbsp;Address (optional)";
+	document.getElementById('qr_address').classList.add('initial');
+	qr_address_active_first = true;
+}
+
+function previewQR_activate() {
+	mode_preview = true;
+	hideEmptyElsePreview(document.getElementById('qr_title_main'));
+	hideEmptyElsePreview(document.getElementById('qr_title_segment'));
+	if(qr_address_active_first || document.getElementById('qr_address').innerHTML.trim().length == 0)
+		document.getElementById('qr_address').classList.add('hide');
+	else {
+		document.getElementById('qr_address').classList.add('preview');
+		document.getElementById('qr_address').setAttribute('contenteditable', false);
+	}
+	document.getElementById('qr_close').classList.add('hide');
+	document.getElementById('qr_preview').classList.add('button_active');
+}
+
+function previewQR_deactivate() {
+	mode_preview = false;
+	unHideEmptyAndRemovePreview(document.getElementById('qr_title_main'));
+	unHideEmptyAndRemovePreview(document.getElementById('qr_title_segment'));
+	document.getElementById('qr_address').setAttribute('contenteditable', true);
+	document.getElementById('qr_address').classList.remove('preview');
+	document.getElementById('qr_address').classList.remove('hide');
+	document.getElementById('qr_close').classList.remove('hide');
+	document.getElementById('qr_preview').classList.remove('button_active');
+}
+
+function qr_address_active() {
+	if (qr_address_active_first) {
+		qr_address_active_first = false;
+		document.getElementById('qr_address').classList.remove('initial');
+		document.getElementById('qr_address').innerHTML = address;
+	}
+}
+
+function hideEmptyElsePreview(node) {
+	if(node.value.trim() == '')
+		node.classList.add('hide')
+	else
+		node.classList.add('preview')
+}
+
+function unHideEmptyAndRemovePreview(node) {
+	node.classList.remove('hide');
+	node.classList.remove('preview');
+}
+
+function toggleQRpreview() {
+	if(mode_preview) {
+		previewQR_deactivate();
+		document.getElementById('qr_body').classList.remove('section-to-print');
+	}
+	else {
+		previewQR_activate();
+		document.getElementById('qr_body').classList.add('section-to-print');
+	}
+}
+
+function printQR() {
+	var mode_preview_activated = false;
+	if(!mode_preview) {
+		toggleQRpreview();
+		mode_preview_activated = true;
+	}
+	document.getElementById('qr').classList.remove('overlay');
+	document.getElementById('qr').classList.add('section-to-print');
+	window.print();
+	document.getElementById('qr').classList.add('overlay');
+	document.getElementById('qr').classList.remove('section-to-print');
+	if(mode_preview_activated)
+		toggleQRpreview();
+}
 function suggestWrapper(event) {
 	cityNameList = [];
 	getCitiesFromNameId(document.getElementById('pac-input').value.toLowerCase(), function(cityList) {
@@ -1375,7 +1494,7 @@ function suggestComplete() {
 	var curList;
 	if(input_array.length > 0)
 		curList = getPossibleList(input_array.slice(0, -1));
-	if(curList !=  null) {
+	if(curList != null) {
 		var curWord = input_array[input_array.length-1];
 		if(curList != city_styled_wordlist && curList != wordList.curList) {
 			var compareWord = input_array.slice(0, -1).join(' ')+' ';
@@ -1423,14 +1542,18 @@ function getPossibleList(code) {
 }
 
 function matchWord(list, input) {
-	var regEx = new RegExp(input.split('').join('\\w*').replace(/\W/, ''), 'i');
-	return list.filter(function(word) {
-		if (word.match(regEx)) {
-			if(word.toLowerCase().startsWith(input))
-				if(word.toLowerCase() != input)
-					return word;
-		}
-	});
+	if(input.match(/^[A-Za-z]+$/)) {
+		var regEx = new RegExp(input.split('').join('\\w*').replace(/\W/, ''), 'i');
+		return list.filter(function(word) {
+			if (word.match(regEx)) {
+				if(word.toLowerCase().startsWith(input))
+					if(word.toLowerCase() != input)
+						return word;
+			}
+		});
+	}
+	else
+		return [];
 }
 
 function changeInput(list, val) {
@@ -1480,8 +1603,9 @@ function initLoad () {
 };
 
 function setupControls() {
-	document.getElementById('overlay').addEventListener('click', hideOverlay);
 	document.getElementById('overlay_message_close').addEventListener('click', hideOverlay);
+	document.getElementById('info_intro_close_button').addEventListener('click', hideOverlay);
+	document.getElementById('info_full_close_button').addEventListener('click', hideOverlay);
 	document.getElementById('info').addEventListener('click', showOverlay);
 	document.getElementById('no_city_message_close').addEventListener('click', hideNoCityMessage);
 	document.getElementById('locate_right_message_close').addEventListener('click', hideLocateRightMessage);
@@ -1500,6 +1624,11 @@ function setupControls() {
 	document.getElementById('choose_city_message_close').addEventListener('click', hideChooseCityMessage);
 	document.getElementById('share_copy_button').addEventListener('click', shareWCodeCopy);
 	document.getElementById('share_link_button').addEventListener('click', shareWCodeLink);
+	document.getElementById('share_qr_button').addEventListener('click', showQR);
+	document.getElementById('qr_close').addEventListener('click', closeQR);
+	document.getElementById('qr_preview').addEventListener('click', toggleQRpreview);
+	document.getElementById('qr_print').addEventListener('click', printQR);
+	document.getElementById('qr_address').addEventListener('focus', qr_address_active);
 }
 
 function showAndCopy(message) {
@@ -1528,138 +1657,138 @@ function copyNodeText(node) {
 
 UMB = function () {
 
-    var hasInit = false;
-    var hasLoaded = false;
-    var config = {};
+	var hasInit = false;
+	var hasLoaded = false;
+	var config = {};
 
-    /*
-     * Recursively merge properties of two objects
-     */
-    function mergeRecursive(obj1, obj2, lvl) {
-        var lvl = lvl || 0;
-        for (var p in obj1) {
-            try {
-                if (obj2[p].constructor == Object) {
-                    obj1[p] = mergeRecursive(obj1[p], obj2[p], lvl + 1);
-                } else {
-                    obj1[p] = obj2[p];
-                }
-            } catch (e) {
-            }
-        }
-        return obj1;
-    }
+	/*
+	 * Recursively merge properties of two objects
+	 */
+	function mergeRecursive(obj1, obj2, lvl) {
+		var lvl = lvl || 0;
+		for (var p in obj1) {
+			try {
+				if (obj2[p].constructor == Object) {
+					obj1[p] = mergeRecursive(obj1[p], obj2[p], lvl + 1);
+				} else {
+					obj1[p] = obj2[p];
+				}
+			} catch (e) {
+			}
+		}
+		return obj1;
+	}
 
-    var init = function () {
-        if (hasInit) {
-            return;
-        }
-        hasInit = true;
+	var init = function () {
+		if (hasInit) {
+			return;
+		}
+		hasInit = true;
 
-        UMB.Detect.init();
+		UMB.Detect.init();
 
-        var _umb = window._umb || {};
-        config = {
-            require: {
-                chrome: UMB.Browsers['chrome'].minimum,
-                firefox: UMB.Browsers['firefox'].minimum,
-                ie: UMB.Browsers['ie'].minimum,
-                opera: UMB.Browsers['opera'].minimum,
-                safari: UMB.Browsers['safari'].minimum,
-                edge: UMB.Browsers['edge'].minimum
-            },
-            display: true,
-            nonCritical: false
-        };
-        config = mergeRecursive(config, _umb);
-    };
+		var _umb = window._umb || {};
+		config = {
+			require: {
+				chrome: UMB.Browsers['chrome'].minimum,
+				firefox: UMB.Browsers['firefox'].minimum,
+				ie: UMB.Browsers['ie'].minimum,
+				opera: UMB.Browsers['opera'].minimum,
+				safari: UMB.Browsers['safari'].minimum,
+				edge: UMB.Browsers['edge'].minimum
+			},
+			display: true,
+			nonCritical: false
+		};
+		config = mergeRecursive(config, _umb);
+	};
 
-    return {
+	return {
 
-        load: function () {
-            if (hasLoaded) {
-                return;
-            }
-            hasLoaded = true;
+		load: function () {
+			if (hasLoaded) {
+				return;
+			}
+			hasLoaded = true;
 
-            UMB.attach(window, 'load', function () {
-                init();
-                // Display at all?
-                if (config.display) {
-                    UMB.autoDisplayWidget();
-                }
-            });
-        },
+			UMB.attach(window, 'load', function () {
+				init();
+				// Display at all?
+				if (config.display) {
+					UMB.autoDisplayWidget();
+				}
+			});
+		},
 
-        // http://stackoverflow.com/questions/9434/how-do-i-add-an-additional-window-onload-event-in-javascript
-        attach: function (elm, event, callback) {
-            if (elm.addEventListener) { // W3C standard
-                window.addEventListener(event, callback, false);
-            } else if (elm.attachEvent) { // Microsoft
-                elm.attachEvent('on' + event, callback);
-            }
-        },
+		// http://stackoverflow.com/questions/9434/how-do-i-add-an-additional-window-onload-event-in-javascript
+		attach: function (elm, event, callback) {
+			if (elm.addEventListener) { // W3C standard
+				window.addEventListener(event, callback, false);
+			} else if (elm.attachEvent) { // Microsoft
+				elm.attachEvent('on' + event, callback);
+			}
+		},
 
-        getConfig: function () {
-            init();
-            return config;
-        },
+		getConfig: function () {
+			init();
+			return config;
+		},
 
-        getCurrentBrowser: function () {
-            init();
-            return UMB.Detect.browser;
-        },
+		getCurrentBrowser: function () {
+			init();
+			return UMB.Detect.browser;
+		},
 
-        getCurrentVersion: function () {
-            init();
-            return UMB.Detect.version;
-        },
+		getCurrentVersion: function () {
+			init();
+			return UMB.Detect.version;
+		},
 
-        getBrowserInfo: function (browser) {
-            init();
-            return UMB.Browsers[browser];
-        },
+		getBrowserInfo: function (browser) {
+			init();
+			return UMB.Browsers[browser];
+		},
 
-        getStatus: function () {
-            init();
-            return UMB.Status.getStatus();
-        },
+		getStatus: function () {
+			init();
+			return UMB.Status.getStatus();
+		},
 
-        displayWidget: function () {
-            init();
-            UMB.Widget.display();
-        },
+		displayWidget: function () {
+			init();
+			UMB.Widget.display();
+		},
 
-        hideWidget: function () {
-            init();
-            UMB.Widget.hide();
-        },
+		hideWidget: function () {
+			init();
+			UMB.Widget.hide();
+		},
 
-        autoDisplayWidget: function () {
-            init();
+		autoDisplayWidget: function () {
+			init();
 
-            // Cookie set to hide bar?
-            if (document.cookie.indexOf('_umb=hide') == -1) {
-                var status = UMB.getStatus();
+			// Cookie set to hide bar?
+			if (document.cookie.indexOf('_umb=hide') == -1) {
+				var status = UMB.getStatus();
 
-                if (status == 'update' && config.nonCritical) {
-                    // Display on recommended update
-                    UMB.displayWidget();
-                } else if (status == 'warning') {
-                    // Display on critical update
-                    UMB.displayWidget();
-                }
-            }
-        },
+				if (status == 'update' && config.nonCritical) {
+					// Display on recommended update
+					UMB.displayWidget();
+				} else if (status == 'warning') {
+					// Display on critical update
+					UMB.displayWidget();
+				}
+			}
+		},
 
-        scrollToTop: function () {
-            // http://stackoverflow.com/questions/871399/cross-browser-method-for-detecting-the-scrolltop-of-the-browser-window
-            var B = document.body; //IE 'quirks'
-            var D = document.documentElement; //IE with doctype
-            D = (B.clientHeight) ? B : D;
-            D.scrollTop = 0;
-        }
-    };
+		scrollToTop: function () {
+			// http://stackoverflow.com/questions/871399/cross-browser-method-for-detecting-the-scrolltop-of-the-browser-window
+			var B = document.body; //IE 'quirks'
+			var D = document.documentElement; //IE with doctype
+			D = (B.clientHeight) ? B : D;
+			D.scrollTop = 0;
+		}
+	};
 }();
 UMB.load();/*!
  * updatemybrowser.org JavaScript Library v1
@@ -1738,107 +1867,107 @@ UMB.Browsers = {
 ;if (typeof UMB === "undefined") {UMB = function(){}};
 
 UMB.Detect = {
-    init: function () {
-        this.browser = this.searchString(this.dataBrowser) || "unknown";
-        this.version = this.searchVersion(navigator.userAgent)
-            || this.searchVersion(navigator.appVersion)
-            || "an unknown version";
-        this.OS = this.searchString(this.dataOS) || "unknown";
-    },
-    searchString: function (data) {
-        for (var i = 0; i < data.length; i++) {
-            var dataString = data[i].string;
-            var dataProp = data[i].prop;
-            this.versionSearchString = data[i].versionSearch || data[i].identity;
-            if (dataString) {
-                if (dataString.indexOf(data[i].subString) != -1)
-                    return data[i].identity;
-            }
-            else if (dataProp)
-                return data[i].identity;
-        }
-    },
-    searchVersion: function (dataString) {
-        var index = dataString.indexOf(this.versionSearchString);
-        if (index == -1) return;
-        return parseFloat(dataString.substring(index + this.versionSearchString.length + 1));
-    },
-    dataBrowser: [
-        {
-            string: navigator.userAgent,
-            subString: "OPR/",
-            identity: "opera",
-            versionSearch: "OPR"
-        },
-        {
-            string: navigator.userAgent,
-            subString: "Edge",
-            identity: "edge",
-            versionSearch: "Edge"
-        },
-        {
-            string: navigator.userAgent,
-            subString: "Chrome",
-            versionSearch: "Chrome",
-            identity: "chrome"
-        },
-        {
-            string: navigator.vendor,
-            subString: "Apple",
-            identity: "safari",
-            versionSearch: "Version"
-        },
-        {
-            string: navigator.userAgent,
-            subString: "Firefox",
-            versionSearch: "Firefox",
-            identity: "firefox"
-        },
-        {
-            string: navigator.userAgent,
-            subString: "MSIE",
-            identity: "ie",
-            versionSearch: "MSIE"
-        },
-        {
-            string: navigator.userAgent,
-            subString: "Trident",
-            identity: "ie",
-            versionSearch: "rv"
-        }
-    ],
-    dataOS: [
-        {
-            string: navigator.userAgent,
-            subString: "iPhone",
-            identity: "iOS"
-        },
-        {
-            string: navigator.userAgent,
-            subString: "iPad",
-            identity: "iOS"
-        },
-        {
-            string: navigator.userAgent,
-            subString: "Android",
-            identity: "Android"
-        },
-        {
-            string: navigator.platform,
-            subString: "Win",
-            identity: "Windows"
-        },
-        {
-            string: navigator.platform,
-            subString: "Mac",
-            identity: "Mac"
-        },
-        {
-            string: navigator.platform,
-            subString: "Linux",
-            identity: "Linux"
-        }
-    ]
+	init: function () {
+		this.browser = this.searchString(this.dataBrowser) || "unknown";
+		this.version = this.searchVersion(navigator.userAgent)
+			|| this.searchVersion(navigator.appVersion)
+			|| "an unknown version";
+		this.OS = this.searchString(this.dataOS) || "unknown";
+	},
+	searchString: function (data) {
+		for (var i = 0; i < data.length; i++) {
+			var dataString = data[i].string;
+			var dataProp = data[i].prop;
+			this.versionSearchString = data[i].versionSearch || data[i].identity;
+			if (dataString) {
+				if (dataString.indexOf(data[i].subString) != -1)
+					return data[i].identity;
+			}
+			else if (dataProp)
+				return data[i].identity;
+		}
+	},
+	searchVersion: function (dataString) {
+		var index = dataString.indexOf(this.versionSearchString);
+		if (index == -1) return;
+		return parseFloat(dataString.substring(index + this.versionSearchString.length + 1));
+	},
+	dataBrowser: [
+		{
+			string: navigator.userAgent,
+			subString: "OPR/",
+			identity: "opera",
+			versionSearch: "OPR"
+		},
+		{
+			string: navigator.userAgent,
+			subString: "Edge",
+			identity: "edge",
+			versionSearch: "Edge"
+		},
+		{
+			string: navigator.userAgent,
+			subString: "Chrome",
+			versionSearch: "Chrome",
+			identity: "chrome"
+		},
+		{
+			string: navigator.vendor,
+			subString: "Apple",
+			identity: "safari",
+			versionSearch: "Version"
+		},
+		{
+			string: navigator.userAgent,
+			subString: "Firefox",
+			versionSearch: "Firefox",
+			identity: "firefox"
+		},
+		{
+			string: navigator.userAgent,
+			subString: "MSIE",
+			identity: "ie",
+			versionSearch: "MSIE"
+		},
+		{
+			string: navigator.userAgent,
+			subString: "Trident",
+			identity: "ie",
+			versionSearch: "rv"
+		}
+	],
+	dataOS: [
+		{
+			string: navigator.userAgent,
+			subString: "iPhone",
+			identity: "iOS"
+		},
+		{
+			string: navigator.userAgent,
+			subString: "iPad",
+			identity: "iOS"
+		},
+		{
+			string: navigator.userAgent,
+			subString: "Android",
+			identity: "Android"
+		},
+		{
+			string: navigator.platform,
+			subString: "Win",
+			identity: "Windows"
+		},
+		{
+			string: navigator.platform,
+			subString: "Mac",
+			identity: "Mac"
+		},
+		{
+			string: navigator.platform,
+			subString: "Linux",
+			identity: "Linux"
+		}
+	]
 };/*!
  * updatemybrowser.org JavaScript Library v1
  * http://updatemybrowser.org/
@@ -1856,27 +1985,27 @@ UMB.Detect = {
 
 UMB.Status = function () {
 
-    var STATUS_LATEST = 'latest';
-    var STATUS_UPDATE = 'update';
-    var STATUS_WARNING = 'warning';
-    var STATUS_UNSUPPORTED = 'unsupported';
+	var STATUS_LATEST = 'latest';
+	var STATUS_UPDATE = 'update';
+	var STATUS_WARNING = 'warning';
+	var STATUS_UNSUPPORTED = 'unsupported';
 
-    return {
-        getStatus: function () {
-            var browser = UMB.getBrowserInfo(UMB.Detect.browser);
-            var os = UMB.Detect.OS;
-            if (!browser || os == 'iOS' || os == 'Android') return STATUS_UNSUPPORTED;
-            var latestVersion = parseFloat(browser.current);
-            var minimumVersion = parseFloat(UMB.getConfig().require[UMB.Detect.browser]);
-            if (UMB.Detect.version >= latestVersion) {
-                return STATUS_LATEST;
-            } else if (UMB.Detect.version >= minimumVersion) {
-                return STATUS_UPDATE;
-            } else {
-                return STATUS_WARNING;
-            }
-        }
-    };
+	return {
+		getStatus: function () {
+			var browser = UMB.getBrowserInfo(UMB.Detect.browser);
+			var os = UMB.Detect.OS;
+			if (!browser || os == 'iOS' || os == 'Android') return STATUS_UNSUPPORTED;
+			var latestVersion = parseFloat(browser.current);
+			var minimumVersion = parseFloat(UMB.getConfig().require[UMB.Detect.browser]);
+			if (UMB.Detect.version >= latestVersion) {
+				return STATUS_LATEST;
+			} else if (UMB.Detect.version >= minimumVersion) {
+				return STATUS_UPDATE;
+			} else {
+				return STATUS_WARNING;
+			}
+		}
+	};
 }();/*!
  * updatemybrowser.org JavaScript Library v1
  * http://updatemybrowser.org/
@@ -1893,346 +2022,347 @@ UMB.Status = function () {
 
 UMB.Widget = function () {
 
-    var hasInit = false;
-    var isFixed = false;
+	var hasInit = false;
+	var isFixed = false;
 
-    var oldBodyMarginTop;
+	var oldBodyMarginTop;
 
-    var applyStyle = function (style, elm) {
-        for (var x in style) {
-            elm.style[x] = style[x];
-        }
-        ;
-    };
+	var applyStyle = function (style, elm) {
+		for (var x in style) {
+			elm.style[x] = style[x];
+		}
+		;
+	};
 
-    var setCookie = function (key, value, days) {
-        var exdate = new Date();
-        exdate.setDate(exdate.getDate() + days);
-        var content = encodeURIComponent(value) + ((days == null) ? '' : '; expires=' + exdate.toUTCString()) + '; path=/';
-        document.cookie = key + '=' + content;
-    };
+	var setCookie = function (key, value, days) {
+		var exdate = new Date();
+		exdate.setDate(exdate.getDate() + days);
+		var content = encodeURIComponent(value) + ((days == null) ? '' : '; expires=' + exdate.toUTCString()) + '; path=/';
+		document.cookie = key + '=' + content;
+	};
 
-    var insertHtml = function () {
+	var insertHtml = function () {
 
-        // CLEAN UP OLD WRAPPER
-        isFixed = false;
-        var oldWrapper = document.getElementById('BrowserBar');
-        if (oldWrapper) {
-            document.getElementsByTagName('body')[0].removeChild(oldWrapper);
-        }
+		// CLEAN UP OLD WRAPPER
+		isFixed = false;
+		var oldWrapper = document.getElementById('BrowserBar');
+		if (oldWrapper) {
+			document.getElementsByTagName('body')[0].removeChild(oldWrapper);
+		}
 
-        // WRAPPER
-        var wrapper = document.createElement('div');
-        var wrapperStyle = {
-            display: 'none',
-            position: 'absolute',
-            height: '19px',
-            fontSize: '14px',
-            lineHeight: '1em',
-            fontFamily: 'Arial, sans-serif',
-            color: 'black',
-            padding: '10px 0',
-            top: '-40px',
-            left: '0px',
-            backgroundColor: '#FDF2AB',
-            backgroundImage: 'url(//updatemybrowser.org/warning.gif)',
-            backgroundPosition: '10px center',
-            backgroundRepeat: 'no-repeat',
-            borderBottom: '1px solid #A29330',
-            width: '100%',
-            textAlign: 'left',
-            cursor: 'pointer',
-            zoom: '1',
-            zIndex: 9999,
-            '-webkit-box-sizing': 'content-box',
-            '-moz-box-sizing': 'content-box',
-            'box-sizing': 'content-box',
-            overflow: 'hidden'
-        };
-        applyStyle(wrapperStyle, wrapper);
-        wrapper.setAttribute('id', 'BrowserBar');
+		// WRAPPER
+		var wrapper = document.createElement('div');
+		var wrapperStyle = {
+			display: 'none',
+			position: 'absolute',
+			height: '19px',
+			fontSize: '14px',
+			lineHeight: '1em',
+			fontFamily: 'Arial, sans-serif',
+			color: 'black',
+			padding: '10px 0',
+			top: '-40px',
+			left: '0px',
+			backgroundColor: '#FDF2AB',
+			backgroundImage: 'url(//updatemybrowser.org/warning.gif)',
+			backgroundPosition: '10px center',
+			backgroundRepeat: 'no-repeat',
+			borderBottom: '1px solid #A29330',
+			width: '100%',
+			textAlign: 'left',
+			cursor: 'pointer',
+			zoom: '1',
+			zIndex: 9999,
+			'-webkit-box-sizing': 'content-box',
+			'-moz-box-sizing': 'content-box',
+			'box-sizing': 'content-box',
+			overflow: 'hidden'
+		};
+		applyStyle(wrapperStyle, wrapper);
+		wrapper.setAttribute('id', 'BrowserBar');
 
-        // PARAGRAPH
-        var p = document.createElement('p');
-        var pStyle = {
-            margin: '0px 0px 0px 40px',
-            padding: '0px',
-            lineHeight: '1.5em'
-        };
-        applyStyle(pStyle, p);
+		// PARAGRAPH
+		var p = document.createElement('p');
+		var pStyle = {
+			margin: '0px 0px 0px 40px',
+			padding: '0px',
+			lineHeight: '1.5em'
+		};
+		applyStyle(pStyle, p);
 
-        // CLOSE BUTTON
-        var a = document.createElement('a');
-        a.href = 'javascript:void(0);';
-        a.title = 'Don\'t show me this notification bar for the next 24 hours';
-        a.onclick = function (e) {
-            if (!e) {
-                var e = window.event;
-            }
-            e.cancelBubble = true;
-            if (e.stopPropagation) {
-                e.stopPropagation();
-            }
+		// CLOSE BUTTON
+		var a = document.createElement('a');
+		a.href = 'javascript:void(0);';
+		a.title = 'Don\'t show me this notification bar for the next 24 hours';
+		a.onclick = function (e) {
+			if (!e) {
+				var e = window.event;
+			}
+			e.cancelBubble = true;
+			if (e.stopPropagation) {
+				e.stopPropagation();
+			}
 
-            UMB.Widget.hidePersistent(1);
-            return false;
-        };
-        var aStyle = {
-            display: 'block',
-            width: '20px',
-            height: '20px',
-            margin: '0px 0px 0px 40px',
-            padding: '0px',
-            lineHeight: '1.5em',
-            position: 'absolute',
-            top: '10px',
-            right: '10px',
-            backgroundImage: 'url(//updatemybrowser.org/close.gif)',
-            backgroundPosition: '0 0',
-            backgroundRepeat: 'no-repeat'
-        };
-        applyStyle(aStyle, a);
+			UMB.Widget.hidePersistent(1);
+			return false;
+		};
+		var aStyle = {
+			display: 'block',
+			width: '20px',
+			height: '20px',
+			margin: '0px 0px 0px 40px',
+			padding: '0px',
+			lineHeight: '1.5em',
+			position: 'absolute',
+			top: '10px',
+			right: '10px',
+			backgroundImage: 'url(//updatemybrowser.org/close.gif)',
+			backgroundPosition: '0 0',
+			backgroundRepeat: 'no-repeat'
+		};
+		applyStyle(aStyle, a);
 
-        wrapper.appendChild(p);
-        wrapper.appendChild(a);
-        document.getElementsByTagName('body')[0].appendChild(wrapper);
-    };
+		wrapper.appendChild(p);
+		wrapper.appendChild(a);
+		document.getElementsByTagName('body')[0].appendChild(wrapper);
+	};
 
-    var prepareHtml = function () {
-        // Get current browser info and status
-        var status = UMB.getStatus();
-        var browser = UMB.getBrowserInfo(UMB.getCurrentBrowser());
-        var version = UMB.getCurrentVersion();
+	var prepareHtml = function () {
+		// Get current browser info and status
+		var status = UMB.getStatus();
+		var browser = UMB.getBrowserInfo(UMB.getCurrentBrowser());
+		var version = UMB.getCurrentVersion();
 
-        if (!status || !browser || !version) return;
+		if (!status || !browser || !version) return;
 
-        var wrapper = document.getElementById('BrowserBar');
-        var link = document.createElement('a');
-        link.href = 'https://www.updatemybrowser.org';
-        link.onclick = function () {
-            return false;
-        };
-        link.style.color = '#2183d0';
-        link.style.fontWeight = 'bold';
-        link.target = '_blank';
+		var wrapper = document.getElementById('BrowserBar');
+		var link = document.createElement('a');
+		link.href = 'https://www.updatemybrowser.org';
+		link.onclick = function () {
+			return false;
+		};
+		link.style.color = '#2183d0';
+		link.style.fontWeight = 'bold';
+		link.target = '_blank';
 
-        var message = '';
-        var post = '';
-        if (status == 'latest') {
-            message = 'You have the latest version of your browser installed (' + browser.name + ' ' + version + '). ';
-            link.style.color = '#00A651';
-            link.appendChild(document.createTextNode('Learn more'));
-        } else if (status == 'update') {
-            message = 'An update (' + browser.name + ' ' + browser.current + ') is available for your browser. Please ';
-            link.appendChild(document.createTextNode('install this browser update'));
-            post = '.';
-        } else if (status == 'warning') {
-            message = 'An important update (' + browser.name + ' ' + browser.current + ') is available for your browser. Please ';
-            link.style.color = '#ED1C24';
-            link.appendChild(document.createTextNode('install this critical browser update'));
-            post = '.';
-            isFixed = true;	// make position fixed
-        }
-        wrapper.getElementsByTagName('p')[0].appendChild(document.createTextNode(message));
-        wrapper.getElementsByTagName('p')[0].appendChild(link);
-        wrapper.getElementsByTagName('p')[0].appendChild(document.createTextNode(post));
+		var message = '';
+		var post = '';
+		if (status == 'latest') {
+			message = 'You have the latest version of your browser installed (' + browser.name + ' ' + version + '). ';
+			link.style.color = '#00A651';
+			link.appendChild(document.createTextNode('Learn more'));
+		} else if (status == 'update') {
+			message = 'An update (' + browser.name + ' ' + browser.current + ') is available for your browser. Please ';
+			link.appendChild(document.createTextNode('install this browser update'));
+			post = '.';
+		} else if (status == 'warning') {
+			message = 'An important update (' + browser.name + ' ' + browser.current + ') is available for your browser. Please ';
+			link.style.color = '#ED1C24';
+			link.appendChild(document.createTextNode('install this critical browser update'));
+			post = '.';
+			isFixed = true;	// make position fixed
+		}
+		wrapper.getElementsByTagName('p')[0].appendChild(document.createTextNode(message));
+		wrapper.getElementsByTagName('p')[0].appendChild(link);
+		wrapper.getElementsByTagName('p')[0].appendChild(document.createTextNode(post));
 
-        // Make click event on BrowserBar go to link
-        document.getElementById('BrowserBar').onclick = function () {
-            window.open(link.href);
-        };
-    };
+		// Make click event on BrowserBar go to link
+		document.getElementById('BrowserBar').onclick = function () {
+			window.open(link.href);
+		};
+	};
 
-    var getComputedVal = function (elm, property) {
-        var r;
-        if (window.getComputedStyle) {
-            r = window.getComputedStyle(elm)[property];
-        } else if (elm.currentStyle) {
-            r = elm.currentStyle[property];
-        }
-        if (!r) {
-            r = elm.style[property];
-        }
-        return r;
-    };
+	var getComputedVal = function (elm, property) {
+		var r;
+		if (window.getComputedStyle) {
+			r = window.getComputedStyle(elm)[property];
+		} else if (elm.currentStyle) {
+			r = elm.currentStyle[property];
+		}
+		if (!r) {
+			r = elm.style[property];
+		}
+		return r;
+	};
 
-    var animate = function (elm, property, end, length, callback, pre, post) {
-        // Animate opacity for IE
-        if (property == 'opacity') {
-            animate(elm, 'filter', end * 100, length, callback, 'alpha(opacity=', ')');
-        }
+	var animate = function (elm, property, end, length, callback, pre, post) {
+		// Animate opacity for IE
+		if (property == 'opacity') {
+			animate(elm, 'filter', end * 100, length, callback, 'alpha(opacity=', ')');
+		}
 
-        // Set property syntax
-        var pxProps = '|top|marginTop|';
-        pre = pre || '';
-        post = post || '';
-        if (pxProps.indexOf(property) > -1) {
-            post = post || 'px';
-        }
+		// Set property syntax
+		var pxProps = '|top|marginTop|';
+		pre = pre || '';
+		post = post || '';
+		if (pxProps.indexOf(property) > -1) {
+			post = post || 'px';
+		}
 
-        // Begin value
-        var begin = parseFloat(getComputedVal(elm, property).replace(pre, '').replace(post, '')) || 0;
+		// Begin value
+		var begin = parseFloat(getComputedVal(elm, property).replace(pre, '').replace(post, '')) || 0;
 
-        // Relative value?
-        if (end.toString().indexOf('+') == 0 || end.toString().indexOf('-') == 0) {
-            end = begin + parseFloat(end);
-        }
+		// Relative value?
+		if (end.toString().indexOf('+') == 0 || end.toString().indexOf('-') == 0) {
+			end = begin + parseFloat(end);
+		}
 
-        // Setup variables
-        var interval = 10;
-        var percstep = 1 / (length / interval);
-        var perc = 0;
+		// Setup variables
+		var interval = 10;
+		var percstep = 1 / (length / interval);
+		var perc = 0;
 
-        // Setup helpers
-        var prop = function (p) {
-            var easedP = 0.5 - Math.cos(p * Math.PI) / 2;
-            var propStep = (end - begin) * easedP;
-            var newProp = begin + propStep;
-            return Math.round(newProp * 100) / 100;
-        };
-        var apply = function (v) {
-            elm.style[property] = pre + v + post;
-        };
+		// Setup helpers
+		var prop = function (p) {
+			var easedP = 0.5 - Math.cos(p * Math.PI) / 2;
+			var propStep = (end - begin) * easedP;
+			var newProp = begin + propStep;
+			return Math.round(newProp * 100) / 100;
+		};
+		var apply = function (v) {
+			elm.style[property] = pre + v + post;
+		};
 
-        // Make an interval
-        var timer = setInterval(function () {
-            perc = perc + percstep;
-            apply(prop(perc));
+		// Make an interval
+		var timer = setInterval(function () {
+			perc = perc + percstep;
+			apply(prop(perc));
 
-            if (perc >= 1) {
-                clearInterval(timer);
-                apply(prop(1));
-                if (callback) {
-                    callback();
-                }
-            }
-        }, interval);
-    };
+			if (perc >= 1) {
+				clearInterval(timer);
+				apply(prop(1));
+				if (callback) {
+					callback();
+				}
+			}
+		}, interval);
+	};
 
-    var showBar = function () {
-        var body = document.getElementsByTagName('body')[0];
-        var BrowserBar = document.getElementById('BrowserBar');
+	var showBar = function () {
+		var body = document.getElementsByTagName('body')[0];
+		var BrowserBar = document.getElementById('BrowserBar');
 
-        // Hide bar body only when BrowserBar is invisible
-        if (getComputedVal(BrowserBar, 'display') !== 'none') {
-            return;
-        }
+		// Hide bar body only when BrowserBar is invisible
+		if (getComputedVal(BrowserBar, 'display') !== 'none') {
+			return;
+		}
 
-        // Add body class
-        body.className += ' umb-active';
+		// Add body class
+		body.className += ' umb-active';
 
-        // BrowserBar
-        BrowserBar.style.opacity = '0';
-        BrowserBar.style.filter = 'alpha(opacity=0)';
-        BrowserBar.style.display = 'block';
-        animate(BrowserBar, 'opacity', 0.95, 600);
+		// BrowserBar
+		BrowserBar.style.opacity = '0';
+		BrowserBar.style.filter = 'alpha(opacity=0)';
+		BrowserBar.style.display = 'block';
+		animate(BrowserBar, 'opacity', 0.95, 600);
 
-        if ((UMB.getCurrentBrowser() == 'ie' && document.compatMode == 'BackCompat')) {
-            // Reposition BrowserBar for IE quirks workaround
-            BrowserBar.style.top = '0px';
-            BrowserBar.style.width = (document.documentElement.clientWidth || document.body.clientWidth) + 'px';
-        } else {
-            // Reposition body element
-            body.style.position = 'relative';
-            body.style.overflow = 'visible';
-            animate(body, 'top', "+40", 300);
+		if ((UMB.getCurrentBrowser() == 'ie' && document.compatMode == 'BackCompat')) {
+			// Reposition BrowserBar for IE quirks workaround
+			BrowserBar.style.top = '0px';
+			BrowserBar.style.width = (document.documentElement.clientWidth || document.body.clientWidth) + 'px';
+		} else {
+			// Reposition body element
+			body.style.position = 'relative';
+			body.style.overflow = 'visible';
+			animate(body, 'top', "+40", 300);
 
-            if (!isFixed) {
-                // Body margin fix
-                UMB.attach(window, 'resize', function () {
-                    BrowserBar.style.width = (document.documentElement.clientWidth || document.body.clientWidth) + 'px';
-                });
-                BrowserBar.style.width = (document.documentElement.clientWidth || document.body.clientWidth) + 'px';
-                BrowserBar.style.top = '-' + (parseFloat(getComputedVal(body, 'marginTop')) + 40) + 'px';
-                BrowserBar.style.left = '-' + parseFloat(getComputedVal(body, 'marginLeft')) + 'px';
-            }
-        }
-        if (isFixed) {
-            if ((UMB.getCurrentBrowser() == 'ie' && document.compatMode == 'BackCompat')) {
-                // Fixed position for Quirks mode
-                UMB.attach(window, 'scroll', function () {
-                    BrowserBar.style.top = ((document.documentElement.scrollTop || document.body.scrollTop) + (!BrowserBar.offsetHeight && 0)) + 'px';
-                });
-                BrowserBar.style.top = ((document.documentElement.scrollTop || document.body.scrollTop) + (!BrowserBar.offsetHeight && 0)) + 'px';
-            } else if (UMB.getCurrentBrowser() == 'ie' && UMB.getCurrentVersion() <= 6) {
-                // Fixed position IE6
-                UMB.attach(window, 'resize', function () {
-                    BrowserBar.style.width = (document.documentElement.clientWidth || document.body.clientWidth) + 'px';
-                });
-                BrowserBar.style.width = (document.documentElement.clientWidth || document.body.clientWidth) + 'px';
-                var bbTop = parseFloat(getComputedVal(body, 'marginTop')) + 40;
-                BrowserBar.style.top = '-' + bbTop + 'px';
-                BrowserBar.style.left = '-' + parseFloat(getComputedVal(body, 'marginLeft')) + 'px';
-                UMB.attach(window, 'scroll', function () {
-                    BrowserBar.style.top = ((document.documentElement.scrollTop || document.body.scrollTop) - bbTop) + 'px';
-                });
-                BrowserBar.style.top = ((document.documentElement.scrollTop || document.body.scrollTop) - bbTop) + 'px';
-            } else {
-                // Fixed position
-                BrowserBar.style.top = '0px';
-                BrowserBar.style.position = 'fixed';
-            }
-        }
-    };
+			if (!isFixed) {
+				// Body margin fix
+				UMB.attach(window, 'resize', function () {
+					BrowserBar.style.width = (document.documentElement.clientWidth || document.body.clientWidth) + 'px';
+				});
+				BrowserBar.style.width = (document.documentElement.clientWidth || document.body.clientWidth) + 'px';
+				BrowserBar.style.top = '-' + (parseFloat(getComputedVal(body, 'marginTop')) + 40) + 'px';
+				BrowserBar.style.left = '-' + parseFloat(getComputedVal(body, 'marginLeft')) + 'px';
+			}
+		}
+		if (isFixed) {
+			if ((UMB.getCurrentBrowser() == 'ie' && document.compatMode == 'BackCompat')) {
+				// Fixed position for Quirks mode
+				UMB.attach(window, 'scroll', function () {
+					BrowserBar.style.top = ((document.documentElement.scrollTop || document.body.scrollTop) + (!BrowserBar.offsetHeight && 0)) + 'px';
+				});
+				BrowserBar.style.top = ((document.documentElement.scrollTop || document.body.scrollTop) + (!BrowserBar.offsetHeight && 0)) + 'px';
+			} else if (UMB.getCurrentBrowser() == 'ie' && UMB.getCurrentVersion() <= 6) {
+				// Fixed position IE6
+				UMB.attach(window, 'resize', function () {
+					BrowserBar.style.width = (document.documentElement.clientWidth || document.body.clientWidth) + 'px';
+				});
+				BrowserBar.style.width = (document.documentElement.clientWidth || document.body.clientWidth) + 'px';
+				var bbTop = parseFloat(getComputedVal(body, 'marginTop')) + 40;
+				BrowserBar.style.top = '-' + bbTop + 'px';
+				BrowserBar.style.left = '-' + parseFloat(getComputedVal(body, 'marginLeft')) + 'px';
+				UMB.attach(window, 'scroll', function () {
+					BrowserBar.style.top = ((document.documentElement.scrollTop || document.body.scrollTop) - bbTop) + 'px';
+				});
+				BrowserBar.style.top = ((document.documentElement.scrollTop || document.body.scrollTop) - bbTop) + 'px';
+			} else {
+				// Fixed position
+				BrowserBar.style.top = '0px';
+				BrowserBar.style.position = 'fixed';
+			}
+		}
+	};
 
-    var hideBar = function () {
-        var body = document.getElementsByTagName('body')[0];
-        var BrowserBar = document.getElementById('BrowserBar');
+	var hideBar = function () {
+		var body = document.getElementsByTagName('body')[0];
+		var BrowserBar = document.getElementById('BrowserBar');
 
-        // Hide bar body only when BrowserBar is visible
-        if (getComputedVal(BrowserBar, 'display') !== 'block') {
-            return;
-        }
+		// Hide bar body only when BrowserBar is visible
+		if (getComputedVal(BrowserBar, 'display') !== 'block') {
+			return;
+		}
 
-        // Remove body class
-        body.className = body.className.replace(' umb-active', '');
+		// Remove body class
+		body.className = body.className.replace(' umb-active', '');
 
-        // BrowserBar
-        animate(BrowserBar, 'opacity', 0, 600, function () {
-            BrowserBar.style.display = 'none';
-        });
+		// BrowserBar
+		animate(BrowserBar, 'opacity', 0, 600, function () {
+			BrowserBar.style.display = 'none';
+		});
 
-        // IE Quirks workaround
-        if (UMB.getCurrentBrowser() == 'ie' && document.compatMode == 'BackCompat') {
-        } else {
-            animate(body, 'top', "-40", 300);
-        }
-    };
+		// IE Quirks workaround
+		if (UMB.getCurrentBrowser() == 'ie' && document.compatMode == 'BackCompat') {
+		} else {
+			animate(body, 'top', "-40", 300);
+		}
+	};
 
-    return {
+	return {
 
-        init: function () {
-            if (hasInit) {
-                return;
-            }
-            hasInit = true;
+		init: function () {
+			if (hasInit) {
+				return;
+			}
+			hasInit = true;
 
-            UMB.Widget.redraw();
-        },
+			UMB.Widget.redraw();
+		},
 
-        redraw: function () {
-            insertHtml();
-            prepareHtml();
-        },
+		redraw: function () {
+			insertHtml();
+			prepareHtml();
+		},
 
-        display: function () {
-            UMB.Widget.init();
-            showBar();
-        },
+		display: function () {
+			UMB.Widget.init();
+			showBar();
+		},
 
-        hide: function () {
-            UMB.Widget.init();
-            hideBar();
-        },
+		hide: function () {
+			UMB.Widget.init();
+			hideBar();
+		},
 
-        hidePersistent: function (days) {
-            days = days || 1;
-            setCookie('_umb', 'hide', days);
-            UMB.hideWidget();
-        }
+		hidePersistent: function (days) {
+			days = days || 1;
+			setCookie('_umb', 'hide', days);
+			UMB.hideWidget();
+		}
 
-    };
-}();const svg_address = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjgnIHdpZHRoPScyOCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTE0IDE3SDR2MmgxMHYtMnptNi04SDR2MmgxNlY5ek00IDE1aDE2di0ySDR2MnpNNCA1djJoMTZWNUg0eiIgLz4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPC9zdmc+IA==";
+	};
+}();
+const svg_address = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjgnIHdpZHRoPScyOCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTE0IDE3SDR2MmgxMHYtMnptNi04SDR2MmgxNlY5ek00IDE1aDE2di0ySDR2MnpNNCA1djJoMTZWNUg0eiIgLz4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPC9zdmc+IA==";
 const svg_copy = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIGhlaWdodD0nMjAnIHdpZHRoPScyMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZmlsbD0nbm9uZScgZD0iTTAgMGgyNHYyNEgweiIgLz4gPHBhdGggZmlsbD0nIzY5QjdDRicgZD0iTTE2IDFINGMtMS4xIDAtMiAuOS0yIDJ2MTRoMlYzaDEyVjF6bTMgNEg4Yy0xLjEgMC0yIC45LTIgMnYxNGMwIDEuMS45IDIgMiAyaDExYzEuMSAwIDItLjkgMi0yVjdjMC0xLjEtLjktMi0yLTJ6bTAgMTZIOFY3aDExdjE0eiIgLz4gPC9zdmc+IA==";
 const svg_share = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyNCcgaGVpZ2h0PScyNCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZD0iTTAgMGgyNHYyNEgweiIgZmlsbD0nbm9uZScvPiA8cGF0aCBkPSJNMTggMTYuMDhjLS43NiAwLTEuNDQuMy0xLjk2Ljc3TDguOTEgMTIuN2MuMDUtLjIzLjA5LS40Ni4wOS0uN3MtLjA0LS40Ny0uMDktLjdsNy4wNS00LjExYy41NC41IDEuMjUuODEgMi4wNC44MSAxLjY2IDAgMy0xLjM0IDMtM3MtMS4zNC0zLTMtMy0zIDEuMzQtMyAzYzAgLjI0LjA0LjQ3LjA5LjdMOC4wNCA5LjgxQzcuNSA5LjMxIDYuNzkgOSA2IDljLTEuNjYgMC0zIDEuMzQtMyAzczEuMzQgMyAzIDNjLjc5IDAgMS41LS4zMSAyLjA0LS44MWw3LjEyIDQuMTZjLS4wNS4yMS0uMDguNDMtLjA4LjY1IDAgMS42MSAxLjMxIDIuOTIgMi45MiAyLjkyIDEuNjEgMCAyLjkyLTEuMzEgMi45Mi0yLjkycy0xLjMxLTIuOTItMi45Mi0yLjkyeiIgZmlsbD0nIzY5YjdjZicvPiA8L3N2Zz4g";
 const svg_link = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMCIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCA0IDIyLjUgMTIiPiA8cGF0aCBkPSJtLTAuMDAzMTc3My0xLjVoMjR2MjRoLTI0eiIgZmlsbD0ibm9uZSIvPiA8cGF0aCBkPSJtMy4xNDMzIDEwYzAtMS41MjM4IDEuMzkxMi0yLjc2MjUgMy4xMDI2LTIuNzYyNWg0LjAwMzN2LTEuNjkzMWgtNC4wMDMzYy0yLjc2MjMgMC01LjAwNDEgMS45OTYxLTUuMDA0MSA0LjQ1NTYgMCAyLjQ1OTUgMi4yNDE5IDQuNDU1NiA1LjAwNDEgNC40NTU2aDQuMDAzM3YtMS42OTMxaC00LjAwMzNjLTEuNzExNCAwLTMuMTAyNi0xLjIzODctMy4xMDI2LTIuNzYyNXptNC4xMDM0IDAuODkxMTJoOC4wMDY2di0xLjc4MjJoLTguMDA2NnptOS4wMDc1LTUuMzQ2N2gtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMS43MTE0IDAgMy4xMDI2IDEuMjM4NyAzLjEwMjYgMi43NjI1IDAgMS41MjM4LTEuMzkxMiAyLjc2MjUtMy4xMDI2IDIuNzYyNWgtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMi43NjIzIDAgNS4wMDQxLTEuOTk2MSA1LjAwNDEtNC40NTU2IDAtMi40NTk1LTIuMjQxOS00LjQ1NTYtNS4wMDQxLTQuNDU1NnoiIGZpbGw9IiM2OWI3Y2YiIHN0cm9rZS13aWR0aD0iLjkiLz4gPC9zdmc+IA==";

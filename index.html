@@ -20,7 +20,7 @@
 ga('create', 'UA-96994409-1', 'auto');
 ga('send', 'pageview');
 </script>
-		<script src='https://browser.sentry-cdn.com/5.6.3/bundle.min.js' crossorigin='anonymous'
+		<script src='https://browser.sentry-cdn.com/5.7.0/bundle.min.js' integrity='sha384-pHnCJ3bbzJ+LzI19wAdyBvGAjJ5vNAC59uxeRpw5WpgkSlZUQstEADxkSbBnI95q' crossorigin='anonymous'
 ></script>
 		<script>Sentry.init({ dsn: 'https://67af341ea58c4424ab4af921f0583573@sentry.io/187322' });
 </script>
@@ -57,6 +57,63 @@ var _umb = {
 				safari: 29
 		}
 };
+var longpress = false;
+var presstimer = null;
+var longtarget = null;
+
+var cancel = function(e) {
+	if (presstimer !== null) {
+		clearTimeout(presstimer);
+		presstimer = null;
+	}
+
+	this.classList.remove('longpress');
+};
+
+var click = function(e) {
+	if (presstimer !== null) {
+		clearTimeout(presstimer);
+		presstimer = null;
+	}
+
+	this.classList.remove('longpress');
+
+	if (longpress) {
+		return false;
+	}
+
+	handleShareWCode();
+};
+
+var start = function(e) {
+
+	if (e.type === 'click' && e.button !== 0) {
+		return;
+	}
+
+	longpress = false;
+
+	this.classList.add('longpress');
+
+	if (presstimer === null) {
+		presstimer = setTimeout(function() {
+			showCopyWcodeMessage();
+			longpress = true;
+		}, 1000);
+	}
+
+	return false;
+};
+
+function addLongpressListener(node) {
+	node.addEventListener('mousedown', start);
+	node.addEventListener('touchstart', start);
+	node.addEventListener('click', click);
+	node.addEventListener('mouseout', cancel);
+	node.addEventListener('touchend', cancel);
+	node.addEventListener('touchleave', cancel);
+	node.addEventListener('touchcancel', cancel);
+}
 var pendingInitMap;
 var clickHandler;
 var map;
@@ -116,6 +173,7 @@ var gpId = '';
 var CURRENT_VERSION = 1;
 var initWCode = false;
 var initWCode_jumpToMap = false;
+
 // City
 var DEFAULT_WCODE = ['bengaluru', 'diesel', 'hall', 'planet'];
 var pendingCity = false;
@@ -126,6 +184,12 @@ var MESSAGE_LOADING = 'Loading ..';
 var LOCATION_PERMISSION_DENIED = "Location permission was denied. Click to point or retry with the locate button";
 
 var CITY_RANGE_RADIUS = 32.767;
+
+var init_map_mode = false;
+
+// QR
+var mode_preview = false;
+var qr_address_active_first = true;
 // var pendingLocate;
 function syncLocate(override_dnd) {
 	if (typeof google === 'object' && typeof google.maps === 'object' && typeof map == 'object') {
@@ -166,7 +230,7 @@ function syncCheckIncompatibleBrowserMessage() {
 
 #address_text_label {
 	font-family: 'Abel';
-  font-size: large;
+	font-size: large;
 	padding-top: 4px;
 	color: #69B7CF;
 }
@@ -285,7 +349,7 @@ button.border {
 	display: inline-block;
 	border-radius: 6px;
 	border-width: thin;
-	border-color: #e8e8e8;
+	border-color: #fbfbfb28;
 	border-style: solid;
 	padding: 2px;
 }
@@ -426,7 +490,8 @@ button.border {
 }
 
 .blur_background {
-	backdrop-filter: blur(8px)
+	backdrop-filter: blur(8px);
+	background-color: #fbfbfb60
 }
 
 .plain_background {
@@ -437,7 +502,7 @@ button.border {
 		#pac-input {
 			top: 100px !important;
 			left: -4px !important;
-			width: 310px !important;
+			width: 88% !important
 		}
 	
 		#logo {
@@ -451,6 +516,11 @@ button.border {
 			top: 168px !important;
 		}
 
+		#footer-content-container {
+			bottom: 14px;
+			font-size: 0.7em
+		}
+		
 }
 
 @media (max-width: 316px) {
@@ -468,12 +538,12 @@ button.border {
 
 /* latin */
 @font-face {
-  font-family: 'Roboto Condensed';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: local('Roboto Condensed'), local('RobotoCondensed-Regular'), local('sans-serif-condensed'), url(https://fonts.gstatic.com/s/robotocondensed/v17/ieVl2ZhZI2eCN5jzbjEETS9weq8-19K7DQk6YvM.woff2) format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+	font-family: 'Roboto Condensed';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: local('Roboto Condensed'), local('RobotoCondensed-Regular'), local('sans-serif-condensed'), url(https://fonts.gstatic.com/s/robotocondensed/v17/ieVl2ZhZI2eCN5jzbjEETS9weq8-19K7DQk6YvM.woff2) format('woff2');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 #infowindow-content .title {
 	font-weight: bold;
@@ -513,7 +583,7 @@ button.border {
 	left: 12px;
 	margin-left: auto;
 	margin-right: auto;
-	text-align: center;
+	text-align: center
 }
 
 .gm-style-iw-d {
@@ -522,12 +592,23 @@ button.border {
 
 #show_address_button {
 	width: 26px;
-	vertical-align: bottom;
+	vertical-align: bottom
+}
+
+.shield {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	z-index: 1;
 }
 
 #share_code_button {
+	position: relative;
 	width: 24px;
-	vertical-align: bottom;
+	display: inline-block;
+	vertical-align: bottom
 }
 
 #copy_link_button {
@@ -540,6 +621,10 @@ button.border {
 #external_map_button {
 	width: 28px;
 	vertical-align: bottom;
+}
+
+#infowindow_actions {
+	padding-left: 4px;
 }
 
 #infowindow_actions > * {
@@ -640,6 +725,17 @@ button.border {
 h2.message_dialog_label {
 	margin: 0.5em;
 }
+
+.message_dialog_body > p > span:first-child {
+	display: block;
+	color: #B5B5B5
+}
+
+.button_active {
+	color: white !important;
+	background: #69B7CF !important;
+	border-color: #69b7cf !important;
+}
 @media (max-width: 512px) {
 
 	.dialog_message_primary {
@@ -650,6 +746,19 @@ h2.message_dialog_label {
 		float: left;
 	}
 
+}
+.overlay {
+	left: 0px;
+	right: 0px;
+	top: 0px;
+	bottom: 0px;
+	z-index: 2;
+	overflow-y: auto;
+	color: rgba(100, 100, 100, 1);
+	background-color: rgba(100, 100, 100, 0.75);
+	position: absolute;
+	margin: auto;
+	text-align: center;
 }
 #wait_loader {
 	position: absolute;
@@ -734,6 +843,7 @@ h2.message_dialog_label {
 }
 #share_include_city, #share_jumto_map {
 	-webkit-appearance: checkbox !important
+	margin-left: 6px;
 }
 
 #copy_wcode_message_city_name {
@@ -753,6 +863,22 @@ h2.message_dialog_label {
 
 #share_link_button {
 	padding-top: 8px
+}
+
+#share_qr_button {
+	padding-right: 6px;
+}
+
+#qr_pre_title_main, #qr_pre_title_segment {
+	margin-left: 6px;
+	background-color: white;
+	color: #999999;
+	outline: 0;
+	outline-style: none;
+	border-top: 0;
+	border-left: none;
+	border-right: 0;
+	min-width: 202px;
 }
 #locate_right_message_body {
 	padding: 2px 16px 8px;
@@ -794,19 +920,6 @@ h2.message_dialog_label {
 	0% { transform: rotate(0deg); }
 	100% { transform: rotate(360deg); }
 }
-#overlay {
-	left: 0px;
-	right: 0px;
-	top: 0px;
-	bottom: 0px;
-	z-index: 2;
-	color: rgba(100, 100, 100, 1);
-	background-color: rgba(100, 100, 100, 0.75);
-	position: absolute;
-	margin: auto;
-	text-align: center;
-}
-
 #overlay_message {
 	position: relative;
 	font-family: Abel;
@@ -868,6 +981,167 @@ h2.message_dialog_label {
 	#overlay {
 		background-color: white;
 	}
+}
+@media print {
+	
+	html {
+		background: none;
+	}
+	
+	body > *:not(.section-to-print) {
+		display: none;
+	}
+	
+	.section-to-print, .section-to-print * {
+		visibility: visible;
+	}
+	
+	.section-to-print {
+		position: absolute !important;
+		left: 0;
+		top: 0;
+	}
+	
+	.section-to-not-print {
+		display: none;
+	}
+	
+}
+#qr_body {
+	position: relative;
+	border-top: 6px solid #69b7cf;
+	font-family: Abel;
+	margin: 0 auto;
+	text-align: left;
+	background-color: #FFFFFF;
+	color: #999999;
+	width: 420px;
+}
+
+#qr_label {
+	padding-top: 20px;
+	padding-bottom: 12px;
+}
+
+#qr_label > div {
+	display: inline-block;
+}
+
+#qr_title_container {
+	margin-top: 6px;
+}
+
+#qr_title_main, #qr_title_segment, #qr_address {
+	background-color: white;
+	color: #999999;
+	outline: 0;
+	outline-style: none;
+	border-top: none;
+	border-left: none;
+	border-right: none;
+	border-bottom-style: inset;
+	border-bottom-width: 2px;
+	min-width: 240px;
+}
+
+#qr_title_main {
+	font-size: larger;
+}
+
+#qr_title_segment {
+	font-size: large;
+}
+
+#qr_wcode_right {
+	padding-left: 10px;
+}
+
+#qr_code {
+	margin-top: 12px;
+	margin-bottom: 4px;
+}
+
+#qr_code > div {
+	position: absolute;
+	width: 300px;
+	height: 300px;
+	margin-left: 35px;
+	margin-top: 25px;
+}
+
+#qr_code > img {
+	position: relative;
+	width: 380px;
+	height: 380px;
+}
+
+.preview#qr_title_main, .preview#qr_title_segment, .preview#qr_address {
+	border-bottom: 0;
+	text-align: center;
+}
+
+#qr_logo_wcode > .image > svg {
+	height: 60px;
+}
+
+#qr_logo_location > .image > svg {
+	width: 120px;
+	height: 34px;
+	padding-left: 18px;
+}
+
+#qr_wcode {
+	padding-top: 20px;
+}
+
+#qr_image {
+	margin-left: 0px;
+}
+
+#qr_sticker_title {
+	width: 188px;
+}
+
+#qr_sticker_title_segment {
+	width: 188px;	
+}
+
+#qr_label > a {
+	text-decoration: none;
+}
+
+#qr_wcode_container {
+	max-width: 240px;
+}
+
+#qr_wcode_left {
+	text-align: left;
+}
+
+#qr_wcode_code {
+	font-size: x-large;
+}
+
+#qr_address {
+	margin: 0 66px 20px 66px;
+	text-align: left;
+}
+
+#qr_address.initial {
+	margin-left: 88px !important;
+	margin-right: 88px !important;
+}
+
+#qr_webapp_url {
+	color: #ffffff;
+	background-color: #69B7CF;
+	font-size: large;
+	padding-top: 7px;
+	padding-bottom: 10px;
+}
+
+#qr_webapp_url > div {
+	margin-left: -30px
 }
 #suggestion_result {
 	position: absolute;
@@ -1031,6 +1305,7 @@ h2.message_dialog_label {
 	</div>
 	<div class='message_dialog_body'>
 		<p>
+			<span>Text</span>
 			<input id='share_include_city' type='checkbox'>
 			include 
 			<span id='copy_wcode_message_city_name'></span>
@@ -1038,11 +1313,22 @@ h2.message_dialog_label {
 				<img id='share_copy_button' class="center control" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4gPHN2ZyB3aWR0aD0iMzAiIGhlaWdodD0iMTgiIHZlcnNpb249IjEuMSIgdmlld0JveD0iLTIwIC0yOCAxNjMuNjQgODEuODE4IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPiA8ZyB0cmFuc2Zvcm09Im1hdHJpeCgxLjAxMzEgMCAwIDEuMDEzMSAzNi4wMzQgLTE2LjQ3MSkiPiA8cGF0aCBkPSJtLTIwLjggNzMuOS0zMS4yLTg5LjhoOC41bDMxLjEgODkuOHoiIGZpbGw9IiNkOWQ5ZDkiLz4gPGcgdHJhbnNmb3JtPSJtYXRyaXgoLjk5OTgyIDAgMCAuOTk5ODIgLS41NzcyNyAuMDEwNzA5KSI+IDxwYXRoIGQ9Im0tMy42IDY2LjEtMjUuMi03Mi44aDEzLjVsMjUuMSA3Mi44eiIgZmlsbD0iIzY5YjdjZiIvPiA8cGF0aCBkPSJtMjYuMyAxMi42LTE1LjIgNDYuOS01LjctMTguNiAxNS4yLTQ3LjZoMTIuNmwxNy4xIDUxIDE4LjEtNTFoMTMuNGwtMjUuMyA3Mi44aC0xMi42eiIgZmlsbD0iIzY5YjdjZiIvPiA8L2c+IDxwYXRoIGQ9Im05NC40LTE1LjloOC41bC0zMC43IDg5LjhoLTguNXoiIGZpbGw9IiNkOWQ5ZDkiLz4gPC9nPiA8L3N2Zz4g" >
 			</span>
 		</p>
+		<hr>
 		<p>
+			<span>Link</span>
 			<input id='share_jumto_map' type='checkbox'>
 			jump directly to map
 			<span class='message_dialog_control_right'>
 				<img id='share_link_button' class="center control" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMCIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCA0IDIyLjUgMTIiPiA8cGF0aCBkPSJtLTAuMDAzMTc3My0xLjVoMjR2MjRoLTI0eiIgZmlsbD0ibm9uZSIvPiA8cGF0aCBkPSJtMy4xNDMzIDEwYzAtMS41MjM4IDEuMzkxMi0yLjc2MjUgMy4xMDI2LTIuNzYyNWg0LjAwMzN2LTEuNjkzMWgtNC4wMDMzYy0yLjc2MjMgMC01LjAwNDEgMS45OTYxLTUuMDA0MSA0LjQ1NTYgMCAyLjQ1OTUgMi4yNDE5IDQuNDU1NiA1LjAwNDEgNC40NTU2aDQuMDAzM3YtMS42OTMxaC00LjAwMzNjLTEuNzExNCAwLTMuMTAyNi0xLjIzODctMy4xMDI2LTIuNzYyNXptNC4xMDM0IDAuODkxMTJoOC4wMDY2di0xLjc4MjJoLTguMDA2NnptOS4wMDc1LTUuMzQ2N2gtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMS43MTE0IDAgMy4xMDI2IDEuMjM4NyAzLjEwMjYgMi43NjI1IDAgMS41MjM4LTEuMzkxMiAyLjc2MjUtMy4xMDI2IDIuNzYyNWgtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMi43NjIzIDAgNS4wMDQxLTEuOTk2MSA1LjAwNDEtNC40NTU2IDAtMi40NTk1LTIuMjQxOS00LjQ1NTYtNS4wMDQxLTQuNDU1NnoiIGZpbGw9IiM2OWI3Y2YiIHN0cm9rZS13aWR0aD0iLjkiLz4gPC9zdmc+IA==" >
+			</span>
+		</p>
+		<hr>
+		<p>
+			<span>QR</span>
+			<input id='qr_pre_title_main' type='text' placeholder="Title e.g. Taj Mahal (optional)">
+			<input id='qr_pre_title_segment' type='text' placeholder="Section e.g. West gate (optional)">
+			<span class="message_dialog_control_right">
+				<img id='share_qr_button' class="center control" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZlcnNpb249IjEuMSIgdmlld0JveD0iMCAwIDYuMzUgNi4zNSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczpjYz0iaHR0cDovL2NyZWF0aXZlY29tbW9ucy5vcmcvbnMjIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiPiA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSguMDIzNjIzNSAtMjkwLjY4MSkiPiA8cmVjdCBpZD0icmVjdDM3MzgiIHg9Ii0uMDIzNjIzNSIgeT0iMjkwLjY4MSIgd2lkdGg9IjIuMTE2NjciIGhlaWdodD0iMi4xMTY2NyIgc3R5bGU9ImZpbGwtb3BhY2l0eTouOTQxMTc2O2ZpbGw6IzY5YjdjZjtzdHJva2Utd2lkdGg6LjI2NDU4MyIvPiA8cmVjdCB4PSIyLjgwODQyIiB5PSIyOTMuNTQxIiB3aWR0aD0iMS4zMzY2OCIgaGVpZ2h0PSIxLjMzNjY4IiBzdHlsZT0iZmlsbC1vcGFjaXR5Oi45NDExNzY7ZmlsbDojNjliN2NmO3N0cm9rZS13aWR0aDouMTY3MDg0Ii8+IDx1c2UgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNC4yMzIyMykiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHhsaW5rOmhyZWY9IiNyZWN0MzczOCIvPiA8dXNlIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgNC4yMzE4KSIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgeGxpbms6aHJlZj0iI3JlY3QzNzM4Ii8+IDwvZz4gPC9zdmc+IA==" >
 			</span>
 		</p>
 	</div>
@@ -1093,7 +1379,7 @@ h2.message_dialog_label {
 		</div>
 	</div>
 </div>
-<div id='overlay' class='hide'>
+<div id='overlay' class="overlay hide">
 	<div id='overlay_message'>
 		<div id='overlay_message_close' class="message_dialog_close control">
 			<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
@@ -1154,7 +1440,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span>
-	2019 Sep 15 - 23:27:27			</span>
+	2019 Oct 24 - 11:17:17			</span> (UTC)
 		</div>
 	</div>
 	<div>
@@ -1198,10 +1484,119 @@ h2.message_dialog_label {
 		</div>
 	</div>
 </div>
+<div id='qr' class="overlay hide">
+	<div id='qr_body'>
+		<div id='qr_close' class="message_dialog_close control">
+			<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+	 height='22' width='22' viewBox="0 0 24 24">
+	<path fill='#CECECE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+	<path fill='none' d="M0 0h24v24H0z" />
+</svg>
+</span>
+		</div>
+		<div id='qr_label' class='center'>
+			<div id=qr_logo_wcode tabindex='1'>
+				<span class='image'><svg xmlns='http://www.w3.org/2000/svg' x='0px' y='0px'
+	 viewBox="-55 -18 306 100">
+	<g transform="matrix(0.2476154,0,0,0.2476154,3.0703645,-26.736306)">
+		<path fill='#69B7CF' d="M549.9,282.2h-19.4c-0.3-4.5-1.5-8.6-3.5-12.2
+			c-2.1-3.7-4.8-6.8-8.2-9.4c-3.4-2.6-7.4-4.6-12-5.9c-4.6-1.4-9.5-2.1-14.8-2.1c-7.2,0-13.7,1.3-19.5,3.8
+			c-5.8,2.5-10.8,6.2-14.9,11.1c-4.1,4.9-7.3,10.9-9.5,18.1c-2.2,7.2-3.3,15.5-3.3,24.8c0,9.3,1.1,17.5,3.3,24.7
+			c2.2,7.2,5.3,13.2,9.4,18.1c4,4.9,8.9,8.7,14.7,11.3c5.8,2.6,12.2,3.9,19.3,3.9c11.3,0,20.3-2.7,27.3-8.2
+			c6.9-5.4,10.8-13.3,11.7-23.6h19.4c-0.7,7.6-2.5,14.4-5.7,20.3c-3.1,5.9-7.2,10.9-12.3,15c-5.1,4.1-11,7.2-17.9,9.4
+			c-6.8,2.2-14.2,3.3-22.2,3.3c-10.2,0-19.5-1.7-27.7-5.2c-8.2-3.5-15.2-8.4-21-14.9c-5.8-6.4-10.2-14.2-13.3-23.4
+			c-3.1-9.2-4.7-19.4-4.7-30.7c0-11.3,1.6-21.5,4.7-30.7c3.2-9.2,7.6-17,13.4-23.4c5.8-6.4,12.8-11.4,21-14.9
+			c8.2-3.5,17.4-5.3,27.5-5.3c7.6,0,14.8,1.1,21.6,3.3c6.8,2.2,12.7,5.3,17.9,9.4c5.2,4.1,9.4,8.9,12.7,14.6
+			C547.2,269,549.2,275.3,549.9,282.2z" />
+		<path fill='#69B7CF' d="M638.4,236.3c9.9,0,19,1.8,27.4,5.3
+			c8.4,3.6,15.6,8.6,21.7,15c6.1,6.5,10.8,14.2,14.2,23.4c3.4,9.1,5.1,19.2,5.1,30.3c0,11-1.7,21-5,30.1c-3.3,9.1-8.1,16.9-14.2,23.5
+			c-6.1,6.6-13.3,11.7-21.7,15.2c-8.3,3.6-17.5,5.4-27.5,5.4c-10.1,0-19.3-1.8-27.7-5.3c-8.4-3.6-15.6-8.6-21.7-15.1
+			c-6.1-6.5-10.8-14.3-14.2-23.5c-3.4-9.1-5.1-19.2-5.1-30.3c0-11.2,1.7-21.3,5.1-30.5c3.4-9.1,8.2-16.9,14.3-23.4
+			c6.1-6.5,13.4-11.4,21.7-14.9C619.2,238.1,628.4,236.3,638.4,236.3z M638.2,368.3c7.1,0,13.7-1.3,19.7-4c6-2.6,11.2-6.5,15.6-11.4
+			c4.4-5,7.7-11,10.2-18.2c2.4-7.2,3.6-15.3,3.6-24.3c0-9.2-1.2-17.4-3.7-24.5c-2.5-7.1-5.9-13.1-10.2-18.1
+			c-4.3-4.9-9.5-8.7-15.4-11.2c-6-2.5-12.4-3.8-19.4-3.8c-7,0-13.6,1.3-19.7,3.9c-6.1,2.6-11.3,6.4-15.6,11.3
+			c-4.3,4.9-7.7,11-10.2,18.1c-2.5,7.1-3.7,15.2-3.7,24.3c0,9.1,1.2,17.2,3.6,24.3c2.4,7.2,5.8,13.2,10.1,18.2
+			c4.4,5,9.5,8.8,15.5,11.4C624.5,367,631,368.3,638.2,368.3z" />
+		<path fill='#69B7CF' d="M850.7,309.6c0,48.3-24.4,72.4-73.1,72.4h-45.4V238.8h45.4
+			C826.4,238.8,850.7,262.4,850.7,309.6z M831.1,309.6c0-8.4-0.8-15.9-2.5-22.5c-1.7-6.6-4.5-12.2-8.5-16.9c-4-4.6-9.5-8.2-16.5-10.7
+			c-7-2.5-15.7-3.7-26.1-3.7h-26.2V365h26.2c10.5,0,19.1-1.3,26-3.8c6.9-2.5,12.4-6.2,16.5-10.9c4.1-4.7,7-10.5,8.7-17.4
+			C830.3,326.1,831.1,318.3,831.1,309.6z" />
+		<path fill='#69B7CF' d="M983.8,382H876.8 V238.8h106.9l0,17h-88v43.6h57.6l21.7,17.1h-79.3V365h88L983.8,382z" />
+	</g>
+	<g transform="matrix(1.0131229,0,0,1.0131229,1.9999995,2.6140126)">
+		<g>
+			<path fill='#D9D9D9' d="M-20.8,73.9L-52-15.9l8.5,0 l31.1,89.8H-20.8z" />
+		</g>
+		<g transform="matrix(0.99981532,0,0,0.99981532,-0.57726526,0.01070876)">
+			<g>
+				<path fill='#69B7CF' d="M-3.6,66.1L-28.8-6.7h13.5 L9.8,66.1H-3.6z" />
+			</g>
+			<g>
+				<path fill='#69B7CF' d="M26.3,12.6L11.1,59.5 L5.4,40.9L20.6-6.7h12.6l17.1,51l18.1-51h13.4L56.5,66.1H43.9L26.3,12.6z" />
+			</g>
+		</g>
+		<g>
+			<path fill='#D9D9D9' d="M94.4-15.9h8.5L72.2,73.9 h-8.5L94.4-15.9z" />
+		</g>
+	</g>
+</svg>
+</span>
+			</div>
+			<div id=qr_logo_location tabindex='2'>
+				<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
+	 width="65.4297" height="9.78525" viewBox="40 0 65.4297 9.78525">
+	<g transform="translate(72.7146,9.61909)" style="fill:#69b7cf" aria-label="LOCATION">
+		<path d="m-26.865 0h-5.8496v-9.4434h1.25v8.3203h4.5996z"/>
+		<path d="m-21.279-9.6094q.97656 0 1.8066.35156t1.4258.99609q.60547.63477.9375 1.543.3418.89844.3418 1.9922 0 1.084-.33203 1.9824-.33203.89844-.9375 1.5527-.5957.64453-1.4258 1.0059-.82031.35156-1.8164.35156t-1.8262-.35156q-.83008-.35156-1.4355-.99609-.5957-.64453-.92773-1.543-.33203-.9082-.33203-2.002 0-1.1035.33203-2.002.3418-.9082.94727-1.543.60547-.64453 1.4258-.98633.83008-.35156 1.8164-.35156zm-.0098 8.7012q.70312 0 1.2988-.25391.5957-.26367 1.0254-.75195.42969-.49805.66406-1.2012.24414-.71289.24414-1.6113 0-.9082-.24414-1.6113-.24414-.70312-.67383-1.1914-.41992-.48828-1.0156-.74219-.58594-.25391-1.2695-.25391-.70312 0-1.3086.26367-.5957.25391-1.0254.74219-.42969.48828-.67383 1.1914t-.24414 1.6016.23438 1.6113q.24414.70312.67383 1.2012.42969.48828 1.0156.75195.5957.25391 1.2988.25391z"/>
+		<path d="m-7.3047-6.582h-1.2793q-.029297-.44922-.23438-.81055-.20508-.36133-.54688-.61523-.33203-.25391-.79102-.39062-.44922-.13672-.9668-.13672-.71289 0-1.2891.25391-.57617.24414-.98633.73242-.40039.47852-.625 1.1914-.21484.71289-.21484 1.6309t.21484 1.6309q.22461.70312.625 1.1914t.9668.74219q.57617.25391 1.2793.25391 1.1133 0 1.7969-.53711.68359-.53711.77148-1.5527h1.2793q-.068359.75195-.38086 1.3379-.30273.58594-.81055.99609-.49805.40039-1.1719.61523-.67383.21484-1.4648.21484-1.0156 0-1.8262-.3418-.81055-.35156-1.3867-.98633-.56641-.63477-.87891-1.543-.30274-.9082-.30274-2.0215t.3125-2.0215.87891-1.543q.57617-.63477 1.3867-.97656.81055-.35156 1.8164-.35156.75195 0 1.416.21484.67383.21484 1.1816.61523.51758.40039.83984.9668.32227.55664.39062 1.2402z"/>
+		<path d="m-.67383-3.8672-1.6699-4.375-1.582 4.375zm2.8711 3.8672h-1.416l-1.0938-2.8711h-3.9551l-1.0449 2.8711h-1.3184l3.623-9.4434h1.3574z"/>
+		<path d="m9.9805-8.3203h-3.125v8.3203h-1.25v-8.3203h-3.1055v-1.123h7.4805z"/>
+		<path d="m12.764 0h-1.25v-9.4434h1.25z"/>
+		<path d="m19.111-9.6094q.97656 0 1.8066.35156t1.4258.99609q.60547.63477.9375 1.543.3418.89844.3418 1.9922 0 1.084-.33203 1.9824-.33203.89844-.9375 1.5527-.5957.64453-1.4258 1.0059-.82031.35156-1.8164.35156t-1.8262-.35156q-.83008-.35156-1.4355-.99609-.5957-.64453-.92773-1.543-.33203-.9082-.33203-2.002 0-1.1035.33203-2.002.3418-.9082.94727-1.543.60547-.64453 1.4258-.98633.83008-.35156 1.8164-.35156zm-.0098 8.7012q.70312 0 1.2988-.25391.5957-.26367 1.0254-.75195.42969-.49805.66406-1.2012.24414-.71289.24414-1.6113 0-.9082-.24414-1.6113-.24414-.70312-.67383-1.1914-.41992-.48828-1.0156-.74219-.58594-.25391-1.2695-.25391-.70312 0-1.3086.26367-.5957.25391-1.0254.74219-.42969.48828-.67383 1.1914t-.24414 1.6016.23438 1.6113q.24414.70312.67383 1.2012.42969.48828 1.0156.75195.5957.25391 1.2988.25391z"/>
+		<path d="m32.715 0h-1.2793l-4.9609-7.4512v7.4512h-1.1816v-9.4434h1.2891l4.9414 7.4609v-7.4609h1.1914z"/>
+	</g>
+</svg>
+</span>
+			</div>
+		</div>
+		<div id='qr_title_container' class='center'>
+			<input id='qr_title_main' type='text' placeholder="&nbsp;&nbsp;Title (optional)">
+			<input id='qr_title_segment' type='text' placeholder="&nbsp;&nbsp;Segment (optional)">
+		</div>
+		<div id='qr_wcode'>
+			<div id='qr_wcode_container' class='center'>
+				<div id='qr_wcode_left'>
+					<span class='slash'>\</span>
+					<span class='infowindow_code' id='qr_wcode_city'></span>
+				</div>
+				<div id='qr_wcode_right'>
+					<span class='infowindow_code' id='qr_wcode_code'></span>
+					<span class='slash'>/</span>
+				</div>
+			</div>
+		</div>
+		<div id='qr_code' class='center'>
+			<div id='qr_code_loader' class='loader'></div>
+			<img id='qr_image'>
+		</div>
+		<div id='qr_address_container' class='center'>
+			<div id='qr_address' class='initial' contentEditable>&nbsp;&nbsp;Address (optional)</div>
+		</div>
+		<div>
+			<div id='qr_webapp_url' class='center'>
+				<div>location.wcodes.org</div>
+			</div>
+		</div>
+		<div class="center message_dialog_control section-to-not-print">
+			<button id='qr_preview' class='border' type='button'>Preview</button>
+			<button id='qr_print' class='border' type='button'>Print</button>
+		</div>
+	</div>
+</div>
 <div id='map'></div>
 <div id='wait_loader'></div>
-<div id='logo' class='blur_background'>
-	<a id=logo_wcode href='//wcodes.org' tabindex='1'>
+<div id='logo'>
+	<a id=logo_wcode class='blur_background' href='//wcodes.org' tabindex='1'>
 		<span class='image'><svg xmlns='http://www.w3.org/2000/svg' x='0px' y='0px'
 	 viewBox="-55 -18 306 100">
 	<g transform="matrix(0.2476154,0,0,0.2476154,3.0703645,-26.736306)">
@@ -1247,7 +1642,7 @@ h2.message_dialog_label {
 	</g>
 </svg>
 </span>
-	</a><a id=logo_location href='//location.wcodes.org' tabindex='2'>
+	</a><a id=logo_location class='blur_background' href='//location.wcodes.org' tabindex='2'>
 		<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
 	 viewBox="0 0 152 8">
 	<g transform="translate(78,8)" fill="#69b7cf" aria-label="LOCATION">
@@ -1316,9 +1711,9 @@ h2.message_dialog_label {
 		<span class='address_text_button_spacer'></span>
 	</div>
 </div>
+<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-database.js"></script>
 	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyCYD7Q0f4ZR0cH0EOi29wVV2Edgb_j5i_s&libraries=places&callback=syncInitMap' async defer></script></head>
-	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-app.js"></script>
-	<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-database.js"></script>
 	<script src="/geofire.min.js"></script>
 </body>
 </html>
