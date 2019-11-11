@@ -25,6 +25,53 @@ ga('send', 'pageview');
 		<script>Sentry.init({ dsn: 'https://67af341ea58c4424ab4af921f0583573@sentry.io/187322' });
 </script>
 	<script>
+function getAddressCity(address_components) {
+	
+	var found_city_i;
+	var found_group_i;
+	var found_country_i;
+	for(var i = address_components.length-1; i >= 0; i--) {
+		if(address_components[i].types.includes('locality')) {
+			found_city_i = i;
+			break;
+		} else if (address_components[i].types.includes('administrative_area_level_1')) {
+			found_group_i = i;
+			found_city_i = i;
+		} else if (address_components[i].types.includes('administrative_area_level_2')) {
+			found_city_i = i;
+		} else if ( found_city_i == null && (address_components[i].types.includes('sublocality') || address_components[i].types.includes('sublocality_level_1')) ) {
+			found_city_i = i;
+		} else if (address_components[i].types.includes('country')) {
+			found_country_i = i;
+		}
+	}
+	
+	var gp_id;
+	var city_lat;
+	var city_lng;
+	var city_name;
+	var city_accent;
+	if(found_city_i != null) {
+		gp_id = address_components[found_city_i].place_id;
+		city_lat = address_components[found_city_i].geometry['location']['lat']();
+		city_lng = address_components[found_city_i].geometry['location']['lng']();
+		city_name = address_components[found_city_i].address_components[0].short_name;
+		city_accent = address_components[found_city_i].address_components[0].long_name;
+	}
+	var group = found_group_i != null? address_components[found_group_i].address_components[0].long_name : null;
+	var country = found_country_i != null? address_components[found_country_i].address_components[0].long_name : null;
+
+	return {
+		gp_id: gp_id,
+		city_lat: city_lat,
+		city_lng: city_lng,
+		city_name: city_name,
+		city_accent: city_accent,
+		group: group,
+		country: country
+	};
+	
+}
 // .\Script
 var DEFAULT_LATLNG = {lat: -34.397, lng: 150.644};
 var DEFAULT_INIT_ZOOM = 2;
@@ -99,7 +146,7 @@ var start = function(e) {
 		presstimer = setTimeout(function() {
 			showCopyWcodeMessage();
 			longpress = true;
-		}, 1000);
+		}, 500);
 	}
 
 	return false;
@@ -187,9 +234,22 @@ var CITY_RANGE_RADIUS = 32.767;
 
 var init_map_mode = false;
 
+//Location
+var location_button_begin_time;
+var location_button_PRESS_THRESHOLD = 500;
+var locating = false;
+var locate_button_pressed = false;
+var watch_location_timer;
+var watch_location_id;
+
 // QR
 var mode_preview = false;
 var qr_address_active_first = true;
+var mode_preview_activated = false;
+
+// Notification
+var NOTIFICATION_DURATION_DEFAULT = 2500;
+var NOTIFICATION_DURATION_LONG = 10000;
 // var pendingLocate;
 function syncLocate(override_dnd) {
 	if (typeof google === 'object' && typeof google.maps === 'object' && typeof map == 'object') {
@@ -383,6 +443,8 @@ button.border {
 	text-overflow: ellipsis;
 	width: 400px;
 	box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
+	border-top-left-radius: 5px;
+	border-bottom-left-radius: 5px;
 }
 
 #pac-input:focus {
@@ -810,6 +872,46 @@ h2.message_dialog_label {
 }
 	</style>
 	<style>
+#accuracy_container {
+	bottom: 88px;
+	z-index: 1;
+}
+
+#accuracy_container > div {
+	padding: 4px 0 4px 12px;
+	background: rgba(237, 240, 233, 0.75);
+	border-radius: 25px;
+	color: #707070;
+	border: 1px solid #DDDDDD;
+	text-align: center;
+	font-size: large;
+	display: inline-block;
+	line-height: 30px;
+}
+
+#accuracy_container.highlight > div {
+	padding-right: 12px;
+	background-color: #FFFFFF;
+}
+
+#accuracy_meter {
+	font-family: monospace;
+}
+
+.highlight #accuracy_meter {
+	font-weight: bold;
+}
+
+#proceed_button {
+	box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
+	color: #69B7CF;
+	font-family: Roboto, Arial, sans-serif;
+	font-size: 0.9375em;
+	background-color: rgb(255, 255, 255);
+	padding: 8px 12px;
+	border: none;
+	border-radius: 28px;	
+}
 #choose_city_message {
 	position: absolute;
 	left: 0;
@@ -842,7 +944,7 @@ h2.message_dialog_label {
 	margin-bottom: 10px;
 }
 #share_include_city, #share_jumto_map {
-	-webkit-appearance: checkbox !important
+	-webkit-appearance: checkbox !important;
 	margin-left: 6px;
 }
 
@@ -869,8 +971,8 @@ h2.message_dialog_label {
 	padding-right: 6px;
 }
 
-#qr_pre_title_main, #qr_pre_title_segment {
-	margin-left: 6px;
+#qr_pre_title_main {
+	margin-left: 8px;
 	background-color: white;
 	color: #999999;
 	outline: 0;
@@ -984,25 +1086,25 @@ h2.message_dialog_label {
 }
 @media print {
 	
-	html {
+	html .print {
 		background: none;
 	}
 	
-	body > *:not(.section-to-print) {
+	body.print > *:not(.section-to-print) {
 		display: none;
 	}
 	
-	.section-to-print, .section-to-print * {
+	.print .section-to-print, .print .section-to-print * {
 		visibility: visible;
 	}
 	
-	.section-to-print {
+	.print .section-to-print {
 		position: absolute !important;
 		left: 0;
 		top: 0;
 	}
 	
-	.section-to-not-print {
+	.print .section-to-not-print {
 		display: none;
 	}
 	
@@ -1061,41 +1163,17 @@ h2.message_dialog_label {
 	margin-bottom: 4px;
 }
 
-#qr_code > div {
-	position: absolute;
-	width: 300px;
-	height: 300px;
-	margin-left: 35px;
-	margin-top: 25px;
-}
-
-#qr_code > img {
-	position: relative;
-	width: 380px;
-	height: 380px;
-}
-
 .preview#qr_title_main, .preview#qr_title_segment, .preview#qr_address {
 	border-bottom: 0;
 	text-align: center;
 }
 
-#qr_logo_wcode > .image > svg {
-	height: 60px;
-}
-
-#qr_logo_location > .image > svg {
-	width: 120px;
-	height: 34px;
+#qr_logo_location > .image {
 	padding-left: 18px;
 }
 
 #qr_wcode {
 	padding-top: 20px;
-}
-
-#qr_image {
-	margin-left: 0px;
 }
 
 #qr_sticker_title {
@@ -1143,6 +1221,13 @@ h2.message_dialog_label {
 #qr_webapp_url > div {
 	margin-left: -30px
 }
+@media print {
+
+	#qr_webapp_url {
+		-webkit-print-color-adjust: exact;
+	}
+
+}
 #suggestion_result {
 	position: absolute;
 	top: 8px;
@@ -1173,7 +1258,8 @@ h2.message_dialog_label {
 	background-color: rgb(255, 255, 255);
 	padding: 8px 10px;
 	border: none;
-	border-radius: 2px;
+	border-top-right-radius: 5px;
+	border-bottom-right-radius: 5px;
 }
 
 #info {
@@ -1207,7 +1293,7 @@ h2.message_dialog_label {
 	background-color: rgb(255, 255, 255);
 	padding: 8px 4px;
 	border: none;
-	border-radius: 2px;
+	border-radius: 22px;
 }
 
 #location_button {
@@ -1325,9 +1411,8 @@ h2.message_dialog_label {
 		<hr>
 		<p>
 			<span>QR</span>
-			<input id='qr_pre_title_main' type='text' placeholder="Title e.g. Taj Mahal (optional)">
-			<input id='qr_pre_title_segment' type='text' placeholder="Section e.g. West gate (optional)">
-			<span class="message_dialog_control_right">
+			<input id='qr_pre_title_main' type='text' placeholder="&nbsp;Title e.g. Taj Mahal (optional)">
+			<span class='message_dialog_control_right'>
 				<img id='share_qr_button' class="center control" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZlcnNpb249IjEuMSIgdmlld0JveD0iMCAwIDYuMzUgNi4zNSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczpjYz0iaHR0cDovL2NyZWF0aXZlY29tbW9ucy5vcmcvbnMjIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiPiA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSguMDIzNjIzNSAtMjkwLjY4MSkiPiA8cmVjdCBpZD0icmVjdDM3MzgiIHg9Ii0uMDIzNjIzNSIgeT0iMjkwLjY4MSIgd2lkdGg9IjIuMTE2NjciIGhlaWdodD0iMi4xMTY2NyIgc3R5bGU9ImZpbGwtb3BhY2l0eTouOTQxMTc2O2ZpbGw6IzY5YjdjZjtzdHJva2Utd2lkdGg6LjI2NDU4MyIvPiA8cmVjdCB4PSIyLjgwODQyIiB5PSIyOTMuNTQxIiB3aWR0aD0iMS4zMzY2OCIgaGVpZ2h0PSIxLjMzNjY4IiBzdHlsZT0iZmlsbC1vcGFjaXR5Oi45NDExNzY7ZmlsbDojNjliN2NmO3N0cm9rZS13aWR0aDouMTY3MDg0Ii8+IDx1c2UgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNC4yMzIyMykiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHhsaW5rOmhyZWY9IiNyZWN0MzczOCIvPiA8dXNlIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgNC4yMzE4KSIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgeGxpbms6aHJlZj0iI3JlY3QzNzM4Ii8+IDwvZz4gPC9zdmc+IA==" >
 			</span>
 		</p>
@@ -1440,7 +1525,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span>
-	2019 Oct 24 - 11:17:17			</span> (UTC)
+	2019 Nov 11 - 15:01:07			</span> (UTC)
 		</div>
 	</div>
 	<div>
@@ -1496,7 +1581,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='qr_label' class='center'>
 			<div id=qr_logo_wcode tabindex='1'>
-				<span class='image'><svg xmlns='http://www.w3.org/2000/svg' x='0px' y='0px'
+				<span class='image'><svg xmlns='http://www.w3.org/2000/svg' width='184' height='60'
 	 viewBox="-55 -18 306 100">
 	<g transform="matrix(0.2476154,0,0,0.2476154,3.0703645,-26.736306)">
 		<path fill='#69B7CF' d="M549.9,282.2h-19.4c-0.3-4.5-1.5-8.6-3.5-12.2
@@ -1543,8 +1628,8 @@ h2.message_dialog_label {
 </span>
 			</div>
 			<div id=qr_logo_location tabindex='2'>
-				<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
-	 width="65.4297" height="9.78525" viewBox="40 0 65.4297 9.78525">
+				<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+	 width='120' height='34' viewBox="40 0 65.4297 9.78525">
 	<g transform="translate(72.7146,9.61909)" style="fill:#69b7cf" aria-label="LOCATION">
 		<path d="m-26.865 0h-5.8496v-9.4434h1.25v8.3203h4.5996z"/>
 		<path d="m-21.279-9.6094q.97656 0 1.8066.35156t1.4258.99609q.60547.63477.9375 1.543.3418.89844.3418 1.9922 0 1.084-.33203 1.9824-.33203.89844-.9375 1.5527-.5957.64453-1.4258 1.0059-.82031.35156-1.8164.35156t-1.8262-.35156q-.83008-.35156-1.4355-.99609-.5957-.64453-.92773-1.543-.33203-.9082-.33203-2.002 0-1.1035.33203-2.002.3418-.9082.94727-1.543.60547-.64453 1.4258-.98633.83008-.35156 1.8164-.35156zm-.0098 8.7012q.70312 0 1.2988-.25391.5957-.26367 1.0254-.75195.42969-.49805.66406-1.2012.24414-.71289.24414-1.6113 0-.9082-.24414-1.6113-.24414-.70312-.67383-1.1914-.41992-.48828-1.0156-.74219-.58594-.25391-1.2695-.25391-.70312 0-1.3086.26367-.5957.25391-1.0254.74219-.42969.48828-.67383 1.1914t-.24414 1.6016.23438 1.6113q.24414.70312.67383 1.2012.42969.48828 1.0156.75195.5957.25391 1.2988.25391z"/>
@@ -1560,8 +1645,8 @@ h2.message_dialog_label {
 			</div>
 		</div>
 		<div id='qr_title_container' class='center'>
-			<input id='qr_title_main' type='text' placeholder="&nbsp;&nbsp;Title (optional)">
-			<input id='qr_title_segment' type='text' placeholder="&nbsp;&nbsp;Segment (optional)">
+			<input id='qr_title_main' type='text' placeholder="&nbsp;&nbsp;Title&nbsp; &nbsp;e.g. Taj Mahal">
+			<input id='qr_title_segment' type='text' placeholder="&nbsp;&nbsp;Segment&nbsp; &nbsp;e.g. West gate">
 		</div>
 		<div id='qr_wcode'>
 			<div id='qr_wcode_container' class='center'>
@@ -1575,20 +1660,16 @@ h2.message_dialog_label {
 				</div>
 			</div>
 		</div>
-		<div id='qr_code' class='center'>
-			<div id='qr_code_loader' class='loader'></div>
-			<img id='qr_image'>
-		</div>
+		<div id='qr_code' class='center'></div>
 		<div id='qr_address_container' class='center'>
-			<div id='qr_address' class='initial' contentEditable>&nbsp;&nbsp;Address (optional)</div>
+			<div id='qr_address' class='initial' contentEditable>&nbsp;&nbsp;Address&nbsp; &nbsp;(optional)</div>
 		</div>
-		<div>
-			<div id='qr_webapp_url' class='center'>
-				<div>location.wcodes.org</div>
-			</div>
+		<div id='qr_webapp_url' class='center'>
+			<div>location.wcodes.org</div>
 		</div>
 		<div class="center message_dialog_control section-to-not-print">
 			<button id='qr_preview' class='border' type='button'>Preview</button>
+			<button id='qr_download' class='border' type='button'>Download</button>
 			<button id='qr_print' class='border' type='button'>Print</button>
 		</div>
 	</div>
@@ -1680,6 +1761,13 @@ h2.message_dialog_label {
 </span>
 </div>
 <div id='notification_top' class="notification_bar hide">Try: Bengaluru, India</div>
+<div id='accuracy_container' class="center-container-abs hide">
+	<div>
+		<span>accuracy</span> <span id='accuracy_meter'></span> <span>m</span>
+		<span id='proceed_container'>&nbsp<span>
+		<span id='proceed_button' class='control'>Proceed</span>
+	</div>
+</div>
 <div id='notification_bottom' class="notification_bar hide"></div>
 <div id='footer-content-container' class='center'>
 	<div id='footer-content' class='blur_background'>
@@ -1715,5 +1803,7 @@ h2.message_dialog_label {
 <script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-database.js"></script>
 	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyCYD7Q0f4ZR0cH0EOi29wVV2Edgb_j5i_s&libraries=places&callback=syncInitMap' async defer></script></head>
 	<script src="/geofire.min.js"></script>
+	<script src="/qrcode.min.js"></script>
+	<script src="/html2canvas.min.js"></script>
 </body>
 </html>

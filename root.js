@@ -45,15 +45,22 @@ function hideIncompatibleBrowserMessage() {
 	document.getElementById('incompatible_browser_message').classList.add('hide');
 	showNotification("This browser is not unsupported");
 }
-function showNotification(message) {
-	notification_bottom.innerText = message;
+function showNotification(message, duration) {
+	// var NOTIFICATION_DURATION_DEFAULT = 2500;
+	// var NOTIFICATION_DURATION_LONG = 10000;
+	
+	if(typeof duration == 'undefined')
+		duration = NOTIFICATION_DURATION_DEFAULT;
+		
+	notification_bottom.innerHTML = message;
 	notification_bottom.classList.remove('hide');
 	if(typeof notification_timer != 'undefined' && notification_timer != null)
 		clearTimeout(notification_timer);
-	notification_timer = setTimeout(function(){
+	notification_timer = setTimeout(function()  {
 		notification_bottom.innerText = '';
 		notification_bottom.classList.add('hide');
-	}, 2500);
+	}, duration);
+	
 }
 if(typeof initLoad !== 'undefined')
 	initLoad();
@@ -355,7 +362,7 @@ function getCityFromId(id, callback) {
 function getCityFromName(name, callback) {
 	var ref = database.ref('CityDetail');
 	wait_loader.classList.remove('hide');
-	ref.orderByChild('name_id').equalTo(name).on('value', function(snapshot) {
+	ref.orderByChild('name_id').equalTo(name).once('value', function(snapshot) {
 		wait_loader.classList.add('hide');
 		var list = snapshot.val();
 		if(list == null)
@@ -384,19 +391,35 @@ function getCityCenterFromId(city, callback) {
 function getCitiesFromNameId(name_id, callback) {
 	var ref = database.ref('CityDetail');
 	wait_loader.classList.remove('hide');
-	ref.orderByChild('name_id').startAt(name_id).endAt(name_id+'\uf8ff').limitToFirst(10).on('value', function(snapshot) {
+	ref.orderByChild('name_id').startAt(name_id).endAt(name_id+'\uf8ff').limitToFirst(10).once('value', function(snapshot) {
 		wait_loader.classList.add('hide');
 		callback(snapshot.val());
 	});
 }
 
+// unused
 function getCityIdFromNameId(name_id, callback) {
 	var ref = database.ref('CityDetail');
 	wait_loader.classList.remove('hide');
-	ref.orderByChild('name_id').equalTo(name_id).on('child_added', function(snapshot) {
+	ref.orderByChild('name_id').equalTo(name_id).once('value', function(snapshot) {
 		wait_loader.classList.add('hide');
-		callback(snapshot.key);
+		callback(Object.keys(snapshot.val())[0]);
 	});
+}
+
+function getCityFromCityGp_id(city_gp_id, callback_success, callback_failure) {
+	var ref = database.ref('CityDetail');
+	wait_loader.classList.remove('hide');
+	ref.orderByChild('gp_id').equalTo(city_gp_id).once('value', function(snapshot) {
+		wait_loader.classList.add('hide');
+		if (snapshot.exists()) {
+			var city = Object.values(snapshot.val())[0];
+			city.id = Object.keys(snapshot.val())[0];
+			callback_success(city);
+		}
+		else
+			callback_failure();
+	});	
 }
 
 function noCity(position) {
@@ -556,6 +579,7 @@ function setCodeCoord(city, codeIndex, code) {
 		return;
 	}
 	getAddress(latLng);
+	firstFocus = true;
 	focus__(city, latLng, code);
 }
 // const WCODE_CODE_COPIED_MESSAGE;
@@ -669,7 +693,23 @@ var wordList;
 
 function encode(position) {
 	clearCode();
-	getCityFromPositionThenEncode(position);
+	getAddress(position, function(address_components) {
+			var city_gp_id = getCityGpId(address_components);
+			if(city_gp_id != null) {
+				getCityFromCityGp_id( city_gp_id, function(city) {
+					getCityCenterFromId(city, function(city) {
+						if(city != null)
+							encode_continue(city, position);
+						else
+							encode_continue(null, position);
+					});
+				}, function() {
+				encode_continue(null, position)
+				} );
+			}
+			else
+				getCityFromPositionThenEncode(position);
+		});
 }
 
 function encode_continue(city, position) {
@@ -785,7 +825,7 @@ function setCode(city, wcode, latLng) {
 	code_city = city;
 	code_wcode = wcode;
 	code_postition = latLng;
-
+	document.getElementById('accuracy_container').classList.add('hide');
 	setInfoWindowText(getProperCityAccent(city), city.name_id, wcode.join(' '), latLng);
 }
 
@@ -810,8 +850,29 @@ function getCodeFull() {
 		return codeFull_city_part;
 }
 
+function getCodeFull_capitalized() {
+	var codeFull_city_part = [code_city.name].concat(code_wcode);
+	var prefix;
+
+	if(!multiple_country)
+		prefix = [];
+	else
+		prefix = [code_city.country];
+	if(multiple_group)
+		prefix = prefix.concat([code_city.group]);
+
+	if(multiple_city)
+		return prefix.concat(codeFull_city_part);
+	else
+		return codeFull_city_part;
+}
+
+function getCodeFull_text() {
+	return getCodeFull_capitalized().join(' ');
+}
+
 function getWcodeFull_formatted() {
-	return formatWcode(getCodeFull());
+	return formatWcode(getCodeFull_capitalized());
 }
 
 function getCodeWCode() {
@@ -915,7 +976,7 @@ function focus_(pos, bounds) {
 		marker = new google.maps.Marker({
 			position: pos,
 			map: map,
-			title: pos.lat + " | " + pos.lng
+			title: pos.lat + " / " + pos.lng
 		});
 		marker.addListener('click', function() {
 			if(!isInfoWindowOpen())
@@ -945,9 +1006,10 @@ function focus_(pos, bounds) {
 			}
 		}
 		if(firstFocus == true) {
-			smoothZoomToBounds(bounds, map, newZoom, map.getZoom());
+			showNotification('Getting more accurate location <br> wait for one minute or hit "Proceed"', NOTIFICATION_DURATION_LONG);
 			firstFocus = false;
 		}
+		smoothZoomToBounds(bounds, map, newZoom, map.getZoom());
 	});
 
 	infoWindow_setContent(MESSAGE_LOADING);
@@ -1018,6 +1080,13 @@ function isInfoWindowOpen() {
 	var map = infoWindow.getMap();
 	return (map !== null && typeof map !== "undefined");
 }
+// var location_button_begin_time;
+// var location_button_PRESS_THRESHOLD = 500;
+// var locating = false;
+// var locate_button_pressed = false;
+// var watch_location_timer;
+// var watch_location_id;
+
 function initLocate(override_dnd) {
 	if(!locationAccessInitCheck())
 		showLocateRightMessage(true);
@@ -1035,82 +1104,166 @@ function initLocate(override_dnd) {
 }
 
 function locateExec(failure) {
-	wait_loader.classList.remove('hide');
-	if (navigator.geolocation) {
-		wait_loader.classList.add('hide');
-		navigator.geolocation.getCurrentPosition(
-			function(position) {
+	if(!locating) {
+		var WATCH_LOCATION_MAX_TIMEOUT = 60000;
+		var WATCH_LOCATION_TIMEOUT = 45000;
 
-				setLocationAccess(true);
-				var pos = {
-					lat: position.coords.latitude,
-					lng: position.coords.longitude
-				};
-				if(typeof accuCircle === 'undefined') {
-					accuCircle = new google.maps.Circle({
-						strokeColor: '#69B7CF',
-						strokeOpacity: 0,
-						strokeWeight: 0,
-						fillColor: '#69B7CF',
-						fillOpacity: 0.35,
-						map: map,
-						center: pos,
-						radius: position.coords.accuracy,
-						clickable: false
-					});
-				}
-				else {
-					accuCircle.setOptions({'fillOpacity': 0.35});
-					accuCircle.setCenter(pos);
-					accuCircle.setRadius(position.coords.accuracy);
-				}
+		wait_loader.classList.remove('hide');
+		if (navigator.geolocation) {
+			locating = true;
+			var watch_location_time_begin = new Date().getTime();
+			watch_location_timer = setTimeout(endWatchLocation, WATCH_LOCATION_MAX_TIMEOUT);
+			
+			location_button.removeEventListener('mouseup', processPositionButtonUp);
+			location_button.removeEventListener('touchend', processPositionButtonTouchEnd);
+			location_button.addEventListener('mouseup', processPositionButtonUp);
+			location_button.addEventListener('touchend', processPositionButtonTouchEnd);
+			
+			watch_location_id = navigator.geolocation.watchPosition(
+				
+				function(position) {
 
-				if(typeof myLocDot === 'undefined') {
-					myLocDot = new google.maps.Marker({
-						clickable: false,
-						icon: new google.maps.MarkerImage('https://maps.gstatic.com/mapfiles/mobile/mobileimgs2.png',
-								new google.maps.Size(22,22),
-								new google.maps.Point(0,18),
-								new google.maps.Point(11,11)),
-						shadow: null,
-						zIndex: 999,
-						map: map,
-						position: pos
-					});
-				}
-				else {
-					myLocDot.setPosition(pos);
-				}
-				if(initWCode == false) {
+					var WATCH_LOCATION_MIN_ACCURACY = 10;
+					setLocationAccess(true);
+					var pos = {
+						lat: position.coords.latitude,
+						lng: position.coords.longitude
+					};
+					if(typeof accuCircle === 'undefined') {
+						accuCircle = new google.maps.Circle({
+							strokeColor: '#69B7CF',
+							strokeOpacity: 0,
+							strokeWeight: 0,
+							fillColor: '#69B7CF',
+							fillOpacity: 0.35,
+							map: map,
+							center: pos,
+							radius: position.coords.accuracy,
+							clickable: false
+						});
+					}
+					else {
+						accuCircle.setOptions({'fillOpacity': 0.35});
+						accuCircle.setCenter(pos);
+						accuCircle.setRadius(position.coords.accuracy);
+					}
+					if(position.coords.accuracy >= 99.5)
+						document.getElementById('accuracy_meter').innerText = "99+";
+					else
+						document.getElementById('accuracy_meter').innerText = Math.round(position.coords.accuracy);
+					document.getElementById('proceed_container').classList.remove('hide');
+					document.getElementById('accuracy_container').classList.remove('highlight');
+					document.getElementById('accuracy_container').classList.remove('hide');
+					if(typeof myLocDot === 'undefined') {
+						myLocDot = new google.maps.Marker({
+							clickable: false,
+							icon: new google.maps.MarkerImage('https://maps.gstatic.com/mapfiles/mobile/mobileimgs2.png',
+									new google.maps.Size(22,22),
+									new google.maps.Point(0,18),
+									new google.maps.Point(11,11)),
+							shadow: null,
+							zIndex: 999,
+							map: map,
+							position: pos
+						});
+					}
+					else {
+						myLocDot.setPosition(pos);
+					}
 					focus_(pos, accuCircle.getBounds());
-					encode(pos);
-					clearAddress();
-					getAddress(pos);
-				}
-				else {
-					initWCode = false;
-				}
 
-			},
-			function(error) {
-				if(error.code = error.PERMISSION_DENIED) {
-					showNotification(LOCATION_PERMISSION_DENIED);
-					setLocationAccess(false);
-					wait_loader.classList.add('hide');
-					failure();
-				}
-				else
-					handleLocationError(true, infoWindow, map.getCenter());
-			},
-			{ maximumAge:10000, timeout:5000, enableHighAccuracy:true }
-		);
-	} else {
-		// Browser doesn't support Geolocation
-		handleLocationError(false, infoWindow, map.getCenter());
+					if(position.coords.accuracy < WATCH_LOCATION_MIN_ACCURACY && !locate_button_pressed)
+						processPosition(pos);
+
+				},
+				function(error) {
+					if(error.code = error.PERMISSION_DENIED) {
+						clearTimeout(watch_location_timer);
+						showNotification(LOCATION_PERMISSION_DENIED);
+						setLocationAccess(false);
+						wait_loader.classList.add('hide');
+						failure();
+					}
+					else
+						handleLocationError(true);
+				},
+				{ maximumAge:100, timeout:WATCH_LOCATION_TIMEOUT, enableHighAccuracy:true }
+				
+			);
+		} else {
+			// Browser does not support Geolocation
+			handleLocationError(false);
+		}
 	}
 }
 
-function handleLocationError(browserHasGeolocation, infoWindow, pos) {
+function endWatchLocation() {
+	if(!locate_button_pressed) {
+		var pos;
+		if(typeof myLocDot != 'undefined')
+			pos = myLocDot.getPosition();
+		if(pos != null)
+			processPosition(pos);
+		else
+			showNotification("Could not get your location.<br> Please move to a more open area and try again by pressing the location icon", NOTIFICATION_DURATION_LONG);
+	}
+}
+
+function proceedPosition() {
+	var pos;
+	if(typeof myLocDot != 'undefined')
+		pos = myLocDot.getPosition();
+	if(pos != null)
+		processPosition(pos);
+	else
+		handleLocationError(true);
+}
+
+function processPosition(pos) {
+	locating = false;
+	wait_loader.classList.add('hide');
+	navigator.geolocation.clearWatch(watch_location_id);
+	clearTimeout(watch_location_timer);
+	document.getElementById('proceed_container').classList.add('hide');
+	document.getElementById('accuracy_container').classList.add('highlight');
+	
+	if(initWCode == false) {
+		encode(pos);
+		clearAddress();
+		getAddress(pos);
+	}
+	else {
+		initWCode = false;
+	}
+	
+}
+
+function processPositionButtonDown() {
+	locate_button_pressed = true;
+	location_button_begin_time = (new Date).getTime();
+	syncLocate(true);
+}
+
+function processPositionButtonUp() {
+	locate_button_pressed = false;
+	var press_duration = locating && (new Date).getTime() - location_button_begin_time;
+	if(press_duration > location_button_PRESS_THRESHOLD)
+		proceedPosition();
+}
+
+function processPositionButtonTouchStart(e) {
+	processPositionButtonDown();
+	e.stopPropagation(); 
+	e.preventDefault();
+}
+
+function processPositionButtonTouchEnd(e) {
+	processPositionButtonUp();
+	e.stopPropagation(); 
+	e.preventDefault();
+}
+
+function handleLocationError(browserHasGeolocation) {
 	showNotification(browserHasGeolocation ?
 												'Error: The Geolocation service failed' :
 												'Error: Your browser doesn\'t support geolocation');
@@ -1233,6 +1386,10 @@ function initMap() {
 	});
 
 	map.addListener('click', function(event) {
+		locating = false;
+		wait_loader.classList.add('hide');
+		navigator.geolocation.clearWatch(watch_location_id);
+		clearTimeout(watch_location_timer);
 		pendingPosition = null;
 		pendingCity = null;
 		notification_top.classList.add('hide');
@@ -1245,7 +1402,6 @@ function initMap() {
 
 	decode_button.addEventListener('click', function() {
 		clearMap();
-		firstFocus = true;
 		suggestion_result.setInnerText = '';
 		var code = document.getElementById('pac-input').value;
 		execDecode(code);
@@ -1255,9 +1411,8 @@ function initMap() {
 		toggleMapType(true);
 	});
 
-	location_button.addEventListener('click', function() {
-		syncLocate(true);
-	});
+	location_button.addEventListener('mousedown', processPositionButtonDown);
+	location_button.addEventListener('touchstart', processPositionButtonTouchStart);
 
 	document.getElementById('pac-input').addEventListener('input', suggestWrapper);
 	clickHandler = new ClickEventHandler(map);
@@ -1390,14 +1545,26 @@ function postMap() {
 }
 function showQR() {
 	document.getElementById('qr_title_main').value = document.getElementById('qr_pre_title_main').value;
-	document.getElementById('qr_title_segment').value = document.getElementById('qr_pre_title_segment').value;
+	document.getElementById('qr_title_segment').value = '';
 	
 	var city_accent = getProperCityAccent(code_city);
 	var code_string = code_wcode.join(' ');
 	document.getElementById('qr_wcode_city').innerHTML = city_accent;
 	document.getElementById('qr_wcode_code').innerHTML = code_string;
-	document.getElementById('qr_image').setAttribute( 'src', src="https://chart.googleapis.com/chart?cht=qr&chs=380x380&chl=https://"+location.hostname + '/' + getCodeFull().join('.').toLowerCase().replace(' ', '_') + "&chld=L|2" );
+	var qrcode = new QRCode({
+		content: "https://"+location.hostname + '/' + getCodeFull().join('.').toLowerCase().replace(' ', '_'),
+		container: "svg",
+		join: true,
+		xmlDeclaration: false,
+		width: 380,
+		height: 380
+	});
+	var svg = qrcode.svg();
+	document.getElementById('qr_code').innerHTML = svg;
 	document.getElementById('qr').classList.remove('hide');
+	
+	window.addEventListener('beforeprint', beforeQRprint);
+	window.addEventListener('afterprint', afterQRprint);
 }
 
 function closeQR() {
@@ -1406,6 +1573,9 @@ function closeQR() {
 	document.getElementById('qr_address').innerHTML = "&nbsp;&nbsp;Address (optional)";
 	document.getElementById('qr_address').classList.add('initial');
 	qr_address_active_first = true;
+	
+	window.removeEventListener('afterprint', afterQRprint);
+	window.removeEventListener('beforeprint', beforeQRprint);
 }
 
 function previewQR_activate() {
@@ -1418,7 +1588,6 @@ function previewQR_activate() {
 		document.getElementById('qr_address').classList.add('preview');
 		document.getElementById('qr_address').setAttribute('contenteditable', false);
 	}
-	document.getElementById('qr_close').classList.add('hide');
 	document.getElementById('qr_preview').classList.add('button_active');
 }
 
@@ -1429,7 +1598,6 @@ function previewQR_deactivate() {
 	document.getElementById('qr_address').setAttribute('contenteditable', true);
 	document.getElementById('qr_address').classList.remove('preview');
 	document.getElementById('qr_address').classList.remove('hide');
-	document.getElementById('qr_close').classList.remove('hide');
 	document.getElementById('qr_preview').classList.remove('button_active');
 }
 
@@ -1454,39 +1622,76 @@ function unHideEmptyAndRemovePreview(node) {
 }
 
 function toggleQRpreview() {
-	if(mode_preview) {
+	if(mode_preview)
 		previewQR_deactivate();
-		document.getElementById('qr_body').classList.remove('section-to-print');
-	}
-	else {
+	else
 		previewQR_activate();
-		document.getElementById('qr_body').classList.add('section-to-print');
-	}
 }
 
-function printQR() {
-	var mode_preview_activated = false;
+function beforeQRprint() {
+	document.body.classList.add('print');
 	if(!mode_preview) {
 		toggleQRpreview();
 		mode_preview_activated = true;
 	}
 	document.getElementById('qr').classList.remove('overlay');
 	document.getElementById('qr').classList.add('section-to-print');
-	window.print();
+	document.getElementById('qr_close').classList.add('hide');
+}
+
+function afterQRprint() {
+	document.body.classList.remove('print');
 	document.getElementById('qr').classList.add('overlay');
 	document.getElementById('qr').classList.remove('section-to-print');
+	document.getElementById('qr_close').classList.remove('hide');
 	if(mode_preview_activated)
 		toggleQRpreview();
 }
-function suggestWrapper(event) {
-	cityNameList = [];
-	getCitiesFromNameId(document.getElementById('pac-input').value.toLowerCase(), function(cityList) {
-		for(let key in cityList)
-			cityNameList.push(getProperCityAccent(cityList[key]));
-		city_styled_wordlist = cityNameList.concat(wordList.curList);
-		suggestComplete();
+
+function printQR() {
+	if(UMB.getCurrentBrowser() == 'safari')	
+		beforeQRprint();
+	window.print();
+	if(UMB.getCurrentBrowser() == 'safari')
+		afterQRprint();
+}
+
+function downloadQR() {
+	if(!mode_preview) {
+		toggleQRpreview();
+		mode_preview_activated = true;
+	}
+	document.getElementById('qr_body').setAttribute( 'style',
+	 "height: "+(document.getElementById('qr_body').offsetHeight-6)+"px"+"; "+
+	 "width: "+document.getElementById('qr_body').offsetWidth+"px" );
+	document.getElementById('qr_close').classList.add('hide');
+	html2canvas(document.querySelector('#qr_body')).then(canvas => {
+		if(mode_preview_activated)
+			toggleQRpreview();
+		document.getElementById('qr_body').removeAttribute('style');
+		document.getElementById('qr_close').classList.remove('hide');			
+		var qrImage = canvas.toDataURL("image/png");
+		downloadURI('data:' + qrImage, "WCode Location - " + getCodeFull_text() + ".png");
 	});
-	suggestComplete();
+}
+
+function downloadURI(uri, name) {
+	var link = document.createElement('a');
+	link.download = name;
+	link.href = uri;
+	link.click();
+}
+function suggestWrapper(event) {
+	if(typeof wordList != undefined && wordList != null) {
+		cityNameList = [];
+		getCitiesFromNameId(document.getElementById('pac-input').value.toLowerCase(), function(cityList) {
+			for(let key in cityList)
+				cityNameList.push(getProperCityAccent(cityList[key]));
+			city_styled_wordlist = cityNameList.concat(wordList.curList);
+			suggestComplete();
+		});
+		suggestComplete();
+	}
 }
 
 function suggestComplete() {
@@ -1616,6 +1821,7 @@ function setupControls() {
 	document.getElementById('no_city_submit_wait_continue').addEventListener('click', noCityWait_continue);
 	document.getElementById('no_city_submit_wait_stop').addEventListener('click', noCityWait_stop);
 	document.getElementById('notification_top').addEventListener('click', tryDefaultCity);
+	document.getElementById('proceed_button').addEventListener('click', proceedPosition);
 	document.getElementById('share_wcode_message_close').addEventListener('click', hideCopyCodeMessage);
 	document.getElementById('incompatible_browser_message_close').addEventListener('click', hideIncompatibleBrowserMessage);
 	document.getElementById('incompatible_browser_message_continue').addEventListener('click', hideIncompatibleBrowserMessage);
@@ -1628,6 +1834,7 @@ function setupControls() {
 	document.getElementById('qr_close').addEventListener('click', closeQR);
 	document.getElementById('qr_preview').addEventListener('click', toggleQRpreview);
 	document.getElementById('qr_print').addEventListener('click', printQR);
+	document.getElementById('qr_download').addEventListener('click', downloadQR);
 	document.getElementById('qr_address').addEventListener('focus', qr_address_active);
 }
 
