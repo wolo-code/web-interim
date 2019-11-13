@@ -258,8 +258,8 @@ function chooseCityContinue(e) {
 function getFullCity(city) {
 	var fullCity = city.country + ' \\ ';
 	if(typeof (city.group) != 'undefined' && city.group != null && city.group.length > 0)
-		fullCity += city.group + ' ~ ';
-	fullCity += city.accent;
+		fullCity += city.group + ' : ';
+	fullCity += getProperCityAccent(city);
 	return fullCity;
 }
 // const DEFAULT_WCODE;
@@ -268,6 +268,13 @@ function getFullCity(city) {
 var multiple_city;
 var multiple_country;
 var multiple_group;
+
+function getCityAccent(city) {
+	if(typeof city.accent != 'undefined')
+		return city.accent;
+	else
+		return city.name;
+}
 
 function getProperCityAccent(city) {
 	if(typeof city.accent != 'undefined') {
@@ -579,7 +586,6 @@ function setCodeCoord(city, codeIndex, code) {
 		return;
 	}
 	getAddress(latLng);
-	firstFocus = true;
 	focus__(city, latLng, code);
 }
 // const WCODE_CODE_COPIED_MESSAGE;
