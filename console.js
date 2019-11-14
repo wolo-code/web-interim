@@ -62,6 +62,10 @@ function showNotification(message, duration) {
 	}, duration);
 	
 }
+
+function hideNotication() {
+	notification_bottom.classList.add('hide');
+}
 if(typeof initLoad !== 'undefined')
 	initLoad();
 // var latLng_p;

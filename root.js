@@ -62,8 +62,25 @@ function showNotification(message, duration) {
 	}, duration);
 	
 }
+
+function hideNotication() {
+	notification_bottom.classList.add('hide');
+}
 if(typeof initLoad !== 'undefined')
 	initLoad();
+function perc2color(perc) {
+	var r, g, b = 0;
+	if(perc < 50) {
+		r = 255;
+		g = Math.round(5.1 * perc);
+	}
+	else {
+		g = 255;
+		r = Math.round(510 - 5.10 * perc);
+	}
+	var h = r * 0x10000 + g * 0x100 + b * 0x1;
+	return '#' + ('000000' + h.toString(16)).slice(-6);
+}
 // var latLng_p;
 // var address;
 // var gpId;
@@ -1109,6 +1126,7 @@ function locateExec(failure) {
 	if(!locating) {
 		var WATCH_LOCATION_MAX_TIMEOUT = 60000;
 		var WATCH_LOCATION_TIMEOUT = 45000;
+		var WATCH_LOCATION_NOTICE_TIMEOUT = 5000;
 
 		wait_loader.classList.remove('hide');
 		if (navigator.geolocation) {
@@ -1116,10 +1134,13 @@ function locateExec(failure) {
 			var watch_location_time_begin = new Date().getTime();
 			watch_location_timer = setTimeout(endWatchLocation, WATCH_LOCATION_MAX_TIMEOUT);
 			
+			location_dot.classList.add('blinking');
 			location_button.removeEventListener('mouseup', processPositionButtonUp);
 			location_button.removeEventListener('touchend', processPositionButtonTouchEnd);
 			location_button.addEventListener('mouseup', processPositionButtonUp);
 			location_button.addEventListener('touchend', processPositionButtonTouchEnd);
+
+			watch_location_notice_timer = setTimeout(watch_location_notice, WATCH_LOCATION_NOTICE_TIMEOUT);
 			
 			watch_location_id = navigator.geolocation.watchPosition(
 				
@@ -1149,10 +1170,14 @@ function locateExec(failure) {
 						accuCircle.setCenter(pos);
 						accuCircle.setRadius(position.coords.accuracy);
 					}
-					if(position.coords.accuracy >= 99.5)
+					if(position.coords.accuracy >= 99.5) {
 						document.getElementById('accuracy_meter').innerText = "99+";
-					else
+						document.getElementById('accuracy_indicator').setAttribute('style', 'background-color: #FF0000');
+					}
+					else {
 						document.getElementById('accuracy_meter').innerText = Math.round(position.coords.accuracy);
+						document.getElementById('accuracy_indicator').setAttribute('style', 'background-color: '+perc2color(100-position.coords.accuracy));
+					}
 					document.getElementById('proceed_container').classList.remove('hide');
 					document.getElementById('accuracy_container').classList.remove('highlight');
 					document.getElementById('accuracy_container').classList.remove('hide');
@@ -1222,8 +1247,7 @@ function proceedPosition() {
 }
 
 function processPosition(pos) {
-	locating = false;
-	wait_loader.classList.add('hide');
+	clearLocating();
 	navigator.geolocation.clearWatch(watch_location_id);
 	clearTimeout(watch_location_timer);
 	document.getElementById('proceed_container').classList.add('hide');
@@ -1233,10 +1257,6 @@ function processPosition(pos) {
 		encode(pos);
 		clearAddress();
 		getAddress(pos);
-		if(firstFocus == true) {
-			showNotification('Getting more accurate location <br> wait for one minute or hit "Proceed"', NOTIFICATION_DURATION_LONG);
-			firstFocus = false;
-		}
 	}
 	else {
 		initWCode = false;
@@ -1270,11 +1290,30 @@ function processPositionButtonTouchEnd(e) {
 }
 
 function handleLocationError(browserHasGeolocation) {
+	clearLocating();
 	showNotification(browserHasGeolocation ?
 												'Error: The Geolocation service failed' :
 												'Error: Your browser doesn\'t support geolocation');
 	notification_top.classList.remove('hide');
 	syncCheckIncompatibleBrowserMessage();
+}
+
+function clearLocating() {
+	locating = false;
+	wait_loader.classList.add('hide');
+	location_dot.classList.remove('blinking');
+	hideNotication();
+}
+
+function watch_location_notice() {
+	var wait_duration;
+	if(firstFocus == true) {
+		notification_duration = NOTIFICATION_DURATION_LONG;
+		firstFocus = false;
+	}
+	else
+		notification_duration = NOTIFICATION_DURATION_DEFAULT;
+	showNotification('Getting more accurate location <br> wait for a minute or choose "Proceed"', notification_duration);
 }
 function showLocateRightMessage(hide_dnd) {
 	if(hide_dnd == true)
@@ -1491,10 +1530,12 @@ function toggleMapType() {
 	if(map.getMapTypeId() == google.maps.MapTypeId.SATELLITE.toLowerCase()) {
 		map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
 		map_type_button.value = 'Map';
+		document.body.classList.remove('satellite');
 	}
 	else {
 		map.setMapTypeId(google.maps.MapTypeId.SATELLITE);
 		map_type_button.value = 'Sattelite';
+		document.body.classList.add('satellite');
 	}
 }
 function showNoCityMessage() {
@@ -1692,7 +1733,8 @@ function suggestWrapper(event) {
 		cityNameList = [];
 		getCitiesFromNameId(document.getElementById('pac-input').value.toLowerCase(), function(cityList) {
 			for(let key in cityList)
-				cityNameList.push(getProperCityAccent(cityList[key]));
+				if(cityNameList.indexOf(getProperCityAccent(cityList[key])) == -1)
+					cityNameList.push(getProperCityAccent(cityList[key]));
 			city_styled_wordlist = cityNameList.concat(wordList.curList);
 			suggestComplete();
 		});

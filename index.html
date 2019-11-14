@@ -556,6 +556,10 @@ button.border {
 	background-color: #fbfbfb60
 }
 
+.satellite .blur_background {
+	background-color: #1b69824d !important;
+}
+
 .plain_background {
 	background: rgba(241, 241, 241, 0.75)
 }
@@ -894,6 +898,12 @@ h2.message_dialog_label {
 	background-color: #FFFFFF;
 }
 
+#accuracy_indicator {
+	padding-left: 15px;
+	margin-right: 3px;
+	border-radius: 50%;
+}
+
 #accuracy_meter {
 	font-family: monospace;
 }
@@ -911,6 +921,16 @@ h2.message_dialog_label {
 	padding: 8px 12px;
 	border: none;
 	border-radius: 28px;	
+}
+
+#location_dot.blinking {
+	animation:blinkingBlue 1.3s infinite;
+}
+
+@keyframes blinkingBlue {
+	0%	{ fill: #FFFFFF; }
+	50%	{ fill: #69B7CF; }
+	100%{ fill: #FFFFFF; }
 }
 #choose_city_message {
 	position: absolute;
@@ -1266,11 +1286,10 @@ h2.message_dialog_label {
 	z-index: 1;
 	position: absolute;
 	bottom: 26px;
-	left: 10px;
+	left: 11px;
 }
 
 #info svg {
-	padding: 1px;
 	box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
 	background-color: rgb(255, 255, 255);
 	border-radius: 25px;
@@ -1525,7 +1544,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span>
-	2019 Nov 13 - 15:51:12			</span> (UTC)
+	2019 Nov 14 - 09:54:50			</span> (UTC)
 		</div>
 	</div>
 	<div>
@@ -1744,10 +1763,10 @@ h2.message_dialog_label {
 <div id='suggestion_result'></div>
 <input id='decode_button' class='control' type='button' value='Decode' tabindex='4' >
 <div id='location_button' class='control' tabindex='5'>
-	<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
-	 width='24' height='24' viewBox="0 0 24 24">
-	<path fill='none' d="M0 0h24v24H0z" />
-	<path fill='#69B7CF' d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" />
+	<span class='image'><svg width="24" height="24" version="1.1" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+	<path d="M0 0h24v24H0z" fill="none"/>
+	<path d="m20.94 11c-.46-4.17-3.77-7.48-7.94-7.94v-2.06h-2v2.06c-4.17.46-7.48 3.77-7.94 7.94h-2.06v2h2.06c.46 4.17 3.77 7.48 7.94 7.94v2.06h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94h2.06v-2zm-8.94 8c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" style="fill:#69b7cf"/>
+	<path id='location_dot' d="m12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z" style="fill:#69b7cf"/>
 </svg>
 </span>
 </div>
@@ -1755,14 +1774,15 @@ h2.message_dialog_label {
 <div id='info' class='control' tabindex='7'>
 	<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
 	 width='36' height='36' viewBox="0 0 24 24">
-	<path fill='none' d="M0 0h24v24H0z" />
-	<path fill='#69B7CF' d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z" />
+	<path d="M0 0h24v24H0z" fill="none"/>
+	<path d="m10.8667 17.6667h2.26667v-6.8h-2.26667zm0-9.06667h2.26667v-2.26667h-2.26667z" style="fill:#69b7cf;stroke-width:1.13333"/>
 </svg>
 </span>
 </div>
 <div id='notification_top' class="notification_bar hide">Try: Bengaluru, India</div>
 <div id='accuracy_container' class="center-container-abs hide">
 	<div>
+		<span id='accuracy_indicator'>&nbsp;</span>
 		<span>accuracy</span> <span id='accuracy_meter'></span> <span>m</span>
 		<span id='proceed_container'>&nbsp<span>
 		<span id='proceed_button' class='control'>Proceed</span>
@@ -1771,8 +1791,8 @@ h2.message_dialog_label {
 <div id='notification_bottom' class="notification_bar hide"></div>
 <div id='footer-content-container' class='center'>
 	<div id='footer-content' class='blur_background'>
-		<a class="link-gray" href='wcodes.org/license'>Copyright &copy; 2019</a>
-		<a class="link" href='wcodes.org/about_me'>Ujjwal Singh</a><a class='content-link' target='_blank' href='/about_me' rel='author'></a>
+		<a class='link-gray' href='wcodes.org/license'>Copyright &copy; 2019</a>
+		<a class='link' href='wcodes.org/about_me'>Ujjwal Singh</a><a class='content-link' target='_blank' href='/about_me' rel='author'></a>
 	</div>
 </div>
 <div id='address_text' class='hide'>
