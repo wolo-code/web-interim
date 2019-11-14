@@ -241,6 +241,7 @@ var locating = false;
 var locate_button_pressed = false;
 var watch_location_timer;
 var watch_location_id;
+var watch_location_notice_timer;
 
 // QR
 var mode_preview = false;
@@ -923,7 +924,7 @@ h2.message_dialog_label {
 	border-radius: 28px;	
 }
 
-#location_dot.blinking {
+#location_icon_dot.blinking {
 	animation:blinkingBlue 1.3s infinite;
 }
 
@@ -1544,7 +1545,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span>
-	2019 Nov 14 - 11:26:55			</span> (UTC)
+	2019 Nov 14 - 19:46:43			</span> (UTC)
 		</div>
 	</div>
 	<div>
@@ -1763,10 +1764,11 @@ h2.message_dialog_label {
 <div id='suggestion_result'></div>
 <input id='decode_button' class='control' type='button' value='Decode' tabindex='4' >
 <div id='location_button' class='control' tabindex='5'>
-	<span class='image'><svg width="24" height="24" version="1.1" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-	<path d="M0 0h24v24H0z" fill="none"/>
-	<path d="m20.94 11c-.46-4.17-3.77-7.48-7.94-7.94v-2.06h-2v2.06c-4.17.46-7.48 3.77-7.94 7.94h-2.06v2h2.06c.46 4.17 3.77 7.48 7.94 7.94v2.06h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94h2.06v-2zm-8.94 8c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" style="fill:#69b7cf"/>
-	<path id='location_dot' d="m12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z" style="fill:#69b7cf"/>
+	<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+	 width='24' height='24' viewBox="0 0 24 24">
+	<path fill='none' d="M0 0h24v24H0z" />
+	<path fill='#69b7cf' d="m20.94 11c-.46-4.17-3.77-7.48-7.94-7.94v-2.06h-2v2.06c-4.17.46-7.48 3.77-7.94 7.94h-2.06v2h2.06c.46 4.17 3.77 7.48 7.94 7.94v2.06h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94h2.06v-2zm-8.94 8c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" />
+	<path id='location_icon_dot' d="m12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z" style="fill:#69b7cf" />
 </svg>
 </span>
 </div>
@@ -1819,8 +1821,8 @@ h2.message_dialog_label {
 		<span class='address_text_button_spacer'></span>
 	</div>
 </div>
-<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-database.js"></script>
+<script src="/__/firebase/5.5.2/firebase-app.js"></script>
+<script src="/__/firebase/5.5.2/firebase-database.js"></script>
 	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyCYD7Q0f4ZR0cH0EOi29wVV2Edgb_j5i_s&libraries=places&callback=syncInitMap' async defer></script></head>
 	<script src="/geofire.min.js"></script>
 	<script src="/qrcode.min.js"></script>
