@@ -68,19 +68,6 @@ function hideNotication() {
 }
 if(typeof initLoad !== 'undefined')
 	initLoad();
-function perc2color(perc) {
-	var r, g, b = 0;
-	if(perc < 50) {
-		r = 255;
-		g = Math.round(5.1 * perc);
-	}
-	else {
-		g = 255;
-		r = Math.round(510 - 5.10 * perc);
-	}
-	var h = r * 0x10000 + g * 0x100 + b * 0x1;
-	return '#' + ('000000' + h.toString(16)).slice(-6);
-}
 // var latLng_p;
 // var address;
 // var gpId;
@@ -1176,7 +1163,7 @@ function locateExec(failure) {
 					}
 					else {
 						document.getElementById('accuracy_meter').innerText = Math.round(position.coords.accuracy);
-						document.getElementById('accuracy_indicator').setAttribute('style', 'background-color: '+perc2color(100-position.coords.accuracy));
+						document.getElementById('accuracy_indicator').setAttribute('style', 'background-color: '+percantageToColor(100-position.coords.accuracy));
 					}
 					document.getElementById('proceed_container').classList.remove('hide');
 					document.getElementById('accuracy_container').classList.remove('highlight');
@@ -1841,6 +1828,20 @@ function clearURL() {
 
 function capitalizeWords(s) {
 	return s.replace(/(^|\s)\S/g, l => l.toUpperCase());
+}
+
+function percantageToColor(perc) {
+	var r, g, b = 0;
+	if(perc < 50) {
+		r = 255;
+		g = Math.round(5.1 * perc);
+	}
+	else {
+		g = 255;
+		r = Math.round(510 - 5.10 * perc);
+	}
+	var h = r * 0x10000 + g * 0x100 + b * 0x1;
+	return '#' + ('000000' + h.toString(16)).slice(-6);
 }
 function initLoad () {
 	if(!initLoadDone && document.readyState === 'interactive') {
