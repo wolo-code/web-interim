@@ -12,14 +12,6 @@
 	<link href='https://location.wcodes.org' rel='canonical' >
 	<title>WCode based addressing system - WCode location</title>
 <link rel='manifest' href='/manifest.json' >
-		<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-ga('create', 'UA-96994409-1', 'auto');
-ga('send', 'pageview');
-</script>
 		<script src='https://browser.sentry-cdn.com/5.7.0/bundle.min.js' integrity='sha384-pHnCJ3bbzJ+LzI19wAdyBvGAjJ5vNAC59uxeRpw5WpgkSlZUQstEADxkSbBnI95q' crossorigin='anonymous'
 ></script>
 		<script>Sentry.init({ dsn: 'https://67af341ea58c4424ab4af921f0583573@sentry.io/187322' });
@@ -85,8 +77,12 @@ var FIREBASE_CONFIG = {
 	databaseURL: "https://waddress-5f30b.firebaseio.com",
 	projectId: "waddress-5f30b",
 	storageBucket: "waddress-5f30b.appspot.com",
-	messagingSenderId: "744968913043"
+	messagingSenderId: "744968913043",
+	appId: "1:744968913043:web:b098f0ea8db562a33dcd66",
+	measurementId: "G-JF3R4LB0M3"
 };
+var analytics;
+var perf;
 var database;
 var refCityCenter;
 var geoFire;
@@ -1545,7 +1541,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span>
-	2019 Nov 14 - 20:49:27			</span> (UTC)
+	2019 Nov 15 - 06:42:08			</span> (UTC)
 		</div>
 	</div>
 	<div>
@@ -1821,11 +1817,13 @@ h2.message_dialog_label {
 		<span class='address_text_button_spacer'></span>
 	</div>
 </div>
-<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/7.4.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/7.4.0/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/7.4.0/firebase-analytics.js"></script>
+<script src="https://www.gstatic.com/firebasejs/7.4.0/firebase-performance.js"></script>
 	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyCYD7Q0f4ZR0cH0EOi29wVV2Edgb_j5i_s&libraries=places&callback=syncInitMap' async defer></script></head>
-	<script src="/geofire.min.js"></script>
-	<script src="/qrcode.min.js"></script>
-	<script src="/html2canvas.min.js"></script>
+	<script src="/geofire.min.js" async defer></script>
+	<script src="/qrcode.min.js" async defer></script>
+	<script src="/html2canvas.min.js" async defer></script>
 </body>
 </html>

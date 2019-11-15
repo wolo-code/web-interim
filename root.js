@@ -33,9 +33,17 @@ ClickEventHandler.prototype.getPlaceInformation = function(placeId) {
 
 function firebaseInit() {
 	firebase.initializeApp(FIREBASE_CONFIG);
+	if(typeof firebase.analytics != 'undefined')
+		analytics = firebase.analytics();
+	if(typeof firebase.performance != 'undefined')
+		perf = firebase.performance();
 	database = firebase.database();
 	refCityCenter = database.ref('CityCenter');
-	geoFire = new GeoFire(refCityCenter);
+}
+
+function geoFireInit() {
+	if(geoFire == null)
+		geoFire = new GeoFire(refCityCenter);
 }
 function showIncompatibleBrowserMessage() {
 	document.getElementById('incompatible_browser_message').classList.remove('hide');
@@ -292,6 +300,7 @@ function getProperCityAccent(city) {
 function getCityFromPositionThenEncode(latLng) {
 	var nearCity = new Object;
 
+	geoFireInit();
 	var geoQuery = geoFire.query({
 		center: [latLng.lat, latLng.lng],
 		radius: CITY_RANGE_RADIUS
@@ -326,6 +335,7 @@ function getCityFromIdThenEncode(city_id, city_center, latLng) {
 function getCityFromPositionThenDecode(latLng, wcode) {
 	var nearCity = new Object;
 
+	geoFireInit();
 	var geoQuery = geoFire.query({
 		center: [latLng.lat, latLng.lng],
 		radius: CITY_RANGE_RADIUS
