@@ -274,6 +274,43 @@ function getFullCity(city) {
 	fullCity += getProperCityAccent(city);
 	return fullCity;
 }
+var chooseCity_by_periphery_Callback;
+var chooseCity_by_periphery_List;
+
+function showChooseCity_by_periphery_Message() {
+	clearChooseCity_by_periphery_List();
+	choose_city_by_periphery_message.classList.remove('hide');
+	var container = document.getElementById('choose_city_by_periphery_message_list');
+	for(let key in chooseCity_by_periphery_List) {
+		var row = document.createElement('div');
+		row.innerHTML = getFullCity(chooseCity_by_periphery_List[key].city);
+		container.appendChild(row);
+		row.addEventListener('click', chooseCity_by_periphery_Continue);
+		row.data_id = key;
+	}
+}
+
+function hideChooseCity_by_periphery_Message() {
+	choose_city_by_periphery_message.classList.add('hide');
+	clearChooseCity_by_periphery_List();
+}
+
+function clearChooseCity_by_periphery_List() {
+	document.getElementById('choose_city_by_periphery_message_list').innerHTML = '';
+}
+
+function chooseCity_by_periphery(list, callback) {
+	chooseCity_by_periphery_List = list;
+	chooseCity_by_periphery_Callback = callback;
+}
+
+function chooseCity_by_periphery_Continue(e) {
+	infoWindow_setContent(MESSAGE_LOADING);
+	hideChooseCity_by_periphery_Message();
+	var id = e.target.data_id;
+	var city = chooseCity_by_periphery_List[id].city;
+	chooseCity_by_periphery_Callback(city);
+}
 // const DEFAULT_WCODE;
 // var pendingCity;
 // var pendingCitySubmit;
@@ -297,33 +334,77 @@ function getProperCityAccent(city) {
 	return city.name;
 }
 
-function getCityFromPositionThenEncode(latLng) {
-	var nearCity = new Object;
+var geoQuery_completed;
+var nearCity;
+var pending_encode_latLng;
 
+function getCity_by_perifery_list(latLng, continue_encode) {
+	geoQuery_completed = false;
+	if(continue_encode)
+		pending_encode_latLng = latLng;
+	else
+		pending_encode_latLng = null;
+	nearCity = null;
+	var nearCityList_coord = {};
+	var nearCityList_detail = {};
 	geoFireInit();
 	var geoQuery = geoFire.query({
 		center: [latLng.lat, latLng.lng],
 		radius: CITY_RANGE_RADIUS
 	});
 
-	wait_loader.classList.remove('hide');;
+	wait_loader.classList.remove('hide');
 	geoQuery.on('ready', function() {
+		geoQuery_completed = true;
 		wait_loader.classList.add('hide');
 		geoQuery.cancel();
-		if(Object.keys(nearCity).length === 0)
-			encode_continue(null, latLng);
-		else
-			getCityFromIdThenEncode(nearCity.city.id, nearCity.city.center, latLng);
+
+		if(Object.keys(nearCityList_coord).length == Object.keys(nearCityList_detail).length)
+			syncNearCityList(nearCityList_coord, nearCityList_detail);
 	});
 
 	geoData = geoQuery.on('key_entered', function(key, location, distance) {
-		if(typeof nearCity.distance == 'undefined' || distance < nearCity.distance) {
-			nearCity.city = {id:key, center:{ lat: location[0], lng: location[1]} };
-			nearCity.distance = distance;
-		}
+		nearCityList_coord[key] = {city: {id: key, center: { lat: location[0], lng: location[1] } }, distance: distance};
+		getCityFromId(key, function(city) {
+			nearCityList_detail[key] = {city: city};
+			if(geoQuery_completed && Object.keys(nearCityList_coord).length == Object.keys(nearCityList_detail).length)
+					syncNearCityList(nearCityList_coord, nearCityList_detail);
+		});
 	});
-
 }
+
+function syncNearCityList(nearCityList_coord, nearCityList_detail) {
+	if(Object.keys(nearCityList_coord).length === 0) {
+		if(pending_encode_latLng)
+			encode_continue(null, pending_encode_latLng);
+	}
+	else {
+		var nearCityList = [];
+		var nearCity_distance;
+		nearCity = null;
+		for(aCity in nearCityList_coord) {
+			var xCity = new Object;
+			xCity = nearCityList_coord[aCity];
+			xCity.city.country = nearCityList_detail[aCity].city.country;
+			xCity.city.gp_id = nearCityList_detail[aCity].city.gp_id;
+			xCity.city.group = nearCityList_detail[aCity].city.group;
+			xCity.city.name = nearCityList_detail[aCity].city.name;
+			xCity.city.name_id = nearCityList_detail[aCity].city.name_id;
+			nearCityList.push(xCity);
+			if(nearCity == null || nearCityList_coord[aCity].distance < nearCity.distance) {
+				nearCity = xCity;
+				nearCity.distance = nearCityList_coord[aCity].distance;
+			}
+		}
+		chooseCity_by_periphery(nearCityList, function(city) {
+			encode_continue(city, resolveLatLng(marker.getPosition()));
+		});
+		if(pending_encode_latLng != null)
+			encode_continue(nearCity.city, pending_encode_latLng);
+	}
+}
+
+//			getCityFromIdThenEncode(nearCity.city.id, nearCity.city.center, latLng);
 
 function getCityFromIdThenEncode(city_id, city_center, latLng) {
 	getCityFromId(city_id, function(city) {
@@ -726,9 +807,11 @@ function encode(position) {
 				}, function() {
 				encode_continue(null, position)
 				} );
+				getCity_by_perifery_list(resolveLatLng(position), false);
 			}
-			else
-				getCityFromPositionThenEncode(position);
+			else {
+				getCity_by_perifery_list(resolveLatLng(position), true);
+			}
 		});
 }
 
@@ -764,7 +847,7 @@ function getCityGpId(address_components) {
 	for(var i = address_components.length-1; i >= 0; i--) {
 		if ( address_components[i].types.includes('administrative_area_level_1') || address_components[i].types.includes('administrative_area_level_2') ) {
 			found_city_i = i;
-		} else if(found_city_i == null && address_components[i].types.includes('locality')) {
+		} else if(address_components[i].types.includes('locality')) {
 			found_city_i = i;
 			break;
 		} else if ( found_city_i == null && (address_components[i].types.includes('sublocality') || address_components[i].types.includes('sublocality_level_1')) ) {
@@ -1090,7 +1173,7 @@ function setInfoWindowText(city_accent, city_name, code_string, latLng) {
 		if(document.getElementById('share_code_button') != null)
 			addLongpressListener(document.getElementById('share_code_button'));
 	});
-	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'>" + city_accent + "</span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code_string + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' onclick='toggleAddress();' src=" + svg_address + " ><a href='"+ getIntentURL(latLng, city_name + ' ' + code_string) + "'><img id='external_map_button' class='control' src=" + svg_map + " ></a><div id='share_code_button' class='control'><div class='shield'></div><img src=" + svg_share + " ></div></div>");
+	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'><span class='control' onclick='showChooseCity_by_periphery_Message();'>" + city_accent + "</span></span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code_string + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' onclick='toggleAddress();' src=" + svg_address + " ><a href='"+ getIntentURL(latLng, city_name + ' ' + code_string) + "'><img id='external_map_button' class='control' src=" + svg_map + " ></a><div id='share_code_button' class='control'><div class='shield'></div><img src=" + svg_share + " ></div></div>");
 }
 
 function isInfoWindowOpen() {
@@ -1442,7 +1525,7 @@ function initMap() {
 		clearURL();
 		var pos = resolveLatLng(event.latLng);
 		focus_(pos);
-		encode(pos);
+		encode(event.latLng);
 	});
 
 	decode_button.addEventListener('click', function() {
@@ -1890,6 +1973,7 @@ function setupControls() {
 	document.getElementById('address_text_close').addEventListener('click', hideAddress);
 	document.getElementById('address_text_copy').addEventListener('click', copyAddress);
 	document.getElementById('choose_city_message_close').addEventListener('click', hideChooseCityMessage);
+	document.getElementById('choose_city_by_periphery_message_close').addEventListener('click', hideChooseCity_by_periphery_Message);
 	document.getElementById('share_copy_button').addEventListener('click', shareWCodeCopy);
 	document.getElementById('share_link_button').addEventListener('click', shareWCodeLink);
 	document.getElementById('share_qr_button').addEventListener('click', showQR);

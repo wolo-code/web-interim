@@ -23,7 +23,7 @@ function getAddressCity(address_components) {
 	var found_group_i;
 	var found_country_i;
 	for(var i = address_components.length-1; i >= 0; i--) {
-		if(found_city_i == null && address_components[i].types.includes('locality')) {
+		if(address_components[i].types.includes('locality')) {
 			found_city_i = i;
 			break;
 		} else if (address_components[i].types.includes('administrative_area_level_1')) {
@@ -961,6 +961,37 @@ h2.message_dialog_label {
 #choose_city_message_list div:not(:last-child) {
 	margin-bottom: 10px;
 }
+#choose_city_message, #choose_city_by_periphery_message {
+	position: absolute;
+	left: 0;
+	right: 0;
+	max-width: 360px;
+	width: 360px;
+	margin: auto;
+	font-family: 'Abel';
+	background-color: #FFFFFF;
+	z-index: 1;
+}
+
+#choose_city_message_list, #choose_city_by_periphery_message_list {
+	padding-left: 6px;
+}
+
+#choose_city_message_list div, #choose_city_by_periphery_message_list div {
+	background-color: #69B7CF;
+	color: #ffffff;
+	font-size: larger;
+	border-radius: 5px;
+	padding: 2px 0 2px 8px;
+}
+
+#choose_city_message_list div:hover, #choose_city_by_periphery_message_list div:hover {
+	cursor: pointer;
+}
+
+#choose_city_message_list div:not(:last-child), #choose_city_by_periphery_message_list div:not(:last-child) {
+	margin-bottom: 10px;
+}
 #share_include_city, #share_jumto_map {
 	-webkit-appearance: checkbox !important;
 	margin-left: 6px;
@@ -1449,10 +1480,30 @@ h2.message_dialog_label {
 	</div>
 	<div id='choose_city_message_prompt' class='message_dialog_body'>
 		<p>
-			There are multiple cities with this name<br>
+			There are multiple cities with this name.<br>
 			Please select the correct one:
 		</p>
 		<div id='choose_city_message_list'></div>
+	</div>
+</div>
+<div id='choose_city_by_periphery_message' class="message_dialog hide">
+	<h2 class='message_dialog_label'>
+		Choose the city
+	</h2>
+	<div id='choose_city_by_periphery_message_close' class="message_dialog_close control">
+		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+	 height='22' width='22' viewBox="0 0 24 24">
+	<path fill='#CECECE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+	<path fill='none' d="M0 0h24v24H0z" />
+</svg>
+</span>
+	</div>
+	<div id='choose_city_by_periphery_message_prompt' class='message_dialog_body'>
+		<p>
+			There are multiple cities near by.<br>
+			Please select one:
+		</p>
+		<div id='choose_city_by_periphery_message_list'></div>
 	</div>
 </div>
 <div id='locate_right_message' class="message_dialog hide">
@@ -1542,7 +1593,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span>
-	2019 Nov 20 - 12:00:39			</span> (UTC)
+	2019 Dec 04 - 20:44:45			</span> (UTC)
 		</div>
 	</div>
 	<div>
