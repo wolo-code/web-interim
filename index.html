@@ -930,7 +930,7 @@ h2.message_dialog_label {
 	50%	{ fill: #69B7CF; }
 	100%{ fill: #FFFFFF; }
 }
-#choose_city_message, #choose_city_by_periphery_message {
+.choose_city_message {
 	position: absolute;
 	left: 0;
 	right: 0;
@@ -942,11 +942,11 @@ h2.message_dialog_label {
 	z-index: 1;
 }
 
-#choose_city_message_list, #choose_city_by_periphery_message_list {
+.choose_city_message_list {
 	padding-left: 6px;
 }
 
-#choose_city_message_list div, #choose_city_by_periphery_message_list div {
+.choose_city_message_list div {
 	background-color: #69B7CF;
 	color: #ffffff;
 	font-size: larger;
@@ -954,11 +954,11 @@ h2.message_dialog_label {
 	padding: 2px 0 2px 8px;
 }
 
-#choose_city_message_list div:hover, #choose_city_by_periphery_message_list div:hover {
+.choose_city_message_list div:hover {
 	cursor: pointer;
 }
 
-#choose_city_message_list div:not(:last-child), #choose_city_by_periphery_message_list div:not(:last-child) {
+.choose_city_message_list div:not(:last-child) {
 	margin-bottom: 10px;
 }
 #share_include_city, #share_jumto_map {
@@ -1208,6 +1208,7 @@ h2.message_dialog_label {
 
 #qr_wcode_container {
 	max-width: 240px;
+	color: #69b7cf;
 }
 
 #qr_wcode_left {
@@ -1435,11 +1436,11 @@ h2.message_dialog_label {
 		</p>
 	</div>
 </div>
-<div id='choose_city_message' class="message_dialog hide">
+<div id='choose_city_by_name_message' class="choose_city_message message_dialog hide">
 	<h2 class='message_dialog_label'>
 		Choose the city
 	</h2>
-	<div id='choose_city_message_close' class="message_dialog_close control">
+	<div id='choose_city_by_name_message_close' class="message_dialog_close control">
 		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
 	 height='22' width='22' viewBox="0 0 24 24">
 	<path fill='#CECECE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
@@ -1447,15 +1448,15 @@ h2.message_dialog_label {
 </svg>
 </span>
 	</div>
-	<div id='choose_city_message_prompt' class='message_dialog_body'>
+	<div id='choose_city_by_name_message_prompt' class='message_dialog_body'>
 		<p>
 			There are multiple cities with this name.<br>
 			Please select the correct one:
 		</p>
-		<div id='choose_city_message_list'></div>
+		<div id='choose_city_by_name_message_list' class='choose_city_message_list'></div>
 	</div>
 </div>
-<div id='choose_city_by_periphery_message' class="message_dialog hide">
+<div id='choose_city_by_periphery_message' class="choose_city_message message_dialog hide">
 	<h2 class='message_dialog_label'>
 		Choose the city
 	</h2>
@@ -1469,10 +1470,9 @@ h2.message_dialog_label {
 	</div>
 	<div id='choose_city_by_periphery_message_prompt' class='message_dialog_body'>
 		<p>
-			There are multiple cities near by.<br>
-			Please select one:
+			Near by cities:
 		</p>
-		<div id='choose_city_by_periphery_message_list'></div>
+		<div id='choose_city_by_periphery_message_list' class='choose_city_message_list'></div>
 	</div>
 </div>
 <div id='locate_right_message' class="message_dialog hide">
@@ -1562,7 +1562,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span>
-	2019 Dec 05 - 16:33:31			</span> (UTC)
+	2019 Dec 06 - 12:27:39			</span> (UTC)
 		</div>
 	</div>
 	<div>

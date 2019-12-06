@@ -233,8 +233,8 @@ var chooseCityList;
 
 function showChooseCityMessage() {
 	clearChooseCityList();
-	choose_city_message.classList.remove('hide');
-	var container = document.getElementById('choose_city_message_list');
+	choose_city_by_name_message.classList.remove('hide');
+	var container = document.getElementById('choose_city_by_name_message_list');
 	for(let key in chooseCityList) {
 		var row = document.createElement('div');
 		row.innerHTML = getFullCity(chooseCityList[key]);
@@ -245,12 +245,12 @@ function showChooseCityMessage() {
 }
 
 function hideChooseCityMessage() {
-	choose_city_message.classList.add('hide');
+	choose_city_by_name_message.classList.add('hide');
 	clearChooseCityList();
 }
 
 function clearChooseCityList() {
-	document.getElementById('choose_city_message_list').innerHTML = '';
+	document.getElementById('choose_city_by_name_message_list').innerHTML = '';
 }
 
 function chooseCity(list, callback) {
@@ -265,14 +265,6 @@ function chooseCityContinue(e) {
 	var city = chooseCityList[id];
 	city.id = id;
 	chooseCityCallback(city);
-}
-
-function getFullCity(city) {
-	var fullCity = city.country + ' \\ ';
-	if(typeof (city.group) != 'undefined' && city.group != null && city.group.length > 0)
-		fullCity += city.group + ' : ';
-	fullCity += getProperCityAccent(city);
-	return fullCity;
 }
 var chooseCity_by_periphery_Callback;
 var chooseCity_by_periphery_List;
@@ -558,6 +550,14 @@ function tryDefaultCity() {
 	decode(DEFAULT_WCODE);
 	notification_top.classList.add('hide');
 	infoWindow.close();
+}
+
+function getFullCity(city) {
+	var fullCity = city.country + ' \\ ';
+	if(typeof (city.group) != 'undefined' && city.group != null && city.group.length > 0)
+		fullCity += city.group + ': ';
+	fullCity += getProperCityAccent(city);
+	return fullCity;
 }
 function addCity(gp_id, callback) {
 
@@ -1972,7 +1972,7 @@ function setupControls() {
 	document.getElementById('incompatible_browser_message_continue').addEventListener('click', hideIncompatibleBrowserMessage);
 	document.getElementById('address_text_close').addEventListener('click', hideAddress);
 	document.getElementById('address_text_copy').addEventListener('click', copyAddress);
-	document.getElementById('choose_city_message_close').addEventListener('click', hideChooseCityMessage);
+	document.getElementById('choose_city_by_name_message_close').addEventListener('click', hideChooseCityMessage);
 	document.getElementById('choose_city_by_periphery_message_close').addEventListener('click', hideChooseCity_by_periphery_Message);
 	document.getElementById('share_copy_button').addEventListener('click', shareWCodeCopy);
 	document.getElementById('share_link_button').addEventListener('click', shareWCodeLink);
