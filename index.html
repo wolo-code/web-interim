@@ -1247,6 +1247,12 @@ h2.message_dialog_label {
 	}
 
 }
+#redirecting_message_loader {
+	width: 180px;
+	height: 180px;
+	margin-top: 10px;
+	margin-bottom: 12px;
+}
 #suggestion_result {
 	position: absolute;
 	top: 8px;
@@ -1360,7 +1366,18 @@ h2.message_dialog_label {
 }
 	</style>
 <body>
-	<div id='no_city_message' class="message_dialog hide">
+	<div id='redirecting_message' class="message_dialog hide">
+	<h2 class='message_dialog_label'>
+		Redirecting to maps app
+	</h2>
+	<div class='message_dialog_body'>
+		<div id= 'redirecting_message_loader' class="loader center"></div>
+		<div class="center message_dialog_control">
+			<button id='redirect_cancel' class="border control" type='button'>Cancel</button>
+		</div>
+	</div>
+</div>
+<div id='no_city_message' class="message_dialog hide">
 	<h2 class='message_dialog_label'>
 		Add city
 	</h2>
@@ -1562,7 +1579,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span>
-	2019 Dec 06 - 12:27:39			</span> (UTC)
+	2019 Dec 06 - 17:51:55			</span> (UTC)
 		</div>
 	</div>
 	<div>

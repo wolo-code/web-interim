@@ -208,6 +208,7 @@ function urlDecode() {
 		var code_string;
 		var end_flag_char = window.location.pathname.substr(-1);
 		if(end_flag_char == '/') {
+			redirect_showLoader();
 			code_string = window.location.pathname.substr(1, window.location.pathname.length-2);
 			initWCode_jumpToMap = true;
 		}
@@ -1811,6 +1812,18 @@ function downloadURI(uri, name) {
 	link.href = uri;
 	link.click();
 }
+function redirectCancel() {
+	initWCode_jumpToMap = false;
+	redirect_hideLoader();
+}
+
+function redirect_showLoader() {
+	document.getElementById('redirecting_message').classList.remove('hide');
+}
+
+function redirect_hideLoader() {
+	document.getElementById('redirecting_message').classList.add('hide');
+}
 function suggestWrapper(event) {
 	if(typeof wordList != undefined && wordList != null) {
 		cityNameList = [];
@@ -1953,6 +1966,7 @@ function initLoad () {
 };
 
 function setupControls() {
+	document.getElementById('redirect_cancel').addEventListener('click', redirectCancel);
 	document.getElementById('overlay_message_close').addEventListener('click', hideOverlay);
 	document.getElementById('info_intro_close_button').addEventListener('click', hideOverlay);
 	document.getElementById('info_full_close_button').addEventListener('click', hideOverlay);
