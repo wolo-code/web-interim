@@ -380,7 +380,10 @@ function syncNearCityList(nearCityList_coord, nearCityList_detail) {
 			xCity = nearCityList_coord[aCity];
 			xCity.city.country = nearCityList_detail[aCity].city.country;
 			xCity.city.gp_id = nearCityList_detail[aCity].city.gp_id;
-			xCity.city.group = nearCityList_detail[aCity].city.group;
+			if(typeof nearCityList_detail[aCity].city.administrative_level_2 != 'undefined')
+				xCity.city.administrative_level_2 = nearCityList_detail[aCity].city.administrative_level_2;
+			else if(typeof nearCityList_detail[aCity].city.administrative_level_1 != 'undefined')
+				xCity.city.administrative_level_1 = nearCityList_detail[aCity].city.administrative_level_1;
 			xCity.city.name = nearCityList_detail[aCity].city.name;
 			xCity.city.name_id = nearCityList_detail[aCity].city.name_id;
 			nearCityList.push(xCity);
@@ -554,11 +557,7 @@ function tryDefaultCity() {
 }
 
 function getFullCity(city) {
-	var fullCity = city.country + ' \\ ';
-	if(typeof (city.group) != 'undefined' && city.group != null && city.group.length > 0)
-		fullCity += city.group + ': ';
-	fullCity += getProperCityAccent(city);
-	return fullCity;
+	return city.country + ' \\ ' + getCityGroupName(city) + ': ' + getProperCityAccent(city);
 }
 function addCity(gp_id, callback) {
 
@@ -714,7 +713,7 @@ function showCopyWcodeMessage() {
 		for(let key in cities) {
 			if(cities[key].country == country_name)
 				country_repeat_count++;
-			if(cities[key].group == group_name)
+			if(getCityGroupName(cities[key]) == group_name)
 				group_repeat_count++;
 			city_repeat_count++;
 		}
@@ -946,7 +945,7 @@ function getCodeFull() {
 	else
 		prefix = [code_city.country.toLowerCase()];
 	if(multiple_group)
-		prefix = prefix.concat([code_city.group.toLowerCase()]);
+		prefix = prefix.concat([getCodeCityGroupName().toLowerCase()]);
 
 	if(multiple_city)
 		return prefix.concat(codeFull_city_part);
@@ -963,7 +962,7 @@ function getCodeFull_capitalized() {
 	else
 		prefix = [code_city.country];
 	if(multiple_group)
-		prefix = prefix.concat([code_city.group]);
+		prefix = prefix.concat([getCodeCityGroupName()]);
 
 	if(multiple_city)
 		return prefix.concat(codeFull_city_part);
@@ -995,16 +994,20 @@ function getCodeCityNameId() {
 	return code_city.name_id;
 }
 
-function getCodeGroupName() {
-	return code_city.group;
-}
 
 function getCodeCityCountryName() {
 	return code_city.country;
 }
 
 function getCodeCityGroupName() {
-	return code_city.group;
+	return getCityGroupName(code_city);
+}
+
+function getCityGroupName(city) {
+	if(typeof city.administrative_level_2 != 'undefined')
+		return city.administrative_level_2;
+	else if(typeof city.administrative_level_1 != 'undefined')
+		return city.administrative_level_1;
 }
 
 function getCodeCity() {
@@ -1475,7 +1478,7 @@ function initMap() {
 			clearAddress();
 			var pos = resolveLatLng(places[0].geometry.location);
 			focus_(pos);
-			encode(pos);
+			encode(places[0].geometry.location);
 			clearAddress();
 			getAddress(pos);
 		}
