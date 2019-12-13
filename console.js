@@ -202,22 +202,24 @@ function process_entry(key) {
 	ref.update(updates);
 }
 
-function submit_city(gp_id, lat, lng, name, accent, group, country, callback) {
+function submit_city(gp_id, lat, lng, name, accent, administrative_level_3, administrative_level_2, administrative_level_1, country, callback) {
 	var refCityDetail = database.ref('CityDetail').push();
 	refCityDetail.set({
 		'gp_id': gp_id,
-		'name': name,
 		'name_id': name.toLocaleLowerCase(),
-		'accent': accent == null? name : accent,
-		'group': group,
+		'name': name,
+		'accent': accent,
+		'administrative_level_3': administrative_level_3,
+		'administrative_level_2': administrative_level_2,
+		'administrative_level_1': administrative_level_1,
 		'country': country
 	});
 	geoFireInit();
 	geoFire.set(refCityDetail.key, [lat, lng]).then( function() {
 			if(typeof callback == 'function')
 				callback();
-		}, function(error) {
-			console.log("Error: " + error);
+		}, function(err) {
+			console.log("Error: " + err);
 		}
 	);
 }
@@ -295,7 +297,9 @@ function fillForm(address_object) {
 	city_lng.value = address_object.city_lng;
 	city_name.value = address_object.city_name;
 	city_accent.value = address_object.city_accent;
-	city_group.value = address_object.group;
+	city_administrative_level_3.value = address_object.administrative_level_3;
+	city_administrative_level_2.value = address_object.administrative_level_2;
+	city_administrative_level_1.value = address_object.administrative_level_1;
 	city_country.value = address_object.country;
 }
 
@@ -304,7 +308,9 @@ function clearForm() {
 	city_lat.value = '';
 	city_lng.value = '';
 	city_country.value = '';
-	city_group.value = '';
+	city_administrative_level_3.value = '';
+	city_administrative_level_2.value = '';
+	city_administrative_level_1.value = '';
 	city_name.value = '';
 	city_accent.value = '';
 }
@@ -559,10 +565,12 @@ function upload_entry() {
 			var accent = unquote(cells[2]);
 			if(accent.length == 0 || accent.localeCompare(name) == 0)
 				accent = null;
-			var group = null;
+			var administrative_level_3 = null;
+			var administrative_level_2 = null;
+			var administrative_level_1 = null;
 			var country_iso = unquote(cells[0]);
 			if(upload_on)
-				submit_city(gp_id, lat, lng, name, accent, group, country_iso, upload_entry);
+				submit_city(gp_id, lat, lng, name, accent, administrative_level_3, administrative_level_2, administrative_level_1, country_iso, upload_entry);
 			else {
 				if(upload_completed_id == country_iso+'_'+name)
 					upload_on = true;

@@ -273,6 +273,10 @@ var chooseCity_by_periphery_List;
 function showChooseCity_by_periphery_Message() {
 	clearChooseCity_by_periphery_List();
 	choose_city_by_periphery_message.classList.remove('hide');
+	showChooseCity_by_periphery_List();
+}
+
+function showChooseCity_by_periphery_List() {
 	var container = document.getElementById('choose_city_by_periphery_message_list');
 	for(let key in chooseCity_by_periphery_List) {
 		var row = document.createElement('div');
@@ -295,6 +299,9 @@ function clearChooseCity_by_periphery_List() {
 function chooseCity_by_periphery(list, callback) {
 	chooseCity_by_periphery_List = list;
 	chooseCity_by_periphery_Callback = callback;
+	if(!document.getElementById('choose_city_by_periphery_message').classList.contains('hide')
+	 && document.getElementById('choose_city_by_periphery_message_list').innerHTML.length == 0)
+		showChooseCity_by_periphery_List()
 }
 
 function chooseCity_by_periphery_Continue(e) {
@@ -1603,9 +1610,9 @@ function getPanByOffset() {
 
 function getIntentURL(latLng, code_string) {
 	if((navigator.userAgent.match(/android/i)))
-		return 'geo:0,0?q='+latLng.lat+','+latLng.lng+'(\\ '+code_string+' /)';
+		return 'geo:0,0?q='+latLng.lat()+','+latLng.lng()+'(\\ '+code_string+' /)';
 	else
-		return 'https://maps.google.com/maps?q=loc:'+latLng.lat+','+latLng.lng+'&t=h';
+		return 'https://maps.google.com/maps?q=loc:'+latLng.lat()+','+latLng.lng()+'&t=h';
 }
 
 function clearMap() {
