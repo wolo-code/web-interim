@@ -33,6 +33,8 @@ ClickEventHandler.prototype.getPlaceInformation = function(placeId) {
 
 function firebaseInit() {
 	firebase.initializeApp(FIREBASE_CONFIG);
+	wait_loader.classList.remove('hide');
+	authInit();
 	if(typeof firebase.analytics != 'undefined')
 		analytics = firebase.analytics();
 	if(typeof firebase.performance != 'undefined')
@@ -76,6 +78,168 @@ function hideNotication() {
 }
 if(typeof initLoad !== 'undefined')
 	initLoad();
+function onAccount() {
+	if(firebase.auth().currentUser)
+		showAccountDialog();
+	else
+		onLogin();
+}
+
+function showAccountDialog() {
+	document.getElementById('account_dialog_container').classList.remove('hide');
+	account_dialog_address_active_first = true;
+}
+
+function hideAccountDialog() {
+	document.getElementById('account_dialog_container').classList.add('hide');
+	clearAccountDialogSaveForm();
+	clearSaveEntry();
+}
+
+function onAccountDialogSave() {
+	if(!document.getElementById('save_title_main').value.length) {
+		showNotification("Title is required");
+		return;
+	}
+	if(locating) {
+		showNotification("Still locating..");
+		return;
+	}
+	
+	var user = firebase.auth().currentUser;
+	if(user != null) {
+		uid = user.uid;
+		firebase.database().ref('/UserData/'+uid).push({
+			city_id: getCodeCity().id,
+			code: getCodeWCode(),
+			title: document.getElementById('save_title_main').value,
+			segment: document.getElementById('save_title_segment').value,
+			address: document.getElementById('save_address').innerText,
+			time: firebase.database.ServerValue.TIMESTAMP
+		}, function() {
+			clearAccountDialogSaveForm();
+		});
+	}
+}
+
+function clearAccountDialogSaveForm() {
+	document.getElementById('save_title_main').value = '';
+	document.getElementById('save_title_segment').value = '';
+	document.getElementById('save_address').innerText = "\xa0\xa0Address (optional)";
+	account_dialog_address_active_first = true;
+}
+
+function onAccountDialogAddressActive() {
+	if (account_dialog_address_active_first) {
+		account_dialog_address_active_first = false;
+		document.getElementById('save_address').innerHTML = address;
+	}
+}
+
+function loadSaveList() {
+	saveList = [];
+	lastActiveSaveEntry = null;
+	var user = firebase.auth().currentUser;
+	if(user != null) {
+		uid = user.uid;
+		var container = document.getElementById('account_dialog_save_list');
+		firebase.database().ref('/UserData/'+uid).on('value', function(snapshot) {
+			document.getElementById('account_dialog_save_list').innerHTML = '';
+			saveList = snapshot.val();
+			if(saveList && Object.keys(saveList).length) {
+				document.getElementById('account_dialog_save_list_loader').classList.add('hide');
+				document.getElementById('account_dialog_save_list_placeholder').classList.add('hide');
+				for(let key in saveList) {
+					let row = document.createElement('div');
+					let row_title = document.createElement('div');
+					let row_segment = document.createElement('div');
+					let row_controls_container = document.createElement('div');
+					let row_controls = document.createElement('div');
+					row_title.setAttribute('class', 'row-title');
+					row_title.innerText = saveList[key].title;
+					row_segment.setAttribute('class', 'row-segment');
+					row_segment.innerText = saveList[key].segment;
+					row.addEventListener('click', onPressSaveEntry);
+					row.appendChild(row_title);
+					row.appendChild(row_segment);
+					container.appendChild(row);
+					row.data_key = key;
+					var row_address = document.createElement('div');
+					var row_code = document.createElement('div');
+					var row_delete = document.createElement('span');
+					var row_process = document.createElement('span');
+					row_address.setAttribute('class', 'row-address');
+					row_address.innerText = saveList[key].address;
+					row_code.setAttribute('class', 'row-code');
+					row_code.innerText = '\\' + ' ' + saveList[key].code.join(' ') + ' ' + '/';
+					row_controls.setAttribute('class', 'row-controls');
+					row_delete.setAttribute('class', 'row-delete');
+					row_delete.innerText = 'Delete';
+					row_delete.addEventListener('click', deleteSaveEntry);
+					row_process.setAttribute('class', 'row-delete');
+					row_process.innerText = '►';
+					row_process.addEventListener('click', processSaveEntry);
+					row_controls.appendChild(row_delete);
+					row_controls.appendChild(row_process);
+					row.appendChild(row_code);
+					row.appendChild(row_address);
+					row_controls_container.setAttribute('class', 'row-controls-container');
+					row_controls_container.appendChild(row_controls);
+					row.appendChild(row_controls_container);
+					getCityFromId(saveList[key].city_id, function(city) {
+						row.data_city = city;
+					});
+				}
+			}
+			else {
+				document.getElementById('account_dialog_save_list_loader').classList.add('hide');
+				document.getElementById('account_dialog_save_list_placeholder').classList.remove('hide');
+			}
+		})
+	}
+}
+
+function processSaveEntry(e) {
+	var row = e.target.parentElement.parentElement.parentElement;
+	getCityCenterFromId(row.data_city, function(city) {
+		decode_continue(city, saveList[row.data_key].code);
+		hideAccountDialog();
+	});
+}
+
+function deleteSaveEntry(e) {
+	var user = firebase.auth().currentUser;
+	if(user != null) {
+		uid = user.uid;
+		firebase.database().ref('/UserData/'+uid+'/'+e.target.parentElement.parentElement.parentElement.data_key).remove(function() {
+			showNotification('Deleted record successfully');
+		});
+	}
+}
+
+function onPressSaveEntry(e) {
+	if(lastActiveSaveEntry && lastActiveSaveEntry != e.target)
+		toggleSaveEntry(lastActiveSaveEntry);
+	toggleSaveEntry(e.target);
+}
+
+function toggleSaveEntry(e) {
+	if(e.classList.contains('active')) {
+		e.classList.remove('active');
+		lastActiveSaveEntry = null;
+	}
+	else {
+		e.classList.add('active');
+		lastActiveSaveEntry = e;
+	}	
+}
+
+function clearSaveEntry() {
+	if(lastActiveSaveEntry) {
+		lastActiveSaveEntry.classList.remove('active');
+		lastActiveSaveEntry = null;
+	}
+}
 // var latLng_p;
 // var address;
 // var gpId;
@@ -135,6 +299,39 @@ function refreshAddress() {
 
 function copyAddress() {
 	copyNodeText(address_text_content);
+}
+function onLogin() {
+	showAuthenticationDialog();
+	hideAccountDialog();
+	ui.start('#firebaseui-auth', uiConfig);	
+}
+
+function onLogout() {
+	document.getElementById('firebaseui-auth-container').classList.remove('hide');
+	firebase.auth().signOut()
+	.then(function() {
+		document.getElementById('firebaseui-auth-container').classList.add('hide');
+		document.getElementById('account_dialog_container').classList.add('hide');
+		document.getElementById('account_user_image').classList.add('hide');
+		document.getElementById('account_user_image').setAttribute('src', null);
+		document.getElementById('account_default_image').classList.remove('hide');
+		document.getElementById('account_default_image').classList.add('inactive');
+		document.getElementById('account_default_image').classList.remove('hide');
+		document.getElementById('account_dialog_save_list_loader').classList.remove('hide');
+		document.getElementById('account_dialog_save_list_placeholder').classList.add('hide');
+		document.getElementById('account_dialog_save_list').innerHTML = '';
+	})
+	.catch(function(error) {
+		console.error('logout error');
+	});
+}
+
+function showAuthenticationDialog() {
+	document.getElementById('firebaseui-auth-container').classList.remove('hide');
+}
+
+function hideAuthenticationDialog() {
+	document.getElementById('firebaseui-auth-container').classList.add('hide');
 }
 // const CURRENT_VERSION;
 // var initWCode;
@@ -453,6 +650,7 @@ function getCityFromPositionThenDecode(latLng, wcode) {
 
 }
 
+// only detail, not center
 function getCityFromId(id, callback) {
 	var ref = database.ref('CityDetail'+'/'+id);
 	wait_loader.classList.remove('hide');
@@ -635,7 +833,7 @@ function setCodeWords(code, city, position) {
 	for(const i of object)
 		message.push(wordList.getWord(i));
 
-	setCode(city, message, position);
+	setCode(city, message, resolveLatLng(position));
 }
 
 function stringifyEncodeData(city_center, position) {
@@ -1075,6 +1273,34 @@ function initData() {
 		decode(pendingWords);
 	}
 }
+var uiConfig;
+var ui;
+
+function authInit() {
+	uiConfig = {
+		callbacks: {
+			signInSuccessWithAuthResult: function(authResult, redirectUrl) {
+				signedIn();
+				document.getElementById('firebaseui-auth-container').classList.add('hide');
+			},
+			uiShown: function() {
+				wait_loader.classList.add('hide');
+			}
+		},
+		signInFlow: 'popup',
+		signInOptions: [
+			firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+			firebase.auth.FacebookAuthProvider.PROVIDER_ID,
+			firebase.auth.EmailAuthProvider.PROVIDER_ID,
+		],
+		tosUrl: 'https://location.wcodes.org/tos',
+		privacyPolicyUrl: function() {
+			window.location.assign('https://location.wcodes.org/ppc');
+		}
+	};
+	
+	ui = new firebaseui.auth.AuthUI(firebase.auth());
+}
 function focus__(city, pos, code) {
 	focus_(pos);
 	setCode(city, code, pos);
@@ -1184,7 +1410,7 @@ function setInfoWindowText(city_accent, city_name, code_string, latLng) {
 		if(document.getElementById('share_code_button') != null)
 			addLongpressListener(document.getElementById('share_code_button'));
 	});
-	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'><span class='control' onclick='showChooseCity_by_periphery_Message();'>" + city_accent + "</span></span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code_string + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' onclick='toggleAddress();' src=" + svg_address + " ><a href='"+ getIntentURL(resolveLatLng(latLng), city_name + ' ' + code_string) + "'><img id='external_map_button' class='control' src=" + svg_map + " ></a><div id='share_code_button' class='control'><div class='shield'></div><img src=" + svg_share + " ></div></div>");
+	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'><span class='control' onclick='showChooseCity_by_periphery_Message();'>" + city_accent + "</span></span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code_string + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' onclick='toggleAddress();' src=" + svg_address + " ><a href='"+ getIntentURL(latLng, city_name + ' ' + code_string) + "'><img id='external_map_button' class='control' src=" + svg_map + " ></a><div id='share_code_button' class='control'><div class='shield'></div><img src=" + svg_share + " ></div></div>");
 }
 
 function isInfoWindowOpen() {
@@ -1965,6 +2191,7 @@ function percantageToColor(perc) {
 function initLoad () {
 	if(!initLoadDone && document.readyState === 'interactive') {
 		firebaseInit();
+		initApp();
 		dbInit();
 		versionCheck();
 		if(!urlDecode())
@@ -1975,8 +2202,63 @@ function initLoad () {
 	}
 };
 
+function initApp() {
+	firebase.auth().getRedirectResult().then(function(result) {
+		if (result.credential) {
+			// This gives you a Google Access Token. You can use it to access the Google API.
+			//var token = result.credential.accessToken;
+			signedIn();
+		}
+		else if (firebase.auth().currentUser) {
+			// User already signed in.
+			// Update your UI, hide the sign in button.
+			signedIn();
+		} else {
+			//showRestrictedBlock();
+			// No user signed in, update your UI, show the sign in button.
+			// var provider = new firebase.auth.GoogleAuthProvider();
+			// firebase.auth().signInWithRedirect(provider);
+			document.getElementById('account_default_image').classList.add('inactive');
+			document.getElementById('account_default_image').classList.remove('hide');
+		}
+		// var user = result.user;
+	}).catch(function(error) {
+		var errorCode = error.code;
+		var errorMessage = error.message;
+		// The email of the user's account used.
+		var email = error.email;
+		// The firebase.auth.AuthCredential type that was used.
+		var credential = error.credential;
+		// ...
+	});
+}
+
+function signedIn() {
+	document.getElementById('account_default_image').classList.remove('inactive');
+	document.getElementById('account_dialog_logout').classList.remove('hide');
+	document.getElementById('account_dialog_display_name').innerText = firebase.auth().currentUser.displayName;
+	document.getElementById('account_dialog_email').innerText = firebase.auth().currentUser.email;
+	if(typeof firebase.auth().currentUser.photoURL != null && firebase.auth().currentUser.photoURL.length) {
+		document.getElementById('account_user_image').setAttribute('src', firebase.auth().currentUser.photoURL);
+		document.getElementById('account_user_image').classList.remove('hide');
+		document.getElementById('account_default_image').classList.add('hide');
+	}
+	else {
+		document.getElementById('account_default_image').classList.remove('inactive');
+		document.getElementById('account_default_image').classList.remove('hide');
+	}
+	loadSaveList();
+}
+
 function setupControls() {
 	document.getElementById('redirect_cancel').addEventListener('click', redirectCancel);
+	document.getElementById('account').addEventListener('click', showAccountDialog);
+	document.getElementById('authentication_header_close').addEventListener('click', hideAuthenticationDialog);
+	document.getElementById('account_dialog_close').addEventListener('click', hideAccountDialog);
+	document.getElementById('account').addEventListener('click', onAccount);
+	document.getElementById('account_dialog_logout').addEventListener('click', onLogout);
+	document.getElementById('save_address').addEventListener('focus', onAccountDialogAddressActive);
+	document.getElementById('account_dialog_save').addEventListener('click', onAccountDialogSave);
 	document.getElementById('overlay_message_close').addEventListener('click', hideOverlay);
 	document.getElementById('info_intro_close_button').addEventListener('click', hideOverlay);
 	document.getElementById('info_full_close_button').addEventListener('click', hideOverlay);

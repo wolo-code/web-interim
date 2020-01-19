@@ -248,6 +248,11 @@ var mode_preview_activated = false;
 // Notification
 var NOTIFICATION_DURATION_DEFAULT = 2500;
 var NOTIFICATION_DURATION_LONG = 10000;
+
+// Account Dialog
+var saveList;
+var lastActiveSaveEntry;
+var account_dialog_address_active_first;
 // var pendingLocate;
 function syncLocate(override_dnd) {
 	if (typeof google === 'object' && typeof google.maps === 'object' && typeof map == 'object') {
@@ -490,7 +495,7 @@ button.border {
 }
 
 .notification_bar {
-	z-index: 1;
+	z-index: 100;
 	position: absolute;
 	left: 0;
 	right: 0;
@@ -585,11 +590,19 @@ button.border {
 			font-size: 0.7em
 		}
 		
+		#account {
+			right: 6px !important;
+		}
+		
 }
 
 @media (max-width: 316px) {
 	#pac-input {
 		top: 126px !important;
+	}
+	
+	#account {
+		top: 180px !important;
 	}
 }
 @font-face {
@@ -874,6 +887,165 @@ h2.message_dialog_label {
 }
 	</style>
 	<style>
+#account {
+	position: absolute;
+	right: 188px;
+	top: 18px;
+}
+
+#account_default_image.inactive > svg > path:first-child {
+	fill: #AAAAAA;
+}
+
+#account_dialog {
+	position: absolute;
+	top: 18px;
+	left: 0;
+	right: 0;
+	max-width: 320px;
+	background: white;
+	font-family: 'Abel';
+	background-color: #FFFFFF;
+	z-index: 1;
+}
+
+#account svg {
+	border-radius: 20px;
+}
+
+.message_dialog_body h3 {
+	text-align: left;
+}
+
+#firebaseui-auth-container {
+	
+}
+
+#firebaseui-auth > div {
+	background: white;
+	padding-top: 4px;
+	padding-bottom: 4px;
+}
+
+#save_title_main, #save_title_segment, #save_address {
+	background-color: white;
+	color: #999999;
+	outline: 0;
+	outline-style: none;
+	border-top: none;
+	border-left: none;
+	border-right: none;
+	border-bottom-style: inset;
+	border-bottom-width: 2px;
+	min-width: 240px;
+}
+
+#save_address {
+	margin: 0 4px;
+	color: #444444;
+}
+
+#account > span > img {
+	width: 42px;
+	height: 42px;
+	border-radius: 25px;
+}
+
+#account_dialog_save_list > div {
+	background-color: #69B7CF;
+	color: #ffffff;
+	font-size: larger;
+	border-radius: 5px;
+	padding: 8px 0 8px 0;
+	margin: 6px 8px;
+	cursor: pointer;
+}
+
+.hr-separator {
+	border-bottom: 1px solid #AAAAAA;
+}
+
+.span-left {
+	text-align: left;
+}
+
+#save_address {
+	text-align: left;
+}
+
+#account_dialog_save, #account_dialog_logout {
+	margin-top: 6px;
+	float: none;
+	left: auto;
+}
+
+#account_dialog_save_list_placeholder, #account_dialog_save_list_loader {
+	padding-right: 42px;
+	text-align: right;
+}
+
+.row-title, .row-segment, .row-address, .row-code {
+	pointer-events:none;
+}
+
+.row-title {
+	text-align: left;
+	font-size: large;
+	padding-left: 10px;
+}
+
+.row-segment {
+	text-align: left;
+	font-size: medium;
+	padding-left: 10px;
+}
+
+.row-address {
+	padding: 10px;
+	text-align: left;
+	color: #999999;
+	font-size: medium;
+}
+
+.row-controls-container {
+	overflow: hidden;
+}
+
+.active .row-address, .active .row-code, .active .row-controls {
+	display: block !important;
+}
+
+.row-code, .row-address, .row-controls {
+	display: none;
+}
+
+.row-controls {
+	padding: 8px 0;
+	float: right;
+	position: relative;
+	left: -50%;
+	text-align: left;
+}
+
+.row-controls > span {
+	min-width: 50px;
+	font-size: medium;
+	margin: 0px 8px 0px;
+	padding: 8px 14px;
+	color: #69B7CF;
+	position: relative;
+	left: 50%;
+	box-shadow: rgba(0, 0, 0, 0.285) 0px 1px 4px -1px;
+	font-family: 'Roboto Condensed', Abel, sans-serif;
+	display: inline-block;
+	text-align: center;
+}
+
+#account_dialog_save_list > div.active {
+	background: white;
+	color: #69B7CF;
+	border: 1px solid #69B7CF;
+}
 #accuracy_container {
 	bottom: 88px;
 	z-index: 1;
@@ -929,6 +1101,19 @@ h2.message_dialog_label {
 	0%	{ fill: #FFFFFF; }
 	50%	{ fill: #69B7CF; }
 	100%{ fill: #FFFFFF; }
+}
+#authentication_header {
+	max-width: 360px;
+	background: white;
+}
+
+#authentication_header_close_container {
+	position: relative;
+}
+
+#authentication_header h2 {
+	margin: auto;
+	padding-top: 8px;
 }
 .choose_city_message {
 	position: absolute;
@@ -1579,7 +1764,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span>
-	2019 Dec 27 - 22:03:20			</span> (UTC)
+	2020 Jan 19 - 12:20:04			</span> (UTC)
 		</div>
 	</div>
 	<div>
@@ -1728,6 +1913,81 @@ h2.message_dialog_label {
 		</div>
 	</div>
 </div>
+<div id='firebaseui-auth-container' class="overlay hide">
+	<div id='authentication_header' class='center'>
+		<div id='authentication_header_close_container'>
+			<div id='authentication_header_close' class="message_dialog_close control">
+				<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+	 height='22' width='22' viewBox="0 0 24 24">
+	<path fill='#CECECE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+	<path fill='none' d="M0 0h24v24H0z" />
+</svg>
+</span>
+			</div>
+		</div>
+		<h2>Login / SignUp</h2>
+	</div>
+	<div id='firebaseui-auth'></div>
+</div>
+<div id='account_dialog_container' class="hide overlay">
+	<div id='account_dialog' class="center message_dialog">
+		<h2 id='account_dialog_label' class='message_dialog_label'>
+			Account
+		</h2>
+		<div id='account_dialog_close' class="message_dialog_close control">
+			<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+	 height='22' width='22' viewBox="0 0 24 24">
+	<path fill='#CECECE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+	<path fill='none' d="M0 0h24v24H0z" />
+</svg>
+</span>
+		</div>
+		<div class='message_dialog_body'>
+			<h3 class='dialog-sub-label'>
+				Logged in as
+			</h3>
+			<div id='account_dialog_main'>
+				<div class='span-left'>
+					<div id='account_dialog_display_name'></div>
+					<div id='account_dialog_email'></div>
+				</div>
+				<div class='message_dialog_control_container'>
+					<div id='account_dialog_logout' class='message_dialog_control'>
+						<button id='account_dialog_logout_button' class="border control" type='button'>Logout</button>
+					</div>
+				</div>
+			</div>
+			<div class='hr-separator'></div>
+			<h3 class='dialog-sub-label'>
+				Save current location
+			</h3>
+			<div id='account_dialog_options'>
+				<div id='save_title_container' class='center'>
+					<input id='save_title_main' type='text' placeholder="&nbsp;&nbsp;Title&nbsp; &nbsp;e.g. Taj Mahal">
+					<input id='save_title_segment' type='text' placeholder="&nbsp;&nbsp;Segment&nbsp; &nbsp;e.g. West gate (optional)">
+				</div>
+				<div id='save_address_container'>
+					<div id='save_address' class='initial' contentEditable>&nbsp;&nbsp;Address (optional)</div>
+				</div>
+				<div class='message_dialog_control_container'>
+					<div id='account_dialog_save' class="message_dialog_control center">
+						<button id='account_dialog_save_button' class="border control" type='button'>Save</button>
+					</div>
+				</div>
+				<div id='waddress_list_container'></div>
+			</div>
+			<div class='hr-separator'></div>
+			<h3 class='dialog-sub-label'>
+				Saved locations
+			</h3>
+			<div id='account_dialog_save_list_container'>
+				<div id='account_dialog_save_list_loader' class='center'>-loading-</div>
+				<div id='account_dialog_save_list_placeholder' class="center hide">-empty-</div>
+				<div id=account_dialog_save_list></div>
+			</div>
+		</div>
+	</div>
+</div>
 <div id='map'></div>
 <div id='wait_loader'></div>
 <div id='logo'>
@@ -1794,6 +2054,17 @@ h2.message_dialog_label {
 </span>
 	</a>
 </div>
+<div id='account' class="control">
+	<span class='image'>
+		<img id='account_user_image' class='hide'>
+		<span id='account_default_image' class="inactive hide"><svg xmlns='http://www.w3.org/2000/svg'
+	 width='42' height='42' viewBox="0 0 24 24">
+	 <path d="M0 0h24v24H0z" fill='#67b6cf'/>
+	<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill='#ffffff'/>
+</svg>
+</span>
+	</span>
+</div>
 <input id='pac-input' class='controls' type='text' placeholder='Search' tabindex='3' >
 <div id='suggestion_result'></div>
 <input id='decode_button' class='control' type='button' value='Decode' tabindex='4' >
@@ -1859,6 +2130,9 @@ h2.message_dialog_label {
 <script src="https://www.gstatic.com/firebasejs/7.4.0/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/7.4.0/firebase-analytics.js"></script>
 <script src="https://www.gstatic.com/firebasejs/7.4.0/firebase-performance.js"></script>
+<script src='https://www.gstatic.com/firebasejs/7.4.0/firebase-auth.js'></script>
+<script src='https://www.gstatic.com/firebasejs/ui/4.3.0/firebase-ui-auth.js'></script>
+<link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.3.0/firebase-ui-auth.css" />
 	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyCYD7Q0f4ZR0cH0EOi29wVV2Edgb_j5i_s&libraries=places&callback=syncInitMap' async defer></script></head>
 	<script src="/geofire.min.js" async defer></script>
 	<script src="/qrcode.min.js" async defer></script>
