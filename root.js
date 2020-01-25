@@ -109,6 +109,9 @@ function onAccountDialogSave() {
 	var user = firebase.auth().currentUser;
 	if(user != null) {
 		uid = user.uid;
+		debugger;
+		if(document.getElementById('save_address').innerText == '\xa0\xa0Address (optional)' || document.getElementById('save_address').innerText == '')
+			document.getElementById('save_address').innerText = address;
 		firebase.database().ref('/UserData/'+uid).push({
 			city_id: getCodeCity().id,
 			code: getCodeWCode(),
@@ -151,23 +154,24 @@ function loadSaveList() {
 				document.getElementById('account_dialog_save_list_placeholder').classList.add('hide');
 				for(let key in saveList) {
 					let row = document.createElement('div');
+					let row_header = document.createElement('div');
 					let row_title = document.createElement('div');
 					let row_segment = document.createElement('div');
 					let row_controls_container = document.createElement('div');
 					let row_controls = document.createElement('div');
+					let row_address = document.createElement('div');
+					let row_code = document.createElement('div');
+					let row_delete = document.createElement('span');
+					let row_process = document.createElement('span');
+					row_header.setAttribute('class', 'row-header');
 					row_title.setAttribute('class', 'row-title');
 					row_title.innerText = saveList[key].title;
 					row_segment.setAttribute('class', 'row-segment');
 					row_segment.innerText = saveList[key].segment;
+					row_header.appendChild(row_title);
+					row_header.appendChild(row_segment);
 					row.addEventListener('click', onPressSaveEntry);
-					row.appendChild(row_title);
-					row.appendChild(row_segment);
-					container.appendChild(row);
 					row.data_key = key;
-					var row_address = document.createElement('div');
-					var row_code = document.createElement('div');
-					var row_delete = document.createElement('span');
-					var row_process = document.createElement('span');
 					row_address.setAttribute('class', 'row-address');
 					row_address.innerText = saveList[key].address;
 					row_code.setAttribute('class', 'row-code');
@@ -181,6 +185,8 @@ function loadSaveList() {
 					row_process.addEventListener('click', processSaveEntry);
 					row_controls.appendChild(row_delete);
 					row_controls.appendChild(row_process);
+					container.appendChild(row);
+					row.appendChild(row_header);
 					row.appendChild(row_code);
 					row.appendChild(row_address);
 					row_controls_container.setAttribute('class', 'row-controls-container');
@@ -833,7 +839,7 @@ function setCodeWords(code, city, position) {
 	for(const i of object)
 		message.push(wordList.getWord(i));
 
-	setCode(city, message, resolveLatLng(position));
+	setCode(city, message, position);
 }
 
 function stringifyEncodeData(city_center, position) {
@@ -1012,10 +1018,10 @@ function encode(position) {
 				}, function() {
 				encode_continue(null, position)
 				} );
-				getCity_by_perifery_list(resolveLatLng(position), false);
+				getCity_by_perifery_list(position, false);
 			}
 			else {
-				getCity_by_perifery_list(resolveLatLng(position), true);
+				getCity_by_perifery_list(position, true);
 			}
 		});
 }
@@ -1453,7 +1459,7 @@ function locateExec(failure) {
 			var watch_location_time_begin = new Date().getTime();
 			watch_location_timer = setTimeout(endWatchLocation, WATCH_LOCATION_MAX_TIMEOUT);
 			
-			location_icon_dot.classList.add('blinking');
+			accuracy_indicator.classList.add('blinking');
 			location_button.removeEventListener('mouseup', processPositionButtonUp);
 			location_button.removeEventListener('touchend', processPositionButtonTouchEnd);
 			location_button.addEventListener('mouseup', processPositionButtonUp);
@@ -1518,7 +1524,7 @@ function locateExec(failure) {
 					}
 					focus_(pos, accuCircle.getBounds());
 
-					if(position.coords.accuracy < WATCH_LOCATION_MIN_ACCURACY && !locate_button_pressed)
+					if(position.coords.accuracy <= WATCH_LOCATION_MIN_ACCURACY && !locate_button_pressed)
 						processPosition(pos);
 
 				},
@@ -1547,7 +1553,7 @@ function endWatchLocation() {
 	if(!locate_button_pressed) {
 		var pos;
 		if(typeof myLocDot != 'undefined')
-			pos = myLocDot.getPosition();
+			pos = resolveLatLng(myLocDot.getPosition());
 		if(pos != null)
 			processPosition(pos);
 		else
@@ -1558,7 +1564,7 @@ function endWatchLocation() {
 function proceedPosition() {
 	var pos;
 	if(typeof myLocDot != 'undefined')
-		pos = myLocDot.getPosition();
+		pos = resolveLatLng(myLocDot.getPosition());
 	if(pos != null)
 		processPosition(pos);
 	else
@@ -1620,7 +1626,7 @@ function handleLocationError(browserHasGeolocation) {
 function clearLocating() {
 	locating = false;
 	wait_loader.classList.add('hide');
-	location_icon_dot.classList.remove('blinking');
+	accuracy_indicator.classList.remove('blinking');
 	hideNotication();
 	clearTimeout(watch_location_notice_timer);
 }
@@ -1711,7 +1717,7 @@ function initMap() {
 			clearAddress();
 			var pos = resolveLatLng(places[0].geometry.location);
 			focus_(pos);
-			encode(places[0].geometry.location);
+			encode(pos);
 			clearAddress();
 			getAddress(pos);
 		}
@@ -1762,7 +1768,7 @@ function initMap() {
 		clearURL();
 		var pos = resolveLatLng(event.latLng);
 		focus_(pos);
-		encode(event.latLng);
+		encode(pos);
 	});
 
 	decode_button.addEventListener('click', function() {
@@ -1824,7 +1830,7 @@ function load(marker) {
 	marker.setVisible(false);
 	lastMarker = marker;
 	infoWindow_setContent(MESSAGE_LOADING);
-	encode(marker.position);
+	encode(resolveLatLng(marker.position));
 }
 
 function getPanByOffset() {
