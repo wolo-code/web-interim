@@ -1596,10 +1596,12 @@ function processPositionButtonDown() {
 }
 
 function processPositionButtonUp() {
-	locate_button_pressed = false;
 	var press_duration = locating && (new Date).getTime() - location_button_begin_time;
-	if(press_duration > location_button_PRESS_THRESHOLD)
-		proceedPosition();
+	if(press_duration > location_button_PRESS_THRESHOLD) {
+		location_icon_dot.classList.add('blinking');
+	}
+	else
+		locate_button_pressed = false;
 }
 
 function processPositionButtonTouchStart(e) {
@@ -1626,6 +1628,7 @@ function handleLocationError(browserHasGeolocation) {
 function clearLocating() {
 	locating = false;
 	wait_loader.classList.add('hide');
+	location_icon_dot.classList.remove('blinking');
 	accuracy_indicator.classList.remove('blinking');
 	hideNotication();
 	clearTimeout(watch_location_notice_timer);
