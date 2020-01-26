@@ -2214,31 +2214,16 @@ function initLoad () {
 function initApp() {
 	firebase.auth().getRedirectResult().then(function(result) {
 		if (result.credential) {
-			// This gives you a Google Access Token. You can use it to access the Google API.
-			//var token = result.credential.accessToken;
 			signedIn();
 		}
 		else if (firebase.auth().currentUser) {
-			// User already signed in.
-			// Update your UI, hide the sign in button.
 			signedIn();
 		} else {
-			//showRestrictedBlock();
-			// No user signed in, update your UI, show the sign in button.
-			// var provider = new firebase.auth.GoogleAuthProvider();
-			// firebase.auth().signInWithRedirect(provider);
 			document.getElementById('account_default_image').classList.add('inactive');
 			document.getElementById('account_default_image').classList.remove('hide');
 		}
-		// var user = result.user;
 	}).catch(function(error) {
-		var errorCode = error.code;
-		var errorMessage = error.message;
-		// The email of the user's account used.
-		var email = error.email;
-		// The firebase.auth.AuthCredential type that was used.
-		var credential = error.credential;
-		// ...
+		Sentry.captureException(error);
 	});
 }
 
