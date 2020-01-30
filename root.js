@@ -163,6 +163,7 @@ function loadSaveList() {
 					let row_code = document.createElement('div');
 					let row_delete = document.createElement('span');
 					let row_process = document.createElement('span');
+					let row_process_img = document.createElement('img');
 					row_header.setAttribute('class', 'row-header');
 					row_title.setAttribute('class', 'row-title');
 					row_title.innerText = saveList[key].title;
@@ -181,9 +182,10 @@ function loadSaveList() {
 					row_delete.innerText = 'Delete';
 					row_delete.addEventListener('click', deleteSaveEntry);
 					row_process.setAttribute('class', 'row-delete');
-					row_process.innerText = '►';
+					row_process_img.src = svg_front;
 					row_process.addEventListener('click', processSaveEntry);
 					row_controls.appendChild(row_delete);
+					row_process.appendChild(row_process_img);
 					row_controls.appendChild(row_process);
 					container.appendChild(row);
 					row.appendChild(row_header);
@@ -206,6 +208,7 @@ function loadSaveList() {
 }
 
 function processSaveEntry(e) {
+	hideNotication();
 	var row = e.target.parentElement.parentElement.parentElement;
 	getCityCenterFromId(row.data_city, function(city) {
 		decode_continue(city, saveList[row.data_key].code);
@@ -906,8 +909,8 @@ function handleShareWCode() {
 
 function shareWCode() {
 	navigator.share( {
-		title: "WCode Location",
-		text: "WCode Location for: " + ' ' + address + ' ' + '|',
+		title: "Wolo",
+		text: "Wolo code for: " + ' ' + address + ' ' + '|',
 		url: '/' + getCodeFull().join('.').toLowerCase().replace(' ', '_') + '/'
 	} )
 	.catch((error) => console.log('Error sharing', error));
@@ -1299,9 +1302,9 @@ function authInit() {
 			firebase.auth.FacebookAuthProvider.PROVIDER_ID,
 			firebase.auth.EmailAuthProvider.PROVIDER_ID,
 		],
-		tosUrl: 'https://location.wcodes.org/tos',
+		tosUrl: 'https://wolo.codes/terms',
 		privacyPolicyUrl: function() {
-			window.location.assign('https://location.wcodes.org/ppc');
+			window.location.assign('https://wolo.codes/policy');
 		}
 	};
 	
@@ -1572,7 +1575,7 @@ function proceedPosition() {
 }
 
 function processPosition(pos) {
-	clearLocating();
+	clearLocating(false);
 	navigator.geolocation.clearWatch(watch_location_id);
 	clearTimeout(watch_location_timer);
 	document.getElementById('proceed_container').classList.add('hide');
@@ -1617,7 +1620,7 @@ function processPositionButtonTouchEnd(e) {
 }
 
 function handleLocationError(browserHasGeolocation) {
-	clearLocating();
+	clearLocating(true);
 	showNotification(browserHasGeolocation ?
 												'Error: The Geolocation service failed' :
 												'Error: Your browser doesn\'t support geolocation');
@@ -1625,7 +1628,9 @@ function handleLocationError(browserHasGeolocation) {
 	syncCheckIncompatibleBrowserMessage();
 }
 
-function clearLocating() {
+function clearLocating(hideAccuracyContainer) {
+	if(hideAccuracyContainer)
+		document.getElementById('accuracy_container').classList.add('hide');
 	locating = false;
 	wait_loader.classList.add('hide');
 	location_icon_dot.classList.remove('blinking');
@@ -1760,10 +1765,8 @@ function initMap() {
 	});
 
 	map.addListener('click', function(event) {
-		locating = false;
-		wait_loader.classList.add('hide');
+		clearLocating(true);
 		navigator.geolocation.clearWatch(watch_location_id);
-		clearTimeout(watch_location_timer);
 		pendingPosition = null;
 		pendingCity = null;
 		notification_top.classList.add('hide');
@@ -1844,8 +1847,10 @@ function getPanByOffset() {
 }
 
 function getIntentURL(latLng, code_string) {
-	if((navigator.userAgent.match(/android/i)))
+	if(navigator.userAgent.match(/android/i))
 		return 'geo:0,0?q='+latLng.lat+','+latLng.lng+'(\\ '+code_string+' /)';
+	else if(navigator.userAgent.match(/(iPad|iPhone|iPod)/i))
+		return 'https://maps.apple.com/?ll='+latLng.lat+','+latLng.lng+'&q='+'\\ '+code_string+' /';
 	else
 		return 'https://maps.google.com/maps?q=loc:'+latLng.lat+','+latLng.lng+'&t=h';
 }
@@ -2047,7 +2052,7 @@ function downloadQR() {
 		document.getElementById('qr_body').removeAttribute('style');
 		document.getElementById('qr_close').classList.remove('hide');			
 		var qrImage = canvas.toDataURL("image/png");
-		downloadURI('data:' + qrImage, "WCode Location - " + getCodeFull_text() + ".png");
+		downloadURI('data:' + qrImage, "Wolo codes - " + getCodeFull_text() + ".png");
 	});
 }
 
@@ -3020,3 +3025,4 @@ const svg_copy = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5v
 const svg_share = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyNCcgaGVpZ2h0PScyNCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZD0iTTAgMGgyNHYyNEgweiIgZmlsbD0nbm9uZScvPiA8cGF0aCBkPSJNMTggMTYuMDhjLS43NiAwLTEuNDQuMy0xLjk2Ljc3TDguOTEgMTIuN2MuMDUtLjIzLjA5LS40Ni4wOS0uN3MtLjA0LS40Ny0uMDktLjdsNy4wNS00LjExYy41NC41IDEuMjUuODEgMi4wNC44MSAxLjY2IDAgMy0xLjM0IDMtM3MtMS4zNC0zLTMtMy0zIDEuMzQtMyAzYzAgLjI0LjA0LjQ3LjA5LjdMOC4wNCA5LjgxQzcuNSA5LjMxIDYuNzkgOSA2IDljLTEuNjYgMC0zIDEuMzQtMyAzczEuMzQgMyAzIDNjLjc5IDAgMS41LS4zMSAyLjA0LS44MWw3LjEyIDQuMTZjLS4wNS4yMS0uMDguNDMtLjA4LjY1IDAgMS42MSAxLjMxIDIuOTIgMi45MiAyLjkyIDEuNjEgMCAyLjkyLTEuMzEgMi45Mi0yLjkycy0xLjMxLTIuOTItMi45Mi0yLjkyeiIgZmlsbD0nIzY5YjdjZicvPiA8L3N2Zz4g";
 const svg_link = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMCIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCA0IDIyLjUgMTIiPiA8cGF0aCBkPSJtLTAuMDAzMTc3My0xLjVoMjR2MjRoLTI0eiIgZmlsbD0ibm9uZSIvPiA8cGF0aCBkPSJtMy4xNDMzIDEwYzAtMS41MjM4IDEuMzkxMi0yLjc2MjUgMy4xMDI2LTIuNzYyNWg0LjAwMzN2LTEuNjkzMWgtNC4wMDMzYy0yLjc2MjMgMC01LjAwNDEgMS45OTYxLTUuMDA0MSA0LjQ1NTYgMCAyLjQ1OTUgMi4yNDE5IDQuNDU1NiA1LjAwNDEgNC40NTU2aDQuMDAzM3YtMS42OTMxaC00LjAwMzNjLTEuNzExNCAwLTMuMTAyNi0xLjIzODctMy4xMDI2LTIuNzYyNXptNC4xMDM0IDAuODkxMTJoOC4wMDY2di0xLjc4MjJoLTguMDA2NnptOS4wMDc1LTUuMzQ2N2gtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMS43MTE0IDAgMy4xMDI2IDEuMjM4NyAzLjEwMjYgMi43NjI1IDAgMS41MjM4LTEuMzkxMiAyLjc2MjUtMy4xMDI2IDIuNzYyNWgtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMi43NjIzIDAgNS4wMDQxLTEuOTk2MSA1LjAwNDEtNC40NTU2IDAtMi40NTk1LTIuMjQxOS00LjQ1NTYtNS4wMDQxLTQuNDU1NnoiIGZpbGw9IiM2OWI3Y2YiIHN0cm9rZS13aWR0aD0iLjkiLz4gPC9zdmc+IA==";
 const svg_map = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyMCcgaGVpZ2h0PScyMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZD0ibTIwLjUgMy43Ni0wLjE2IDAuMDMtNS4zNCAyLjA3LTYtMi4xLTUuNjQgMS45Yy0wLjIxIDAuMDctMC4zNiAwLjI1LTAuMzYgMC40OHYxNS4xMmMwIDAuMjggMC4yMiAwLjUgMC41IDAuNWwwLjE2LTAuMDMgNS4zNC0yLjA3IDYgMi4xIDUuNjQtMS45YzAuMjEtMC4wNyAwLjM2LTAuMjUgMC4zNi0wLjQ4di0xNS4xMmMwLTAuMjgtMC4yMi0wLjUtMC41LTAuNXptLTUuNSAxNi02LTIuMTF2LTExLjg5bDYgMi4xMXoiIGZpbGw9IiM2OWI3Y2YiLz4gPHBhdGggZD0iTTAgMGgyNHYyNEgweiIgZmlsbD0nbm9uZScvPiA8L3N2Zz4g";
+const svg_front = "data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMCAzLjU5OTAxIDMuNzA0MTciIGhlaWdodD0nMTRweCcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4gPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTUzLjk4OSAtOTkuNDUzMykiPiA8ZyB0cmFuc2Zvcm09InNjYWxlKC4yNjQ1ODMpIiBzdHlsZT0iZmlsbDojMDAwMDAwIiBhcmlhLWxhYmVsPSLil4QiPiA8cGF0aCBkPSJtMjE3LjY1NiAzODIuODg3LTEzLjYwMjYtN3YxNHoiIHN0eWxlPSJmaWxsOiM2OWI3Y2Y7c3Ryb2tlLXdpZHRoOi40MTc3MzciLz4gPC9nPiA8L2c+IDwvc3ZnPiA=";

@@ -1,6 +1,6 @@
 {
-	"name": "WCode based addressing system",
-	"short_name": "WCode location",
+	"name": "Wolo codes",
+	"short_name": "Wolo",
 	"icons": [
 		{
 			"src": "launcher-icon-0-75x.png",
@@ -43,6 +43,6 @@
 	"display": "standalone",
 	"related_applications": [{
 		"platform": "web",
-		"url": "https://location.wcodes.org"
+		"url": "https://wolo.codes"
 	}]
 }
