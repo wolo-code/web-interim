@@ -780,6 +780,12 @@ h2.message_dialog_label {
 		float: left;
 	}
 
+	.message_dialog_close {
+		position: absolute;
+		top: 0px;
+		right: 0px;
+	}
+	
 }
 .overlay {
 	left: 0px;
@@ -803,9 +809,9 @@ h2.message_dialog_label {
 	display: inline-block;
 	border-radius: 6px;
 	border-width: thin;
-	border-color: #fbfbfb28;
+	border-color: #f0f7fa;
 	border-style: solid;
-	padding: 2px;
+	padding: 3px;
 }
 
 #logo_wcode_info > .image > svg {
@@ -824,11 +830,24 @@ h2.message_dialog_label {
 
 .overlay h2 {
 	text-align: center;
-	margin-top: 8px; 
+	margin-top: 8px;
+	margin-bottom: 12px;
 }
 
 .overlay h3 {
+	text-align: center;
+	margin-top: 12px;
 	color: #bbb;
+}
+
+#wcode_format > span {
+	background: #f7f7f7;
+	border-radius: 6px;
+	padding: 2px 6px;
+}
+
+#wcode_format > span:first-child {
+	margin-right: 4px;
 }
 #social-links {
 	padding-bottom: 4px
