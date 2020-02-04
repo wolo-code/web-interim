@@ -12,7 +12,7 @@
 	<link href='https://wolo.codes' rel='canonical' >
 	<title>Wolo codes</title>
 <link rel='manifest' href='/manifest.json' >
-		<script src='https://browser.sentry-cdn.com/5.11.1/bundle.min.js' integrity='sha384-r7/ZcDRYpWjCNXLUKk3iuyyyEcDJ+o+3M5CqXP5GUGODYbolXewNHAZLYSJ3ZHcV' crossorigin='anonymous'
+		<script src='https://browser.sentry-cdn.com/5.11.2/bundle.min.js' integrity='sha384-FLzYisBa7tvsi/ZP1ISnzZJqBkmw5mvwk7KOmH82W9wdPZKG3bG9hSO8GQFVSlOu' crossorigin='anonymous'
 ></script>
 		<script>Sentry.init({ dsn: 'https://badf8db6081d40d48af771b728440050@sentry.io/2045587' });
 </script>
@@ -239,6 +239,10 @@ var locate_button_pressed = false;
 var watch_location_timer;
 var watch_location_id;
 var watch_location_notice_timer;
+var pendingFocusPos;
+
+// Focus
+var selfBoundsChangedCount = 1;
 
 // QR
 var mode_preview = false;
@@ -305,6 +309,7 @@ function syncCheckIncompatibleBrowserMessage() {
 	max-width: 306px;
 	text-align: left;
 	padding: 6px 0 6px 6px;
+	color: #888888;
 }
 
 #address_text_close {
@@ -564,6 +569,10 @@ button.border {
 
 .plain_background {
 	background: rgba(241, 241, 241, 0.75)
+}
+
+.front_arrow_white > svg > g > g > path {
+	fill: white !important;
 }
 @media (max-width: 662px) {
 	
@@ -1372,6 +1381,7 @@ h2.message_dialog_label {
 }
 
 #overlay table {
+	margin-top: 24px;
 	margin-bottom: 16px;
 }
 
@@ -1393,6 +1403,10 @@ h2.message_dialog_label {
 .button_highlight .indicator {
 	margin-left: -5px;
 	margin-right: 4px;
+}
+
+#info_list {
+	list-style-type: square;
 }
 @media (max-width: 662px) {
 	#overlay {
@@ -1921,7 +1935,14 @@ h2.message_dialog_label {
 </ul>
 	<div class='message_dialog_control_container'>
 		<div class='message_dialog_control'>
-			<button id='info_intro_close_button' class='button_highlight' type='button'>Start &#x25BA;</button>
+			<button id='info_intro_close_button' class='button_highlight' type='button'>Start <span class="image front_arrow_white"><svg version="1.1" viewBox="0 0 3.59901 3.70417" height='14px' xmlns="http://www.w3.org/2000/svg">
+	<g transform="translate(-53.989 -99.4533)">
+		<g transform="scale(.264583)" style="fill:#000000" aria-label="◄">
+			<path d="m217.656 382.887-13.6026-7v14z" style="fill:#69b7cf;stroke-width:.417737"/>
+		</g>
+	</g>
+</svg>
+</span></button>
 		</div>
 	</div>
 </div>
@@ -1959,12 +1980,6 @@ h2.message_dialog_label {
 		Enter a WCode address and hit 'Decode' to go to that location
 	</li>
 </ul>
-	<h2>
-		Info
-	</h2>
-	<ul>
-		<li>Tested to work with Google Chrome</li>
-	</ul>
 	<div class='message_dialog_control_container'>
 		<div class='message_dialog_control'>
 			<button id='info_full_close_button' class='button_highlight' type='button'><span class='indicator'><span class='image'><svg version="1.1" viewBox="0 0 3.59901 3.70417" height='12px' xmlns="http://www.w3.org/2000/svg">
@@ -1977,6 +1992,9 @@ h2.message_dialog_label {
 </span></span> return</button>
 		</div>
 	</div>
+	<ul id='info_list'>
+		<li>Tested to work with Google Chrome</li>
+	</ul>
 	<table>
 		<tr>
 			<td>Terms of use:</td>
@@ -2040,7 +2058,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span>
-	2020 Jan 31 - 21:14:30			</span> (UTC)
+			2020 Feb 04 - 18:47:40			</span> (UTC)
 		</div>
 	</div>
 </div>

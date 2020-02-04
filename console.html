@@ -12,7 +12,7 @@
 	<link href='https://wolo.codes' rel='canonical' >
 	<title>Wolo codes</title>
 <link rel="manifest" href="/manifest-console.json">
-		<script src='https://browser.sentry-cdn.com/5.11.1/bundle.min.js' integrity='sha384-r7/ZcDRYpWjCNXLUKk3iuyyyEcDJ+o+3M5CqXP5GUGODYbolXewNHAZLYSJ3ZHcV' crossorigin='anonymous'
+		<script src='https://browser.sentry-cdn.com/5.11.2/bundle.min.js' integrity='sha384-FLzYisBa7tvsi/ZP1ISnzZJqBkmw5mvwk7KOmH82W9wdPZKG3bG9hSO8GQFVSlOu' crossorigin='anonymous'
 ></script>
 		<script>Sentry.init({ dsn: 'https://badf8db6081d40d48af771b728440050@sentry.io/2045587' });
 </script>
@@ -255,6 +255,7 @@ function syncMarkEntry(lat_lng) {
 	max-width: 306px;
 	text-align: left;
 	padding: 6px 0 6px 6px;
+	color: #888888;
 }
 
 #address_text_close {
@@ -514,6 +515,10 @@ button.border {
 
 .plain_background {
 	background: rgba(241, 241, 241, 0.75)
+}
+
+.front_arrow_white > svg > g > g > path {
+	fill: white !important;
 }
 @media (max-width: 662px) {
 	

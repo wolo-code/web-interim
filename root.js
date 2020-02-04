@@ -901,6 +901,10 @@ function setCodeCoord(city, codeIndex, code) {
 // const WCODE_LINK_COPIED_MESSAGE;
 
 function handleShareWCode() {
+	setTimeout( function() {
+			showNotification("Long press share icon for advanced options");
+		}, 4000);
+	
 	if (navigator.share)
 		shareWCode();
 	else
@@ -1108,7 +1112,7 @@ function decode(words) {
 				if(myLocDot == null) {
 					if(marker != null && marker.position != null) {
 						position = marker.position;
-						focus_(position);
+						focus___(position);
 						showNotification(PURE_WCODE_CITY_PICKED);
 					}
 					else
@@ -1311,17 +1315,43 @@ function authInit() {
 	ui = new firebaseui.auth.AuthUI(firebase.auth());
 }
 function focus__(city, pos, code) {
-	focus_(pos);
+	focus___(pos);
 	setCode(city, code, pos);
+}
+
+function focus___(pos, bounds) {
+	showMarker(pos);
+	focus_(pos, bounds);
 }
 
 const ZOOM_ANIMATION_SPEED = 250;
 var firstFocus = true;
+var userInteractionMapBoundsListener;
+var userInteractionMapDragListener;
 function focus_(pos, bounds) {
 
 	hideNoCityMessage();
 
-	if(typeof marker === 'undefined') {
+	map.panTo(pos);
+
+	var idleListenerPan = map.addListener('idle', function() {
+		idleListenerPan.remove();
+		var newZoom;
+		if(typeof bounds !== 'undefined')
+			newZoom = getZoomByBounds(map, bounds);
+		else {
+			newZoom = DEFAULT_LOCATE_ZOOM;
+			if (typeof accuCircle !== 'undefined') {
+				accuCircle.setOptions({'fillOpacity': 0.10});
+			}
+		}
+		smoothZoomToBounds(bounds, map, newZoom, map.getZoom());
+	});
+
+}
+
+function showMarker(pos) {
+	if(!marker) {
 		marker = new google.maps.Marker({
 			position: pos,
 			map: map,
@@ -1340,50 +1370,73 @@ function focus_(pos, bounds) {
 
 	if(marker.getMap() == null)
 		marker.setMap(map);
+}
 
-	map.panTo(pos);
+function incMapInteractionCounter() {
+	if (selfBoundsChangedCount == 0)
+		stopZoom();
+	else
+		selfBoundsChangedCount--;
+}
 
-	var idleListenerPan = map.addListener('idle', function() {
-		idleListenerPan.remove();
-		var newZoom;
-		if(typeof bounds !== 'undefined')
-			newZoom = getZoomByBounds(map, bounds);
-		else {
-			newZoom = DEFAULT_LOCATE_ZOOM;
-			if (typeof accuCircle !== 'undefined') {
-				accuCircle.setOptions({'fillOpacity': 0.10});
-			}
-		}
-		smoothZoomToBounds(bounds, map, newZoom, map.getZoom());
-	});
+function decMapInteractionCounter() {
+	if(selfBoundsChangedCount == 0) {
+		stopZoom();
+		return false;
+	}
+	else {
+		selfBoundsChangedCount++;
+		return true;
+	}
+}
 
-	infoWindow_setContent(MESSAGE_LOADING);
-	infoWindow.open(map, marker);
-
+function stopZoom() {
+	if(userInteractionMapBoundsListener != null)
+		userInteractionMapBoundsListener.remove();
+	if(userInteractionMapDragListener != null)
+		userInteractionMapDragListener.remove();
+	if(zoomChangedListener != null)
+		google.maps.event.removeListener(zoomChangedListener);
+	if(nextZoomTimer != null)
+		clearTimeout(nextZoomTimer);
 }
 
 const ZOOM_ANIMATION_INCREMENT = 1;
 const ZOOM_BOUND_PADDING = 36;
 var smoothZoomToBounds_callCount = 0;
+var zoomChangedListener;
+var nextZoomTimer;
 function smoothZoomToBounds(bounds, map, max, current) {
 	if (current >= max) {
 		if(smoothZoomToBounds_callCount-- == 0) {
 			if(typeof bounds !== 'undefined')
 				setTimeout(function() {
-					map.fitBounds(bounds, ZOOM_BOUND_PADDING);
-					map.panBy(0, getPanByOffset());
+					if(pendingFocusPos) {
+						var temPos = new Object.create(pendingFocusPos);
+						pendingFocusPos = null;
+						focus___(temPos);
+					}
+					else {
+						if(decMapInteractionCounter) {
+							map.fitBounds(bounds, ZOOM_BOUND_PADDING);
+							map.panBy(0, getPanByOffset());
+						}
+					}
 				}, ZOOM_ANIMATION_SPEED);
 		}
 		return;
 	}
 	else {
 		smoothZoomToBounds_callCount++;
-		var z = google.maps.event.addListener(map, 'zoom_changed', function(event) {
-			google.maps.event.removeListener(z);
+		zoomChangedListener = google.maps.event.addListener(map, 'zoom_changed', function(event) {
+			google.maps.event.removeListener(zoomChangedListener);
+			incMapInteractionCounter();
 			smoothZoomToBounds(bounds, map, max, current + ZOOM_ANIMATION_INCREMENT);
 		});
-		setTimeout(function() {
-			map.setZoom(current);
+		nextZoomTimer = setTimeout(function() {
+			if(decMapInteractionCounter()) {
+				map.setZoom(current);
+			}
 		}, ZOOM_ANIMATION_SPEED);
 	}
 }
@@ -1420,11 +1473,17 @@ function setInfoWindowText(city_accent, city_name, code_string, latLng) {
 			addLongpressListener(document.getElementById('share_code_button'));
 	});
 	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'><span class='control' onclick='showChooseCity_by_periphery_Message();'>" + city_accent + "</span></span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code_string + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' onclick='toggleAddress();' src=" + svg_address + " ><a href='"+ getIntentURL(latLng, city_name + ' ' + code_string) + "'><img id='external_map_button' class='control' src=" + svg_map + " ></a><div id='share_code_button' class='control'><div class='shield'></div><img src=" + svg_share + " ></div></div>");
+	showInfoWindow();
 }
 
 function isInfoWindowOpen() {
 	var map = infoWindow.getMap();
 	return (map !== null && typeof map !== "undefined");
+}
+
+function showInfoWindow() {
+	if(!isInfoWindowOpen())
+		infoWindow.open(map, marker);
 }
 // var location_button_begin_time;
 // var location_button_PRESS_THRESHOLD = 500;
@@ -1433,6 +1492,7 @@ function isInfoWindowOpen() {
 // var watch_location_timer;
 // var watch_location_id;
 // var watch_location_notice_timer;
+// var pendingFocusPos;
 
 function initLocate(override_dnd) {
 	if(!locationAccessInitCheck())
@@ -1509,7 +1569,11 @@ function locateExec(failure) {
 					document.getElementById('proceed_container').classList.remove('hide');
 					document.getElementById('accuracy_container').classList.remove('highlight');
 					document.getElementById('accuracy_container').classList.remove('hide');
-					if(typeof myLocDot === 'undefined') {
+					if(!firstFocus || !myLocDot)
+						focus_(pos, accuCircle.getBounds());
+					else
+						pendingFocusPos = pos;
+					if(!myLocDot) {
 						myLocDot = new google.maps.Marker({
 							clickable: false,
 							icon: new google.maps.MarkerImage('https://maps.gstatic.com/mapfiles/mobile/mobileimgs2.png',
@@ -1525,7 +1589,6 @@ function locateExec(failure) {
 					else {
 						myLocDot.setPosition(pos);
 					}
-					focus_(pos, accuCircle.getBounds());
 
 					if(position.coords.accuracy <= WATCH_LOCATION_MIN_ACCURACY && !locate_button_pressed)
 						processPosition(pos);
@@ -1555,7 +1618,7 @@ function locateExec(failure) {
 function endWatchLocation() {
 	if(!locate_button_pressed) {
 		var pos;
-		if(typeof myLocDot != 'undefined')
+		if(myLocDot)
 			pos = resolveLatLng(myLocDot.getPosition());
 		if(pos != null)
 			processPosition(pos);
@@ -1566,7 +1629,7 @@ function endWatchLocation() {
 
 function proceedPosition() {
 	var pos;
-	if(typeof myLocDot != 'undefined')
+	if(myLocDot)
 		pos = resolveLatLng(myLocDot.getPosition());
 	if(pos != null)
 		processPosition(pos);
@@ -1580,7 +1643,9 @@ function processPosition(pos) {
 	clearTimeout(watch_location_timer);
 	document.getElementById('proceed_container').classList.add('hide');
 	document.getElementById('accuracy_container').classList.add('highlight');
-	
+	showMarker(pos);
+	infoWindow_setContent(MESSAGE_LOADING);
+	infoWindow.open(map, marker);
 	if(initWCode == false) {
 		encode(pos);
 		clearAddress();
@@ -1593,6 +1658,9 @@ function processPosition(pos) {
 }
 
 function processPositionButtonDown() {
+	firstFocus = true;
+	clearMap();
+	selfBoundsChangedCount = 1;
 	locate_button_pressed = true;
 	location_button_begin_time = (new Date).getTime();
 	syncLocate(true);
@@ -1724,7 +1792,7 @@ function initMap() {
 		if(places.length == 1) {
 			clearAddress();
 			var pos = resolveLatLng(places[0].geometry.location);
-			focus_(pos);
+			focus___(pos);
 			encode(pos);
 			clearAddress();
 			getAddress(pos);
@@ -1770,15 +1838,18 @@ function initMap() {
 		pendingPosition = null;
 		pendingCity = null;
 		notification_top.classList.add('hide');
+		infoWindow_setContent(MESSAGE_LOADING);
 		clearAddress();
 		clearURL();
 		var pos = resolveLatLng(event.latLng);
-		focus_(pos);
+		focus___(pos);
 		encode(pos);
 	});
 
 	decode_button.addEventListener('click', function() {
+		firstFocus = true;
 		clearMap();
+		selfBoundsChangedCount = 1;
 		suggestion_result.setInnerText = '';
 		var code = document.getElementById('pac-input').value;
 		execDecode(code);
@@ -1830,7 +1901,7 @@ function execDecode(code) {
 
 var lastMarker;
 function load(marker) {
-	focus_(marker.position);
+	focus___(marker.position);
 	window.marker.title = marker.title;
 	infoWindow.open(map, window.marker);
 	marker.setVisible(false);
@@ -1856,8 +1927,17 @@ function getIntentURL(latLng, code_string) {
 }
 
 function clearMap() {
-	if(marker != null)
+	if(marker != null) {
 		marker.setMap(null);
+		marker = null;
+	}
+}
+
+function clearDot() {
+	if(myLocDot != null) {
+		myLocDot.setMap(null);
+		myLocDot = null;
+	}
 }
 
 function toggleMapType() {
