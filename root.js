@@ -1645,7 +1645,7 @@ function processPosition(pos) {
 	document.getElementById('accuracy_container').classList.add('highlight');
 	showMarker(pos);
 	infoWindow_setContent(MESSAGE_LOADING);
-	infoWindow.open(map, marker);
+	showInfoWindow();
 	if(initWCode == false) {
 		encode(pos);
 		clearAddress();
@@ -1848,8 +1848,8 @@ function initMap() {
 
 	decode_button.addEventListener('click', function() {
 		firstFocus = true;
-		clearMap();
 		selfBoundsChangedCount = 1;
+		clearMap();
 		suggestion_result.setInnerText = '';
 		var code = document.getElementById('pac-input').value;
 		execDecode(code);
@@ -1930,13 +1930,6 @@ function clearMap() {
 	if(marker != null) {
 		marker.setMap(null);
 		marker = null;
-	}
-}
-
-function clearDot() {
-	if(myLocDot != null) {
-		myLocDot.setMap(null);
-		myLocDot = null;
 	}
 }
 
