@@ -1645,7 +1645,7 @@ function processPosition(pos) {
 	document.getElementById('accuracy_container').classList.add('highlight');
 	showMarker(pos);
 	infoWindow_setContent(MESSAGE_LOADING);
-	showInfoWindow();
+	infoWindow.open(map, marker);
 	if(initWCode == false) {
 		encode(pos);
 		clearAddress();
@@ -2274,6 +2274,15 @@ function percantageToColor(perc) {
 	}
 	var h = r * 0x10000 + g * 0x100 + b * 0x1;
 	return '#' + ('000000' + h.toString(16)).slice(-6);
+}
+if ('serviceWorker' in navigator) {
+	window.addEventListener('load', function() {
+		navigator.serviceWorker.register('/sw.js').then(function(registration) {
+			
+		}, function(err) {
+			
+		});
+	});
 }
 function initLoad () {
 	if(!initLoadDone && document.readyState === 'interactive') {
