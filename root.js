@@ -34,7 +34,8 @@ ClickEventHandler.prototype.getPlaceInformation = function(placeId) {
 function firebaseInit() {
 	firebase.initializeApp(FIREBASE_CONFIG);
 	wait_loader.classList.remove('hide');
-	authInit();
+	if(typeof authInit != 'undefined')
+		authInit();
 	if(typeof firebase.analytics != 'undefined')
 		analytics = firebase.analytics();
 	if(typeof firebase.performance != 'undefined')
@@ -181,7 +182,7 @@ function loadSaveList() {
 					row_delete.setAttribute('class', 'row-delete');
 					row_delete.innerText = 'Delete';
 					row_delete.addEventListener('click', deleteSaveEntry);
-					row_process.setAttribute('class', 'row-delete');
+					row_process.setAttribute('class', 'row-process');
 					row_process_img.src = svg_front;
 					row_process.addEventListener('click', processSaveEntry);
 					row_controls.appendChild(row_delete);
@@ -194,8 +195,11 @@ function loadSaveList() {
 					row_controls_container.setAttribute('class', 'row-controls-container');
 					row_controls_container.appendChild(row_controls);
 					row.appendChild(row_controls_container);
+					row.data_process_continue_flag = false;
 					getCityFromId(saveList[key].city_id, function(city) {
 						row.data_city = city;
+						if(row.data_process_continue_flag)
+							processSaveEntry_continue(row);
 					});
 				}
 			}
@@ -209,11 +213,21 @@ function loadSaveList() {
 
 function processSaveEntry(e) {
 	hideNotication();
+	clearTimeout(watch_location_timer);
+	clearLocating(true);
+	clearMap();
+	hideAccountDialog();
 	var row = e.target.parentElement.parentElement.parentElement;
+	if(typeof row.data_city == 'undefined')
+		row.data_process_continue_flag = true;
+	else
+		processSaveEntry_continue(row);
+}
+
+function processSaveEntry_continue(row) {
 	getCityCenterFromId(row.data_city, function(city) {
 		decode_continue(city, saveList[row.data_key].code);
-		hideAccountDialog();
-	});
+	});	
 }
 
 function deleteSaveEntry(e) {
@@ -1133,6 +1147,9 @@ function decode(words) {
 }
 
 function decode_continue(city, wcode) {
+	clearTimeout(watch_location_timer);
+	clearLocating(true);
+	clearMap();
 	if(city != null)
 		decode_(city, wcode);
 	else
@@ -1326,8 +1343,6 @@ function focus___(pos, bounds) {
 
 const ZOOM_ANIMATION_SPEED = 250;
 var firstFocus = true;
-var userInteractionMapBoundsListener;
-var userInteractionMapDragListener;
 function focus_(pos, bounds) {
 
 	hideNoCityMessage();
@@ -1391,10 +1406,6 @@ function decMapInteractionCounter() {
 }
 
 function stopZoom() {
-	if(userInteractionMapBoundsListener != null)
-		userInteractionMapBoundsListener.remove();
-	if(userInteractionMapDragListener != null)
-		userInteractionMapDragListener.remove();
 	if(zoomChangedListener != null)
 		google.maps.event.removeListener(zoomChangedListener);
 	if(nextZoomTimer != null)
@@ -1460,13 +1471,18 @@ function getZoomByBounds(map, bounds) {
 	}
 	return 0;
 }
-function infoWindow_setContent(string) {
+function initInfoWindow() {
 	if(typeof infoWindow == 'undefined')
 		infoWindow = new google.maps.InfoWindow({'map': map});
+}
+
+function infoWindow_setContent(string) {
+	initInfoWindow();
 	infoWindow.setContent(string);
 }
 
 function setInfoWindowText(city_accent, city_name, code_string, latLng) {
+	initInfoWindow();
 	var infoWindow_share_longpress_handle = google.maps.event.addListener(infoWindow, 'domready', function() {
 		google.maps.event.removeListener(infoWindow_share_longpress_handle);
 		if(document.getElementById('share_code_button') != null)
@@ -1477,13 +1493,17 @@ function setInfoWindowText(city_accent, city_name, code_string, latLng) {
 }
 
 function isInfoWindowOpen() {
-	var map = infoWindow.getMap();
-	return (map !== null && typeof map !== "undefined");
+	if(infoWindow) {
+		var map = infoWindow.getMap();
+		return (map !== null && typeof map !== "undefined");
+	}
+	else
+		return false;
 }
 
 function showInfoWindow() {
-	if(!isInfoWindowOpen())
-		infoWindow.open(map, marker);
+	initInfoWindow();
+	infoWindow.open(map, marker);
 }
 // var location_button_begin_time;
 // var location_button_PRESS_THRESHOLD = 500;
@@ -1631,8 +1651,13 @@ function proceedPosition() {
 	var pos;
 	if(myLocDot)
 		pos = resolveLatLng(myLocDot.getPosition());
-	if(pos != null)
+	if(pos != null) {
+		if(!selfBoundsChangedCount) {
+			map.panTo(pos);
+			map.panBy(0, getPanByOffset());
+		}
 		processPosition(pos);
+	}
 	else
 		handleLocationError(true);
 }

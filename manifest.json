@@ -40,7 +40,7 @@
 		}
 	],
 	"start_url": "./",
-	"scode": ".",
+	"scope": ".",
 	"display": "standalone",
 	"related_applications": [{
 		"platform": "web",
