@@ -64,6 +64,9 @@ function getAddressCity(address_components) {
 	};
 	
 }
+function trackOutboundLink(title, url) {
+	analytics.logEvent('outbound_link', {title: title, url: url});
+}
 // .\Script
 var DEFAULT_LATLNG = {lat: -34.397, lng: 150.644};
 var DEFAULT_INIT_ZOOM = 2;
@@ -201,12 +204,12 @@ var curAddCityRequestId = 0;
 var city_styled_wordlist = [];
 var cityNameList;
 
-var WCODE_CODE_COPIED_MESSAGE = "WCode copied to clipboard";
-var WCODE_LINK_COPIED_MESSAGE = "WCode link copied to clipboard";
+var WCODE_CODE_COPIED_MESSAGE = "Wolo code copied to clipboard";
+var WCODE_LINK_COPIED_MESSAGE = "Wolo code link copied to clipboard";
 
 // Code\Core
 var PURE_WCODE_CITY_PICKED = "Since your city is not set - city was chosen from the last location";
-var PURE_WCODE_CITY_FAILED = "Since your city is not set - you must first choose the city or preceed the WCode with city name";
+var PURE_WCODE_CITY_FAILED = "Since your city is not set - you must first choose the city or preceed the Wolo code with city name";
 
 // Address
 var latLng_p = '';
@@ -223,7 +226,7 @@ var DEFAULT_WCODE = ['bengaluru', 'diesel', 'hall', 'planet'];
 var pendingCity = false;
 var pendingCitySubmit = false;
 
-var INCORRECT_WCODE = 'INCORRECT INPUT! Should be at least 3 WCode words, optionally preceded by a city. E.g: "Bengaluru cat apple tomato"';
+var INCORRECT_WCODE = 'INCORRECT INPUT! Should be at least 3 Wolo code words, optionally preceded by a city. E.g: "Bengaluru cat apple tomato"';
 var MESSAGE_LOADING = 'Loading ..';
 var LOCATION_PERMISSION_DENIED = "Location permission was denied. Click to point or retry with the locate button";
 
@@ -257,6 +260,11 @@ var NOTIFICATION_DURATION_LONG = 10000;
 var saveList;
 var lastActiveSaveEntry;
 var account_dialog_address_active_first;
+
+// Title
+var current_title;
+var current_segment;
+var current_address;
 // var pendingLocate;
 function syncLocate(override_dnd) {
 	if (typeof google === 'object' && typeof google.maps === 'object' && typeof map == 'object') {
@@ -300,6 +308,12 @@ function syncCheckIncompatibleBrowserMessage() {
 	font-size: large;
 	padding-top: 4px;
 	color: #69B7CF;
+}
+
+#address_text_header {
+	text-align: left;
+	font-family: 'Roboto';
+	padding-left: 5px;
 }
 
 #address_text_content {
@@ -366,6 +380,10 @@ button {
 button.border {
 	border: 1px solid;
 	border-color: #dcdcdc
+}
+
+*:focus {
+	outline: none;
 }
 
 #map {
@@ -1290,18 +1308,6 @@ h2.message_dialog_label {
 #share_qr_button {
 	padding-right: 6px;
 }
-
-#qr_pre_title_main {
-	margin-left: 8px;
-	background-color: white;
-	color: #999999;
-	outline: 0;
-	outline-style: none;
-	border-top: 0;
-	border-left: none;
-	border-right: 0;
-	min-width: 202px;
-}
 #locate_right_message_body {
 	padding: 2px 16px 8px;
 }
@@ -1468,14 +1474,8 @@ h2.message_dialog_label {
 	padding: 3px;
 }
 
-#logo_wolo_qr > .image > svg {
-	height: 50px;
-}
-
 #logo_codes_qr > .image > svg {
 	padding-top: 4px;
-	height: 14px;
-	width: 152px;
 }
 
 #qr_title_container {
@@ -1773,7 +1773,6 @@ h2.message_dialog_label {
 		<hr>
 		<p>
 			<span>QR</span>
-			<input id='qr_pre_title_main' type='text' placeholder="&nbsp;Title e.g. Taj Mahal (optional)">
 			<span class='message_dialog_control_right'>
 				<img id='share_qr_button' class="center control" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZlcnNpb249IjEuMSIgdmlld0JveD0iMCAwIDYuMzUgNi4zNSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczpjYz0iaHR0cDovL2NyZWF0aXZlY29tbW9ucy5vcmcvbnMjIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiPiA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSguMDIzNjIzNSAtMjkwLjY4MSkiPiA8cmVjdCBpZD0icmVjdDM3MzgiIHg9Ii0uMDIzNjIzNSIgeT0iMjkwLjY4MSIgd2lkdGg9IjIuMTE2NjciIGhlaWdodD0iMi4xMTY2NyIgc3R5bGU9ImZpbGwtb3BhY2l0eTouOTQxMTc2O2ZpbGw6IzY5YjdjZjtzdHJva2Utd2lkdGg6LjI2NDU4MyIvPiA8cmVjdCB4PSIyLjgwODQyIiB5PSIyOTMuNTQxIiB3aWR0aD0iMS4zMzY2OCIgaGVpZ2h0PSIxLjMzNjY4IiBzdHlsZT0iZmlsbC1vcGFjaXR5Oi45NDExNzY7ZmlsbDojNjliN2NmO3N0cm9rZS13aWR0aDouMTY3MDg0Ii8+IDx1c2UgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNC4yMzIyMykiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHhsaW5rOmhyZWY9IiNyZWN0MzczOCIvPiA8dXNlIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgNC4yMzE4KSIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgeGxpbms6aHJlZj0iI3JlY3QzNzM4Ii8+IDwvZz4gPC9zdmc+IA==" >
 			</span>
@@ -1857,7 +1856,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='logo_info'>
 			<a id=logo_wolo_info href='//wcodes.org' tabindex='1'>
-				<span class='image'><svg version="1.1" viewBox="-55 -18 306 100" xmlns="http://www.w3.org/2000/svg">
+				<span class='image'><svg version="1.1" height="50px" viewBox="-55 -18 306 100" xmlns="http://www.w3.org/2000/svg">
 	<g transform="matrix(1.2483 0 0 1.2483 13.1637 -55.438)">
 		<g transform="matrix(.789715 0 0 .700183 -9.82751 49.7403)">
 			<g>
@@ -1891,7 +1890,7 @@ h2.message_dialog_label {
 </span>
 			</a>
 			<a id=logo_codes_info href='//wolo.codes' tabindex='2'>
-				<span class='image'><svg version="1.1" viewBox="0 0 152 10" xmlns="http://www.w3.org/2000/svg">
+				<span class='image'><svg version="1.1" width="152px" height="14px" viewBox="0 0 152 10" xmlns="http://www.w3.org/2000/svg">
 	<g style="fill:#69b7cf;stroke-width:.471333" aria-label="CODES">
 		<path d="m61.3101 3.13431h-1.28635q-.029458-.451694-.235667-.815013-.206208-.363319-.549888-.618624-.333861-.255305-.795374-.392777-.451694-.137472-.972124-.137472-.716819 0-1.29616.255305-.579347.245486-.991763.736458-.402597.481152-.628444 1.19797-.216027.716819-.216027 1.63985t.216027 1.63985q.225847.706999.628444 1.19797t.972124.746277q.579346.255305 1.28635.255305 1.11942 0 1.80678-.540069.68736-.540069.775735-1.56129h1.28635q-.06874.756096-.382958 1.34526-.304403.589166-.815013 1.00158-.500791.402597-1.17833.618624-.677541.216028-1.47292.216028-1.02122 0-1.83624-.34368-.815013-.3535-1.39436-.991763-.569527-.638263-.883749-1.55147-.304403-.913207-.304403-2.03262t.314222-2.03262q.314222-.913207.883749-1.55147.579347-.638263 1.39436-.981943.815013-.3535 1.82642-.3535.756096 0 1.42382.216028.677541.216028 1.18815.618624.52043.402597.844471.972124.324042.559708.392778 1.24707z" style="fill:#69b7cf;stroke-width:.471333"/>
 		<path d="m67.1723.0902833q.981943 0 1.8166.3535.834652.3535 1.43364 1.00158.608805.638263.942665 1.55147.343681.903388.343681 2.00316 0 1.08996-.333861 1.99335-.333861.903388-.942666 1.56129-.598985.648083-1.43364 1.0114-.824833.3535-1.82642.3535t-1.83623-.3535q-.834652-.3535-1.44346-1.00158-.598985-.648083-.932846-1.55147-.333861-.913207-.333861-2.01298 0-1.1096.333861-2.01298.34368-.913207.952485-1.55147.608805-.648083 1.43364-.991763.834652-.3535 1.82642-.3535zm-.0098 8.74912q.706999 0 1.30598-.255305.598986-.265125 1.03104-.756096.432055-.500791.667721-1.20779.245486-.716819.245486-1.62021 0-.913207-.245486-1.62021-.245485-.706999-.67754-1.19797-.422236-.490972-1.02122-.746277-.589166-.255305-1.27653-.255305-.706999 0-1.3158.265125-.598986.255305-1.03104.746277t-.677541 1.19797q-.245486.706999-.245486 1.61039 0 .903388.235667 1.62021.245486.706999.677541 1.20779.432055.490972 1.02122.756096.598985.255305 1.30598.255305z" style="fill:#69b7cf;stroke-width:.471333"/>
@@ -1929,12 +1928,12 @@ h2.message_dialog_label {
 </h2>
 <ul>
 	<li>
-		Point a location to generate the corresponding WCode address.<br>
+		Point a location to generate the corresponding Wolo code address.<br>
 		You may also let the system pick your current location automatically or search for a particular place.<br>
 		Or,
 	</li>
 	<li>
-		Enter a WCode address and hit 'Decode' to go to that location
+		Enter a Wolo code address and hit 'Decode' to go to that location
 	</li>
 </ul>
 	<div class='message_dialog_control_container'>
@@ -1976,12 +1975,12 @@ h2.message_dialog_label {
 </h2>
 <ul>
 	<li>
-		Point a location to generate the corresponding WCode address.<br>
+		Point a location to generate the corresponding Wolo code address.<br>
 		You may also let the system pick your current location automatically or search for a particular place.<br>
 		Or,
 	</li>
 	<li>
-		Enter a WCode address and hit 'Decode' to go to that location
+		Enter a Wolo code address and hit 'Decode' to go to that location
 	</li>
 </ul>
 	<div class='message_dialog_control_container'>
@@ -2019,7 +2018,7 @@ h2.message_dialog_label {
 	</table>
 	<div id='social-links' class='center'>
 		<span class='social grow'>
-			<a href='https://twitter.com/wolocodes' id='site-twitter' onclick="trackOutboundLink('wcodes-twitter', 'https://twitter.com/wolocodes'); return false;"><span class='image'><svg xmlns='http://www.w3.org/2000/svg' x='0px' y='0px'
+			<a href='https://twitter.com/wolocodes' id='site-twitter' onclick="trackOutboundLink('wolo-twitter', 'https://twitter.com/wolocodes'); return false;"><span class='image'><svg xmlns='http://www.w3.org/2000/svg' x='0px' y='0px'
 	 viewBox="0 0 76 76">
 	<path fill='#D9D9D9' d="M76,14.4c-2.8,1.2-5.8,2.1-9,2.5c3.2-1.9,5.7-5,6.9-8.6c-3,1.8-6.3,3.1-9.9,3.8c-2.8-3-6.9-4.9-11.4-4.9
 		C44,7.1,37,14.1,37,22.7c0,1.2,0.1,2.4,0.4,3.6C24.5,25.6,13,19.4,5.3,10c-1.3,2.3-2.1,5-2.1,7.8c0,5.4,2.8,10.2,6.9,13
@@ -2030,7 +2029,7 @@ h2.message_dialog_label {
 </span></a>
 		</span>
 		<span class='social grow'>
-			<a href='https://facebook.com/wolocodes' id='site-facebook' onclick="trackOutboundLink('wcodes-facebook', 'https://facebook.com/wolocodes'); return false;"><span class='image'><svg xmlns='http://www.w3.org/2000/svg' x='0px' y='0px'
+			<a href='https://facebook.com/wolocodes' id='site-facebook' onclick="trackOutboundLink('wolo-facebook', 'https://facebook.com/wolocodes'); return false;"><span class='image'><svg xmlns='http://www.w3.org/2000/svg' x='0px' y='0px'
 	 viewBox="0 0 76 76">
 	<path fill='#D9D9D9' d="M68.7,3.5H7.3c-2.1,0-3.8,1.7-3.8,3.8v61.4c0,2.1,1.7,3.8,3.8,3.8h33V45.8h-9V35.4h9v-7.7
 		c0-8.9,5.4-13.8,13.4-13.8c3.8,0,7.1,0.3,8,0.4v9.3l-5.5,0c-4.3,0-5.2,2.1-5.2,5.1v6.6h10.3l-1.3,10.4h-9v26.7h17.6
@@ -2039,7 +2038,7 @@ h2.message_dialog_label {
 </span></a>
 		</span>
 		<span class='social grow'>
-			<a href='https://www.youtube.com/channel/UCnKSws8Lro8U9Ewtf1Xi5jg' id='site-youtube' onclick="trackOutboundLink('wcodes-youtube', 'https://www.youtube.com/channel/UCnKSws8Lro8U9Ewtf1Xi5jg'); return false;"><span class='image'><svg id='youtube_icon' xmlns='http://www.w3.org/2000/svg' x='0px' y='0px'
+			<a href='https://www.youtube.com/channel/UCnKSws8Lro8U9Ewtf1Xi5jg' id='site-youtube' onclick="trackOutboundLink('wolo-youtube', 'https://www.youtube.com/channel/UCnKSws8Lro8U9Ewtf1Xi5jg'); return false;"><span class='image'><svg id='youtube_icon' xmlns='http://www.w3.org/2000/svg' x='0px' y='0px'
 	 viewBox="0 -158 1024 1024">
 	<path fill='#FFFFFF' d="M407,493l276-143L407,206V493z" />
 	<path fill='#D9D9D9' d="M407,206l242,161.6l34-17.6L407,206z" />
@@ -2062,7 +2061,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span>
-			2020 Feb 06 - 15:40:18			</span> (UTC)
+			2020 Feb 11 - 23:32:09			</span> (UTC)
 		</div>
 	</div>
 </div>
@@ -2109,9 +2108,9 @@ h2.message_dialog_label {
 </span>
 		</div>
 		<div id='qr_label' class='center'>
-			<div id='logo_qr'>
-				<a id=logo_wolo_qr href='//wcodes.org' tabindex='1'>
-					<span class='image'><svg version="1.1" viewBox="-55 -18 306 100" xmlns="http://www.w3.org/2000/svg">
+			<div id='logo_qr' tabindex='1'>
+				<a id=logo_wolo_qr href='//wolo.codes'>
+					<span class='image'><svg version="1.1" height="50px" viewBox="-55 -18 306 100" xmlns="http://www.w3.org/2000/svg">
 	<g transform="matrix(1.2483 0 0 1.2483 13.1637 -55.438)">
 		<g transform="matrix(.789715 0 0 .700183 -9.82751 49.7403)">
 			<g>
@@ -2144,8 +2143,8 @@ h2.message_dialog_label {
 </svg>
 </span>
 				</a>
-				<a id=logo_codes_qr href='//wolo.codes' tabindex='2'>
-					<span class='image'><svg version="1.1" viewBox="0 0 152 10" xmlns="http://www.w3.org/2000/svg">
+				<a id=logo_codes_qr href='//wolo.codes'>
+					<span class='image'><svg version="1.1" width="152px" height="14px" viewBox="0 0 152 10" xmlns="http://www.w3.org/2000/svg">
 	<g style="fill:#69b7cf;stroke-width:.471333" aria-label="CODES">
 		<path d="m61.3101 3.13431h-1.28635q-.029458-.451694-.235667-.815013-.206208-.363319-.549888-.618624-.333861-.255305-.795374-.392777-.451694-.137472-.972124-.137472-.716819 0-1.29616.255305-.579347.245486-.991763.736458-.402597.481152-.628444 1.19797-.216027.716819-.216027 1.63985t.216027 1.63985q.225847.706999.628444 1.19797t.972124.746277q.579346.255305 1.28635.255305 1.11942 0 1.80678-.540069.68736-.540069.775735-1.56129h1.28635q-.06874.756096-.382958 1.34526-.304403.589166-.815013 1.00158-.500791.402597-1.17833.618624-.677541.216028-1.47292.216028-1.02122 0-1.83624-.34368-.815013-.3535-1.39436-.991763-.569527-.638263-.883749-1.55147-.304403-.913207-.304403-2.03262t.314222-2.03262q.314222-.913207.883749-1.55147.579347-.638263 1.39436-.981943.815013-.3535 1.82642-.3535.756096 0 1.42382.216028.677541.216028 1.18815.618624.52043.402597.844471.972124.324042.559708.392778 1.24707z" style="fill:#69b7cf;stroke-width:.471333"/>
 		<path d="m67.1723.0902833q.981943 0 1.8166.3535.834652.3535 1.43364 1.00158.608805.638263.942665 1.55147.343681.903388.343681 2.00316 0 1.08996-.333861 1.99335-.333861.903388-.942666 1.56129-.598985.648083-1.43364 1.0114-.824833.3535-1.82642.3535t-1.83623-.3535q-.834652-.3535-1.44346-1.00158-.598985-.648083-.932846-1.55147-.333861-.913207-.333861-2.01298 0-1.1096.333861-2.01298.34368-.913207.952485-1.55147.608805-.648083 1.43364-.991763.834652-.3535 1.82642-.3535zm-.0098 8.74912q.706999 0 1.30598-.255305.598986-.265125 1.03104-.756096.432055-.500791.667721-1.20779.245486-.716819.245486-1.62021 0-.913207-.245486-1.62021-.245485-.706999-.67754-1.19797-.422236-.490972-1.02122-.746277-.589166-.255305-1.27653-.255305-.706999 0-1.3158.265125-.598986.255305-1.03104.746277t-.677541 1.19797q-.245486.706999-.245486 1.61039 0 .903388.235667 1.62021.245486.706999.677541 1.20779.432055.490972 1.02122.756096.598985.255305 1.30598.255305z" style="fill:#69b7cf;stroke-width:.471333"/>
@@ -2265,9 +2264,9 @@ h2.message_dialog_label {
 </div>
 <div id='map'></div>
 <div id='wait_loader'></div>
-<div id='logo'>
-	<a id=logo_wolo class='blur_background' href='//wcodes.org' tabindex='1'>
-		<span class='image'><svg version="1.1" viewBox="-55 -18 306 100" xmlns="http://www.w3.org/2000/svg">
+<div id='logo' tabindex='1'>
+	<a id=logo_wolo class='blur_background' href='//wolo.codes'>
+		<span class='image'><svg version="1.1" height="50px" viewBox="-55 -18 306 100" xmlns="http://www.w3.org/2000/svg">
 	<g transform="matrix(1.2483 0 0 1.2483 13.1637 -55.438)">
 		<g transform="matrix(.789715 0 0 .700183 -9.82751 49.7403)">
 			<g>
@@ -2299,8 +2298,9 @@ h2.message_dialog_label {
 	</g>
 </svg>
 </span>
-	</a><a id=logo_codes class='blur_background' href='//wolo.codes' tabindex='2'>
-		<span class='image'><svg version="1.1" viewBox="0 0 152 10" xmlns="http://www.w3.org/2000/svg">
+	</a>
+	<a id=logo_codes class='blur_background' href='//wolo.codes'>
+		<span class='image'><svg version="1.1" width="152px" height="14px" viewBox="0 0 152 10" xmlns="http://www.w3.org/2000/svg">
 	<g style="fill:#69b7cf;stroke-width:.471333" aria-label="CODES">
 		<path d="m61.3101 3.13431h-1.28635q-.029458-.451694-.235667-.815013-.206208-.363319-.549888-.618624-.333861-.255305-.795374-.392777-.451694-.137472-.972124-.137472-.716819 0-1.29616.255305-.579347.245486-.991763.736458-.402597.481152-.628444 1.19797-.216027.716819-.216027 1.63985t.216027 1.63985q.225847.706999.628444 1.19797t.972124.746277q.579346.255305 1.28635.255305 1.11942 0 1.80678-.540069.68736-.540069.775735-1.56129h1.28635q-.06874.756096-.382958 1.34526-.304403.589166-.815013 1.00158-.500791.402597-1.17833.618624-.677541.216028-1.47292.216028-1.02122 0-1.83624-.34368-.815013-.3535-1.39436-.991763-.569527-.638263-.883749-1.55147-.304403-.913207-.304403-2.03262t.314222-2.03262q.314222-.913207.883749-1.55147.579347-.638263 1.39436-.981943.815013-.3535 1.82642-.3535.756096 0 1.42382.216028.677541.216028 1.18815.618624.52043.402597.844471.972124.324042.559708.392778 1.24707z" style="fill:#69b7cf;stroke-width:.471333"/>
 		<path d="m67.1723.0902833q.981943 0 1.8166.3535.834652.3535 1.43364 1.00158.608805.638263.942665 1.55147.343681.903388.343681 2.00316 0 1.08996-.333861 1.99335-.333861.903388-.942666 1.56129-.598985.648083-1.43364 1.0114-.824833.3535-1.82642.3535t-1.83623-.3535q-.834652-.3535-1.44346-1.00158-.598985-.648083-.932846-1.55147-.333861-.913207-.333861-2.01298 0-1.1096.333861-2.01298.34368-.913207.952485-1.55147.608805-.648083 1.43364-.991763.834652-.3535 1.82642-.3535zm-.0098 8.74912q.706999 0 1.30598-.255305.598986-.265125 1.03104-.756096.432055-.500791.667721-1.20779.245486-.716819.245486-1.62021 0-.913207-.245486-1.62021-.245485-.706999-.67754-1.19797-.422236-.490972-1.02122-.746277-.589166-.255305-1.27653-.255305-.706999 0-1.3158.265125-.598986.255305-1.03104.746277t-.677541 1.19797q-.245486.706999-.245486 1.61039 0 .903388.235667 1.62021.245486.706999.677541 1.20779.432055.490972 1.02122.756096.598985.255305 1.30598.255305z" style="fill:#69b7cf;stroke-width:.471333"/>
@@ -2361,7 +2361,15 @@ h2.message_dialog_label {
 	</div>
 </div>
 <div id='address_text' class='hide'>
-	<div id='address_text_label'>Address</div>
+	<div id='address_text_label'>
+		<div id='address_text_caption'>
+			Address
+		</div>
+		<div id='address_text_header'>
+			<div id='address_text_title'></div>
+			<div id='address_text_segment'></div>
+		</div>
+	</div>
 	<div id='address_text_close' class='control'>
 		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
 	 height='22' width='22' viewBox="0 0 24 24">

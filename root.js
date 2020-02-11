@@ -88,7 +88,24 @@ function onAccount() {
 
 function showAccountDialog() {
 	document.getElementById('account_dialog_container').classList.remove('hide');
-	account_dialog_address_active_first = true;
+	if(current_title)
+		document.getElementById('save_title_main').value = current_title;
+	else
+		document.getElementById('save_title_main').value = '';
+	if(current_segment)
+		document.getElementById('save_title_segment').value = current_segment;
+	else
+		document.getElementById('save_title_segment').value = '';
+	if(current_address) {
+		document.getElementById('save_address').innerText = current_address;
+		document.getElementById('save_address').classList.remove('initial');
+		account_dialog_address_active_first = false;
+	}
+	else {
+		document.getElementById('save_address').innerHTML = "&nbsp;&nbsp;Address (optional)";
+		document.getElementById('save_address').classList.add('initial');
+		account_dialog_address_active_first = true;
+	}
 }
 
 function hideAccountDialog() {
@@ -213,9 +230,7 @@ function loadSaveList() {
 
 function processSaveEntry(e) {
 	hideNotication();
-	clearTimeout(watch_location_timer);
-	clearLocating(true);
-	clearMap();
+	cleanUp();
 	hideAccountDialog();
 	var row = e.target.parentElement.parentElement.parentElement;
 	if(typeof row.data_city == 'undefined')
@@ -226,8 +241,15 @@ function processSaveEntry(e) {
 
 function processSaveEntry_continue(row) {
 	getCityCenterFromId(row.data_city, function(city) {
+		document.getElementById('address_text_title').innerText = saveList[row.data_key].title;
+		document.getElementById('address_text_segment').innerText = saveList[row.data_key].segment;
+		document.getElementById('address_text_content').innerText = saveList[row.data_key].address;
+		address_text.classList.remove('hide');
+		current_title = saveList[row.data_key].title;
+		current_segment = saveList[row.data_key].segment;
+		current_address = saveList[row.data_key].address;
 		decode_continue(city, saveList[row.data_key].code);
-	});	
+	});
 }
 
 function deleteSaveEntry(e) {
@@ -275,7 +297,8 @@ function getAddress(latLng, callback) {
 			if (address_components[0]) {
 				address = address_components[0].formatted_address;
 				gpId = address_components[0].place_id;
-				refreshAddress();
+				if(!current_title)
+					refreshAddress();
 				if(typeof callback != 'undefined')
 					callback(address_components);
 			} else {
@@ -299,6 +322,8 @@ function toggleAddress() {
 }
 
 function showAddress() {
+	document.getElementById('address_text_title').innerText = '';
+	document.getElementById('address_text_segment').innerText = '';
 	address_text_content.innerText = address;
 	address_text.classList.remove('hide');
 }
@@ -1147,9 +1172,6 @@ function decode(words) {
 }
 
 function decode_continue(city, wcode) {
-	clearTimeout(watch_location_timer);
-	clearLocating(true);
-	clearMap();
 	if(city != null)
 		decode_(city, wcode);
 	else
@@ -1380,11 +1402,12 @@ function showMarker(pos) {
 		});
 	}
 	else {
+		if(marker.getMap() == null)
+			marker.setMap(map);
 		marker.setPosition(pos);
 	}
 
-	if(marker.getMap() == null)
-		marker.setMap(map);
+	showInfoWindow();
 }
 
 function incMapInteractionCounter() {
@@ -1430,7 +1453,10 @@ function smoothZoomToBounds(bounds, map, max, current) {
 					else {
 						if(decMapInteractionCounter) {
 							map.fitBounds(bounds, ZOOM_BOUND_PADDING);
-							map.panBy(0, getPanByOffset());
+							var idleListenerPanBy = map.addListener('idle', function() {
+									idleListenerPanBy.remove();
+									map.panBy(0, getPanByOffset());
+								});
 						}
 					}
 				}, ZOOM_ANIMATION_SPEED);
@@ -1539,6 +1565,10 @@ function locateExec(failure) {
 		wait_loader.classList.remove('hide');
 		if (navigator.geolocation) {
 			locating = true;
+			if(myLocDot)
+				myLocDot.setMap(null);
+			if(accuCircle)
+				accuCircle.setMap(null);
 			var watch_location_time_begin = new Date().getTime();
 			watch_location_timer = setTimeout(endWatchLocation, WATCH_LOCATION_MAX_TIMEOUT);
 			
@@ -1560,7 +1590,7 @@ function locateExec(failure) {
 						lat: position.coords.latitude,
 						lng: position.coords.longitude
 					};
-					if(typeof accuCircle === 'undefined') {
+					if(typeof accuCircle === 'undefined' || !accuCircle.getMap()) {
 						accuCircle = new google.maps.Circle({
 							strokeColor: '#69B7CF',
 							strokeOpacity: 0,
@@ -1574,6 +1604,7 @@ function locateExec(failure) {
 						});
 					}
 					else {
+						accuCircle.setMap(map);
 						accuCircle.setOptions({'fillOpacity': 0.35});
 						accuCircle.setCenter(pos);
 						accuCircle.setRadius(position.coords.accuracy);
@@ -1589,7 +1620,7 @@ function locateExec(failure) {
 					document.getElementById('proceed_container').classList.remove('hide');
 					document.getElementById('accuracy_container').classList.remove('highlight');
 					document.getElementById('accuracy_container').classList.remove('hide');
-					if(!firstFocus || !myLocDot)
+					if(!firstFocus || !myLocDot || !myLocDot.getMap())
 						focus_(pos, accuCircle.getBounds());
 					else
 						pendingFocusPos = pos;
@@ -1607,6 +1638,8 @@ function locateExec(failure) {
 						});
 					}
 					else {
+						if(!myLocDot.getMap())
+							myLocDot.setMap(map);
 						myLocDot.setPosition(pos);
 					}
 
@@ -1654,7 +1687,10 @@ function proceedPosition() {
 	if(pos != null) {
 		if(!selfBoundsChangedCount) {
 			map.panTo(pos);
-			map.panBy(0, getPanByOffset());
+			var idleListenerPanBy = map.addListener('idle', function() {
+					idleListenerPanBy.remove();
+					map.panBy(0, getPanByOffset());
+				});
 		}
 		processPosition(pos);
 	}
@@ -1668,8 +1704,8 @@ function processPosition(pos) {
 	clearTimeout(watch_location_timer);
 	document.getElementById('proceed_container').classList.add('hide');
 	document.getElementById('accuracy_container').classList.add('highlight');
-	showMarker(pos);
 	infoWindow_setContent(MESSAGE_LOADING);
+	showMarker(pos);
 	infoWindow.open(map, marker);
 	if(initWCode == false) {
 		encode(pos);
@@ -1713,7 +1749,7 @@ function processPositionButtonTouchEnd(e) {
 }
 
 function handleLocationError(browserHasGeolocation) {
-	clearLocating(true);
+	cleanUp();
 	showNotification(browserHasGeolocation ?
 												'Error: The Geolocation service failed' :
 												'Error: Your browser doesn\'t support geolocation');
@@ -1858,23 +1894,16 @@ function initMap() {
 	});
 
 	map.addListener('click', function(event) {
-		clearLocating(true);
-		navigator.geolocation.clearWatch(watch_location_id);
-		pendingPosition = null;
-		pendingCity = null;
-		notification_top.classList.add('hide');
+		cleanUp();
 		infoWindow_setContent(MESSAGE_LOADING);
-		clearAddress();
-		clearURL();
 		var pos = resolveLatLng(event.latLng);
-		focus___(pos);
 		encode(pos);
+		focus___(pos);
 	});
 
 	decode_button.addEventListener('click', function() {
-		firstFocus = true;
-		selfBoundsChangedCount = 1;
-		clearMap();
+		cleanUp();
+		document.getElementById('accuracy_container').classList.add('hide');
 		suggestion_result.setInnerText = '';
 		var code = document.getElementById('pac-input').value;
 		execDecode(code);
@@ -1952,10 +1981,31 @@ function getIntentURL(latLng, code_string) {
 }
 
 function clearMap() {
-	if(marker != null) {
+	if(marker)
 		marker.setMap(null);
-		marker = null;
+}
+
+function cleanUp() {
+	clearTimeout(watch_location_timer);
+	clearLocating();
+	clearMap();
+	navigator.geolocation.clearWatch(watch_location_id);
+	pendingPosition = null;
+	pendingCity = null;
+	notification_top.classList.add('hide');
+	if(infoWindow) {
+		infoWindow.close();
+		infoWindow.setContent('');
 	}
+	clearAddress();
+	hideAddress();
+	clearURL();
+	document.getElementById('proceed_container').classList.add('hide');
+	firstFocus = true;
+	selfBoundsChangedCount = 1;
+	current_title = null;
+	current_segment = null;
+	current_address = null;
 }
 
 function toggleMapType() {
@@ -2023,9 +2073,24 @@ function postMap() {
 		syncLocate();
 }
 function showQR() {
-	document.getElementById('qr_title_main').value = document.getElementById('qr_pre_title_main').value;
-	document.getElementById('qr_title_segment').value = '';
-	
+	if(current_title)
+		document.getElementById('qr_title_main').value = current_title;
+	else
+		document.getElementById('qr_title_main').value = '';
+	if(current_segment)
+		document.getElementById('qr_title_segment').value = current_segment;
+	else
+		document.getElementById('qr_title_segment').value = '';
+	if(current_address) {
+		document.getElementById('qr_address').innerText = current_address;
+		document.getElementById('qr_address').classList.remove('initial');
+		qr_address_active_first = false;
+	}
+	else {
+		document.getElementById('qr_address').innerHTML = "&nbsp;&nbsp;Address (optional)";
+		document.getElementById('qr_address').classList.add('initial');
+		qr_address_active_first = true;
+	}
 	var city_accent = getProperCityAccent(code_city);
 	var code_string = code_wcode.join(' ');
 	document.getElementById('qr_wcode_city').innerHTML = city_accent;
@@ -2049,12 +2114,12 @@ function showQR() {
 function closeQR() {
 	document.getElementById('qr').classList.add('hide');
 	previewQR_deactivate()
-	document.getElementById('qr_address').innerHTML = "&nbsp;&nbsp;Address (optional)";
-	document.getElementById('qr_address').classList.add('initial');
-	qr_address_active_first = true;
-	
 	window.removeEventListener('afterprint', afterQRprint);
 	window.removeEventListener('beforeprint', beforeQRprint);
+	current_title = document.getElementById('qr_title_main').value;
+	current_segment = document.getElementById('qr_title_segment').value;
+	if(!qr_address_active_first)
+		current_address = document.getElementById('qr_address').innerText;
 }
 
 function previewQR_activate() {
@@ -2344,7 +2409,7 @@ function signedIn() {
 	document.getElementById('account_dialog_logout').classList.remove('hide');
 	document.getElementById('account_dialog_display_name').innerText = firebase.auth().currentUser.displayName;
 	document.getElementById('account_dialog_email').innerText = firebase.auth().currentUser.email;
-	if(typeof firebase.auth().currentUser.photoURL != null && firebase.auth().currentUser.photoURL.length) {
+	if(typeof firebase.auth().currentUser.photoURL != undefined && firebase.auth().currentUser.photoURL != null && firebase.auth().currentUser.photoURL.length) {
 		document.getElementById('account_user_image').setAttribute('src', firebase.auth().currentUser.photoURL);
 		document.getElementById('account_user_image').classList.remove('hide');
 		document.getElementById('account_default_image').classList.add('hide');
