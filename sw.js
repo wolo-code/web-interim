@@ -3,7 +3,8 @@ var cacheName = 'v1:static';
 self.addEventListener('install', function(e) { e.waitUntil(
 		caches.open(cacheName).then(function(cache) {
 			return cache.addAll([
-				'./script.js',
+				'./root.js',
+				'./console.js',
 				'./geofire.min.js',
 				'./html2canvas.min.js',
 				'./qrcode.min.js',

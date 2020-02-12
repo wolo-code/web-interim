@@ -951,9 +951,14 @@ function handleShareWCode() {
 }
 
 function shareWCode() {
+	var share_address;
+	if(current_address)
+		share_address = current_address;
+	else
+		share_address = address;
 	navigator.share( {
 		title: "Wolo",
-		text: "Wolo code for: " + ' ' + address + ' ' + '|',
+		text: "Wolo code for: " + ' ' + share_address + ' ' + '|',
 		url: '/' + getCodeFull().join('.').toLowerCase().replace(' ', '_') + '/'
 	} )
 	.catch((error) => console.log('Error sharing', error));

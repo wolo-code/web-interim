@@ -17,6 +17,9 @@
 		<script>Sentry.init({ dsn: 'https://badf8db6081d40d48af771b728440050@sentry.io/2045587' });
 </script>
 	<script>
+function trackOutboundLink(title, url) {
+	analytics.logEvent('outbound_link', {title: title, url: url});
+}
 function getAddressCity(address_components) {
 	
 	var found_city_i;
@@ -63,9 +66,6 @@ function getAddressCity(address_components) {
 		country: country
 	};
 	
-}
-function trackOutboundLink(title, url) {
-	analytics.logEvent('outbound_link', {title: title, url: url});
 }
 // .\Script
 var DEFAULT_LATLNG = {lat: -34.397, lng: 150.644};
@@ -190,6 +190,9 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 	</script>
 	<script>
+function trackOutboundLink(title, url) {
+	analytics.logEvent('outbound_link', {title: title, url: url});
+}
 // Address
 var latLng_p = '';
 var address = '';
