@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<urlset
+			xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'
+			xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+			xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+						http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+<url>
+	<loc>https://wolo.codes</loc>
+</url>
+<url>
+	<loc>https://wolo.codes/terms</loc>
+</url>
+<url>
+	<loc>https://wolo.codes/policy</loc>
+</url>
+<url>
+	<loc>https://wolo.codes/license</loc>
+</url>
+<url>
+	<loc>https://wolo.codes/about</loc>
+</url>
+<url>
+	<loc>https://wolo.codes/downloads</loc>
+</url>
+<url>
+	<loc>https://wolo.codes/case</loc>
+</url>
+<url>
+	<loc>https://wolo.codes/competition</loc>
+</url>
+<url>
+	<loc>https://wolo.codes/presentation</loc>
+</url>
+<url>
+	<loc>https://wolo.codes/logo</loc>
+</url>
+<url>
+	<loc>https://wolo.codes/about_me</loc>
+</url>
+
+</urlset>
