@@ -450,3 +450,7 @@ function setXURL(node) {
 }
 var initLoadDone = false;
 initLoad();
+function presentation() {
+	beginLoading();
+	fadeLoading();
+}
