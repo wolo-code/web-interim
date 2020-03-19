@@ -1,4 +1,5 @@
 User-agent: *
 Disallow: /console
+Disallow: *.json
 
 Sitemap: https://wolo.codes/sitemap.xml
