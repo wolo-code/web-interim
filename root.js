@@ -1047,19 +1047,27 @@ function shareWCodeLink() {
 	else
 		copyWcodeLink();
 }
-var pendingPosition;
-var pendingWords;
-var wordList;
-
+// var pendingPosition;
+// var pendingWords;
+// var wordList;
+// var current_city_gp_id;
+// var is_current_city;
 // const PURE_WCODE_CITY_PICKED;
 // const PURE_WCODE_CITY_FAILED;
 
-function encode(position) {
+function encode(position, locating_encode) {
 	clearCode();
 	getAddress(position, function(address_components) {
 			var city_gp_id = getCityGpId(address_components);
 			if(city_gp_id != null) {
 				getCityFromCityGp_id( city_gp_id, function(city) {
+					if(typeof locating_encode != 'undefined' && locating_encode == true) {
+						current_city_gp_id = city_gp_id;
+						is_current_city = true;
+					}
+					else {
+						is_current_city = false;
+					}
 					getCityCenterFromId(city, function(city) {
 						if(city != null)
 							encode_continue(city, position);
@@ -1182,9 +1190,9 @@ function decode_continue(city, wcode) {
 	else
 		showNotification(INCORRECT_WCODE);
 }
-var code_city;
-var code_wcode;
-var code_postition;
+// var code_city;
+// var code_wcode;
+// var code_postition;
 
 function setCode(city, wcode, latLng) {
 	code_city = city;
@@ -1519,7 +1527,7 @@ function setInfoWindowText(city_accent, city_name, code_string, latLng) {
 		if(document.getElementById('share_code_button') != null)
 			addLongpressListener(document.getElementById('share_code_button'));
 	});
-	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'><span class='control' onclick='showChooseCity_by_periphery_Message();'>" + city_accent + "</span></span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code_string + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' onclick='toggleAddress();' src=" + svg_address + " ><a href='"+ getIntentURL(latLng, city_name + ' ' + code_string) + "'><img id='external_map_button' class='control' src=" + svg_map + " ></a><div id='share_code_button' class='control'><div class='shield'></div><img src=" + svg_share + " ></div></div>");
+	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'><span class='control"+ (is_current_city?' current_city':' different_city') + "' onclick='showChooseCity_by_periphery_Message();'>" + city_accent + "</span></span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code_string + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' onclick='toggleAddress();' src=" + svg_address + " ><a href='"+ getIntentURL(latLng, city_name + ' ' + code_string) + "'><img id='external_map_button' class='control' src=" + svg_map + " ></a><div id='share_code_button' class='control'><div class='shield'></div><img src=" + svg_share + " ></div></div>");
 	showInfoWindow();
 }
 
@@ -1713,7 +1721,7 @@ function processPosition(pos) {
 	showMarker(pos);
 	infoWindow.open(map, marker);
 	if(initWCode == false) {
-		encode(pos);
+		encode(pos, true);
 		clearAddress();
 		getAddress(pos);
 	}
