@@ -65,8 +65,7 @@ function showNotification(message, duration) {
 		
 	notification_bottom.innerHTML = message;
 	notification_bottom.classList.remove('hide');
-	if(typeof notification_timer != 'undefined' && notification_timer != null)
-		clearTimeout(notification_timer);
+	clearNotificationTimer();
 	notification_timer = setTimeout(function()  {
 		notification_bottom.innerText = '';
 		notification_bottom.classList.add('hide');
@@ -76,6 +75,11 @@ function showNotification(message, duration) {
 
 function hideNotication() {
 	notification_bottom.classList.add('hide');
+}
+
+function clearNotificationTimer() {
+	if(typeof notification_timer != 'undefined' && notification_timer != null)
+		clearTimeout(notification_timer);
 }
 if(typeof initLoad !== 'undefined')
 	initLoad();
