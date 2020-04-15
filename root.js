@@ -550,6 +550,7 @@ function hideChooseCity_by_periphery_Message() {
 }
 
 function clearChooseCity_by_periphery_List() {
+	document.getElementById('choose_city_by_periphery_message_current_city').innerHTML = '';
 	document.getElementById('choose_city_by_periphery_message_list').innerHTML = '';
 }
 
@@ -570,14 +571,23 @@ function chooseCity_by_periphery_Continue(e) {
 }
 
 function showChooseCity_by_periphery_gpid() {
-	var container = document.getElementById('choose_city_by_periphery_message_list');
 	for(let key in chooseCity_by_periphery_gpid) {
-		chooseCity_by_periphery_List_gpids.push(chooseCity_by_periphery_gpid[key].city.gp_id);
 		var row = document.createElement('div');
 		row.innerHTML = getFullCity(chooseCity_by_periphery_gpid[key].city);
-		container.appendChild(row);
-		row.addEventListener('click', chooseCity_by_periphery_gpid_Continue);
-		row.data_id = key;
+		if(chooseCity_by_periphery_gpid[key].city.gp_id == code_city.gp_id) {
+			var container = document.getElementById('choose_city_by_periphery_message_current_city');
+			row.addEventListener('click', hideChooseCity_by_periphery_Message);
+			container.appendChild(row);
+		}
+		else {
+			if(chooseCity_by_periphery_gpid[key].city.administrative_level_2 == null && chooseCity_by_periphery_gpid[key].city.administrative_level_1 != null)
+				continue;
+			var container = document.getElementById('choose_city_by_periphery_message_list');
+			row.data_id = key;
+			row.addEventListener('click', chooseCity_by_periphery_gpid_Continue);
+			container.appendChild(row);
+		}
+		chooseCity_by_periphery_List_gpids.push(chooseCity_by_periphery_gpid[key].city.gp_id);
 	}
 }
 
@@ -637,7 +647,6 @@ function getCity_by_perifery_list(latLng, continue_encode) {
 	else
 		pending_encode_latLng = null;
 	getCity_by_perifery_list_fs(latLng);
-	//getCity_by_address_list(latLng);
 }
 
 function getCity_by_perifery_list_fs(latLng) {
@@ -893,11 +902,7 @@ function getCity_by_address_list(address_components) {
 				else if(address_components[i].address_components[j].types.includes('administrative_area_level_2'))
 					administrative_level_2 = address_components[i].address_components[j].long_name;
 			}
-			if(administrative_level_2 == null && administrative_level_1 != null) {
-				continue;
-			}
-			else
-				chooseCity_by_periphery_gpid[i] = new Object;
+			chooseCity_by_periphery_gpid[i] = new Object;
 			chooseCity_by_periphery_gpid[i].city = { 'gp_id': address_components[i].place_id,
 				'center' : resolveLatLng(address_components[i].geometry.location),
 				'name' : address_components[i].address_components[0].long_name,

@@ -1295,8 +1295,17 @@ h2.message_dialog_label {
 	z-index: 1;
 }
 
-.choose_city_message_list {
+.choose_city_message_list, #choose_city_by_periphery_message_current_city {
 	padding-left: 6px;
+}
+
+#choose_city_by_periphery_message_current_city div {
+	background-color: #ffffff;
+	color: #ababab;
+	font-size: larger;
+	border-radius: 5px;
+	padding: 2px 0 2px 8px;
+	border: 1px solid #eeeeee;
 }
 
 .choose_city_message_list div {
@@ -1305,9 +1314,10 @@ h2.message_dialog_label {
 	font-size: larger;
 	border-radius: 5px;
 	padding: 2px 0 2px 8px;
+	border: 1px solid #69B7CF;
 }
 
-.choose_city_message_list div:hover {
+.choose_city_message_list, #choose_city_by_periphery_message_current_city div:hover {
 	cursor: pointer;
 }
 
@@ -1846,6 +1856,10 @@ h2.message_dialog_label {
 	</div>
 	<div id='choose_city_by_periphery_message_prompt' class='message_dialog_body'>
 		<p>
+			Current city:
+		</p>
+		<div id='choose_city_by_periphery_message_current_city'></div>
+		<p>
 			Near by cities:
 		</p>
 		<div id='choose_city_by_periphery_message_list' class='choose_city_message_list'></div>
@@ -2098,7 +2112,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span>
-			2020 Apr 12 - 19:05:08			</span> (UTC)
+			2020 Apr 13 - 22:22:12			</span> (UTC)
 		</div>
 	</div>
 </div>
