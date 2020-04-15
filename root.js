@@ -292,6 +292,7 @@ function clearSaveEntry() {
 // var latLng_p;
 // var address;
 // var gpId;
+var code_city_gpid_tally;
 
 function getAddress(latLng, callback) {
 	var geocoder = new google.maps.Geocoder;
@@ -302,6 +303,10 @@ function getAddress(latLng, callback) {
 				getCity_by_address_list(address_components);
 				address = address_components[0].formatted_address;
 				gpId = address_components[0].place_id;
+				if(typeof code_city != 'undefined' && code_city.gp_id != null && gpId != code_city.gp_id)
+					code_city_gpid_tally = false;
+				else
+					code_city_gpid_tally = true;
 				if(!current_title)
 					refreshAddress();
 				if(typeof callback != 'undefined')
@@ -520,7 +525,7 @@ function chooseCityContinue(e) {
 var chooseCity_by_periphery_Callback;
 var chooseCity_by_periphery_List;
 var chooseCity_by_periphery_gpid;
-var chooseCity_by_periphery_List_gpids;
+var chooseCity_by_periphery_List_gpids = [];
 
 function showChooseCity_by_periphery_Message() {
 	clearChooseCity_by_periphery_List();
@@ -572,23 +577,26 @@ function chooseCity_by_periphery_Continue(e) {
 
 function showChooseCity_by_periphery_gpid() {
 	for(let key in chooseCity_by_periphery_gpid) {
-		var row = document.createElement('div');
-		row.innerHTML = getFullCity(chooseCity_by_periphery_gpid[key].city);
-		if(chooseCity_by_periphery_gpid[key].city.gp_id == code_city.gp_id) {
-			var container = document.getElementById('choose_city_by_periphery_message_current_city');
-			row.addEventListener('click', hideChooseCity_by_periphery_Message);
-			container.appendChild(row);
-		}
+		chooseCity_by_periphery_List_gpids.push(chooseCity_by_periphery_gpid[key].city.gp_id);
+		if(chooseCity_by_periphery_gpid[key].city.gp_id == code_city.gp_id)
+			continue;
 		else {
 			if(chooseCity_by_periphery_gpid[key].city.administrative_level_2 == null && chooseCity_by_periphery_gpid[key].city.administrative_level_1 != null)
 				continue;
 			var container = document.getElementById('choose_city_by_periphery_message_list');
+			var row = document.createElement('div');
+			row.innerHTML = getFullCity(chooseCity_by_periphery_gpid[key].city);
 			row.data_id = key;
 			row.addEventListener('click', chooseCity_by_periphery_gpid_Continue);
 			container.appendChild(row);
 		}
-		chooseCity_by_periphery_List_gpids.push(chooseCity_by_periphery_gpid[key].city.gp_id);
 	}
+
+	var container = document.getElementById('choose_city_by_periphery_message_current_city');
+	var row = document.createElement('div');
+	row.innerHTML = getFullCity(code_city);
+	row.addEventListener('click', hideChooseCity_by_periphery_Message);
+	container.appendChild(row);
 }
 
 function chooseCity_by_periphery_gpid_Continue(e) {
@@ -879,12 +887,12 @@ function tryDefaultCity() {
 }
 
 function getFullCity(city) {
-	cityGroupName = getCityGroupName(city);
+	cityGroupName = getCityGroupName(city, ' \\ ');
 	properCityAccent = getProperCityAccent(city);
 	if(cityGroupName == null || cityGroupName == properCityAccent)
-		return city.country + ' \\ ' + getProperCityAccent(city);
+		return city.country + ' \\ ' + properCityAccent;
 	else
-		return city.country + ' \\ ' + getCityGroupName(city) + ' : ' + getProperCityAccent(city);
+		return city.country + ' \\ ' + cityGroupName + ' : ' + properCityAccent;
 }
 
 function getCity_by_address_list(address_components) {
@@ -1366,7 +1374,6 @@ function getCodeCityNameId() {
 	return code_city.name_id;
 }
 
-
 function getCodeCityCountryName() {
 	return code_city.country;
 }
@@ -1375,11 +1382,15 @@ function getCodeCityGroupName() {
 	return getCityGroupName(code_city);
 }
 
-function getCityGroupName(city) {
-	if(typeof city.administrative_level_1 != 'undefined')
-		return city.administrative_level_1;
-	else if(typeof city.administrative_level_2 != 'undefined')
-		return city.administrative_level_2;
+function getCityGroupName(city, separator='.') {
+	if(typeof city.administrative_level_1 == 'undefined' || city.administrative_level_1 == null)
+		return '';
+	else {
+		if(typeof city.administrative_level_2 == 'undefined' || city.administrative_level_2 == null)
+			return city.administrative_level_1;
+		else
+			return city.administrative_level_1 + separator + city.administrative_level_2;
+	}
 }
 
 function getCodeCity() {
