@@ -292,7 +292,6 @@ function clearSaveEntry() {
 // var latLng_p;
 // var address;
 // var gpId;
-var code_city_gpid_tally;
 
 function getAddress(latLng, callback) {
 	var geocoder = new google.maps.Geocoder;
@@ -302,11 +301,13 @@ function getAddress(latLng, callback) {
 			if (address_components[0]) {
 				getCity_by_address_list(address_components);
 				address = address_components[0].formatted_address;
-				gpId = address_components[0].place_id;
-				if(typeof code_city != 'undefined' && code_city.gp_id != null && gpId != code_city.gp_id)
-					code_city_gpid_tally = false;
-				else
-					code_city_gpid_tally = true;
+				gpId = getCityGpId(address_components);
+				if(typeof code_city != 'undefined' && code_city.gp_id != null && gpId != code_city.gp_id) {
+					setCurrentCity_status(false);
+				}
+				else {
+					setCurrentCity_status(true);
+				}
 				if(!current_title)
 					refreshAddress();
 				if(typeof callback != 'undefined')
@@ -576,6 +577,12 @@ function chooseCity_by_periphery_Continue(e) {
 }
 
 function showChooseCity_by_periphery_gpid() {
+	var container = document.getElementById('choose_city_by_periphery_message_current_city');
+	var row = document.createElement('div');
+	row.innerHTML = getFullCity(code_city);
+	row.addEventListener('click', hideChooseCity_by_periphery_Message);
+	container.appendChild(row);
+	
 	for(let key in chooseCity_by_periphery_gpid) {
 		chooseCity_by_periphery_List_gpids.push(chooseCity_by_periphery_gpid[key].city.gp_id);
 		if(chooseCity_by_periphery_gpid[key].city.gp_id == code_city.gp_id)
@@ -591,12 +598,6 @@ function showChooseCity_by_periphery_gpid() {
 			container.appendChild(row);
 		}
 	}
-
-	var container = document.getElementById('choose_city_by_periphery_message_current_city');
-	var row = document.createElement('div');
-	row.innerHTML = getFullCity(code_city);
-	row.addEventListener('click', hideChooseCity_by_periphery_Message);
-	container.appendChild(row);
 }
 
 function chooseCity_by_periphery_gpid_Continue(e) {
@@ -1171,13 +1172,12 @@ function encode(position, locating_encode) {
 				getCityFromCityGp_id( city_gp_id, function(city) {
 					if(typeof locating_encode != 'undefined' && locating_encode == true) {
 						current_city_gp_id = city_gp_id;
-						is_current_city = true;
+						setCurrentCity_status(true);
 					}
-					else if(current_city_gp_id == city_gp_id){
-						is_current_city = true;
-					}
+					else if(current_city_gp_id == city_gp_id)
+						setCurrentCity_status(true);
 					else
-						is_current_city = false;
+						setCurrentCity_status(false);
 					getCityCenterFromId(city, function(city) {
 						if(city != null)
 							encode_continue(city, position);
@@ -1193,6 +1193,17 @@ function encode(position, locating_encode) {
 				getCity_by_perifery_list(position, true);
 			}
 		});
+}
+
+function setCurrentCity_status(status) {
+	if(status) {
+		document.getElementById('map').classList.remove('different_city');
+		document.getElementById('map').classList.add('current_city');
+	}
+	else {
+		document.getElementById('map').classList.remove('current_city');
+		document.getElementById('map').classList.add('different_city');
+	}
 }
 
 function encode_continue(city, position) {
@@ -1250,8 +1261,8 @@ function decode(words) {
 	var valid = true;
 
 	if(words.length >= 3) {
-		for (var i = 0; i < 3; i++) {
-			if (wordList.includes(words[city_words_length+i]) != true) {
+		for(var i = 0; i < 3; i++) {
+			if(typeof wordList != 'undefined' && wordList.includes(words[city_words_length+i]) != true) {
 				valid = false;
 				break;
 			}
@@ -1306,6 +1317,14 @@ function decode_continue(city, wcode) {
 
 function setCode(city, wcode, latLng) {
 	code_city = city;
+	if(typeof code_city != 'undefined' && code_city.gp_id != null && gpId != code_city.gp_id) {
+		document.getElementById('map').classList.remove('city_tally_true');
+		document.getElementById('map').classList.add('city_tally_false');
+	}
+	else {
+		document.getElementById('map').classList.remove('city_tally_false');
+		document.getElementById('map').classList.add('city_tally_true');
+	}
 	code_wcode = wcode;
 	code_postition = latLng;
 	document.getElementById('accuracy_container').classList.add('hide');
@@ -1640,7 +1659,7 @@ function setInfoWindowText(city_accent, city_name, code_string, latLng) {
 		if(document.getElementById('share_code_button') != null)
 			addLongpressListener(document.getElementById('share_code_button'));
 	});
-	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'><span class='control"+ (is_current_city?' current_city':' different_city') + "' onclick='showChooseCity_by_periphery_Message();'>" + city_accent + "</span></span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code_string + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' onclick='toggleAddress();' src=" + svg_address + " ><a href='"+ getIntentURL(latLng, city_name + ' ' + code_string) + "'><img id='external_map_button' class='control' src=" + svg_map + " ></a><div id='share_code_button' class='control'><div class='shield'></div><img src=" + svg_share + " ></div></div>");
+	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'><span class='control' onclick='showChooseCity_by_periphery_Message();'>" + city_accent + "</span></span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code_string + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' onclick='toggleAddress();' src=" + svg_address + " ><a href='"+ getIntentURL(latLng, city_name + ' ' + code_string) + "'><img id='external_map_button' class='control' src=" + svg_map + " ></a><div id='share_code_button' class='control'><div class='shield'></div><img src=" + svg_share + " ></div></div>");
 	showInfoWindow();
 }
 

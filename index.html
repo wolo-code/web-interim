@@ -777,10 +777,14 @@ button.border {
 	margin-right: 0;
 }
 
-.different_city {
+.different_city #infowindow_code_left_code > span {
 	font-weight: bold;
 	text-transform: uppercase;
 	color: rgb(255,64,129);
+}
+
+.city_tally_false #infowindow_code_left_code > span {
+	text-decoration: line-through;
 }
 .message_dialog {
 	position: absolute;
@@ -1317,7 +1321,7 @@ h2.message_dialog_label {
 	border: 1px solid #69B7CF;
 }
 
-.choose_city_message_list, #choose_city_by_periphery_message_current_city div:hover {
+.choose_city_message_list div:hover, #choose_city_by_periphery_message_current_city div:hover {
 	cursor: pointer;
 }
 
@@ -2112,7 +2116,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span>
-			2020 Apr 15 - 20:30:23			</span> (UTC)
+			2020 Apr 18 - 22:08:43			</span> (UTC)
 		</div>
 	</div>
 </div>
