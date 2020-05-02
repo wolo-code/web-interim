@@ -477,10 +477,17 @@ function urlDecode() {
 			code_string = window.location.pathname.substr(1);
 			initWCode_jumpToMap = false;
 		}
-		var code = code_string.toLowerCase().replace('_', ' ');
-		pendingWords = code.split('.');
-		initWCode = true;
-		return true;
+		
+		if(!code_string.match(/^[A-Za-z0-9_]+$/)) {
+			window.location.replace('/404');
+			return false;
+		}
+		else {			
+			var code = code_string.toLowerCase().replace('_', ' ');
+			pendingWords = code.split('.');
+			initWCode = true;
+			return true;
+		}
 	}
 	else
 		return false;
@@ -728,8 +735,6 @@ function syncNearCityList(nearCityList_coord, nearCityList_detail) {
 	}
 }
 
-//			getCityFromIdThenEncode(nearCity.city.id, nearCity.city.center, latLng);
-
 function getCityFromIdThenEncode(city_id, city_center, latLng) {
 	getCityFromId(city_id, function(city) {
 		city.center = city_center;
@@ -792,44 +797,43 @@ function getCityFromName(group, name, callback) {
 	ref.orderByChild('name_id').equalTo(name).once('value', function(snapshot) {
 		wait_loader.classList.add('hide');
 		var list = snapshot.val();
-		let matchCount;
-		matchCount = matchCityByGroup(list, group, name);
-		if(matchCount.length == 0)
+		let matchList;
+		matchList = matchCityByGroup(list, group, name);
+		if(matchList.length == 0)
 			decode_continue();
 		else {
-			if(matchCount.length == 1) {
-				let i = matchCount[0];
-				//var id = Object.keys(list)[i];
+			if(matchList.length == 1) {
+				let i = matchList[0];
 				var city = list[i];
 				city.id = i;
 				callback(city);
 			}
 			else	
-				chooseCity(list, matchCount, callback);
+				chooseCity(list, matchList, callback);
 		}
 	});
 }
 
 function matchCityByGroup(list, group, name) {
-	var matchCount = [];
+	var matchList = [];
 	var complete_id_list = [];
 	if(list != null) {
 		for(let i in list) {
-			let complete_id = (list[i].country+'-'+list[i].administrative_level_1+'-'+list[i].administrative_level_2).toLowerCase();
-			if(!complete_id_list.includes(complete_id)) {	
-				if(group.length == 0 || group.join('-') == complete_id)
-					matchCount.push(i);
-				complete_id_list.push(complete_id);
+			let complete_group_id = (list[i].country+'-'+list[i].administrative_level_1+'-'+list[i].administrative_level_2).toLowerCase().replace('--', '-');
+			if(!complete_group_id_list.includes(complete_group_id)) {	
+				if( group.length == 0 || complete_id.endsWith(group.join('-')) )
+					matchList.push(i);
+				complete_id_list.push(complete_group_id);
 			}
 		}
 	}	
-	return matchCount;
+	return matchList;
 }
 
 function getCityCenterFromId(city, callback) {
 	refCityCenter.child(city.id).once('value', function(snapshot) {
 		var location = snapshot.val().l;
-		city.center = { lat: location[0], lng: location[1]};
+		city.center = { lat: location[0], lng: location[1] };
 		callback(city);
 	});
 }
@@ -1286,9 +1290,10 @@ function getCityGpId(address_components) {
 function decode(words) {
 	var city_words_length = words.length-3;
 
-	var valid = true;
+	var valid;
 
 	if(words.length >= 3) {
+		valid = true;
 		for(var i = 0; i < 3; i++) {
 			if(typeof wordList != 'undefined' && wordList.includes(words[city_words_length+i]) != true) {
 				valid = false;
@@ -1296,6 +1301,8 @@ function decode(words) {
 			}
 		}
 	}
+	else
+		valid = false;
 
 	if(valid) {
 
