@@ -1242,6 +1242,10 @@ h2.message_dialog_label {
 	font-family: monospace;
 }
 
+#accuracy_meter_unit {
+	padding-right: 4px;
+}
+
 .highlight #accuracy_meter {
 	font-weight: bold;
 }
@@ -2111,7 +2115,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span>
-			2020 May 02 - 22:18:59			</span> (UTC)
+			2020 May 04 - 01:46:49			</span> (UTC)
 		</div>
 	</div>
 </div>
@@ -2388,9 +2392,10 @@ h2.message_dialog_label {
 <div id='accuracy_container' class="center-container-abs hide">
 	<div>
 		<span id='accuracy_indicator'>&nbsp;</span>
-		<span>accuracy</span> <span id='accuracy_meter'></span> <span>m</span>
-		<span id='proceed_container'>&nbsp<span>
-		<span id='proceed_button' class='control'>Proceed</span>
+		<span>accuracy</span> <span id='accuracy_meter'></span> <span id='accuracy_meter_unit'>m</span>
+		<span id='proceed_container'>
+			<span id='proceed_button' class='control'>Proceed</span>
+		<span>
 	</div>
 </div>
 <div id='notification_bottom' class="notification_bar hide"></div>

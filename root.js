@@ -881,7 +881,8 @@ function noCity(position) {
 function notInRange(position) {
 	showNotification("Error: place out of range of selected city");
 	showAddress();
-	infoWindow.setContent("Not in selected city's range");
+	infoWindow.setContent("<div class='control' onclick='showChooseCity_by_periphery_Message();'>Not in <span class='blue'>selected<span> city's range</div>");
+	showChooseCity_by_periphery_Message();
 }
 
 function submitCity() {
@@ -988,6 +989,7 @@ function stringifyAddCityData(gp_id) {
 // var curAddCityRequestId;
 
 function encode_(city, position) {
+	code_city = city;
 	var http = new XMLHttpRequest();
 	http.open('POST', FUNCTIONS_BASE_URL+'/'+'encode', true);
 
@@ -999,13 +1001,12 @@ function encode_(city, position) {
 	http.onreadystatechange = function() {
 		if(http.readyState == 4) {
 			if(http.requestId == curEncRequestId) {
+				wait_loader.classList.add('hide');
 				if(http.status == 200) {
 					setCodeWords(http.responseText, city, position);
-					wait_loader.classList.add('hide');
 				}
 				else if(http.status == 416) {
 					notInRange(position);
-					wait_loader.classList.add('hide');
 				}
 			}
 		}
@@ -1033,7 +1034,7 @@ function stringifyEncodeData(city_center, position) {
 }
 
 function decode_(city, code) {
-
+	code_city = city;
 	var http = new XMLHttpRequest();
 	http.open('POST', FUNCTIONS_BASE_URL+'/'+'decode', true);
 
@@ -1057,7 +1058,6 @@ function decode_(city, code) {
 	data[1] = wordList.indexOf(code[1]);
 	data[2] = wordList.indexOf(code[2]);
 	http.send( stringifyDecodeData(city.center, data) );
-
 }
 
 function stringifyDecodeData(city_center, code) {
@@ -1352,7 +1352,6 @@ function decode_continue(city, wcode) {
 // var code_postition;
 
 function setCode(city, wcode, latLng) {
-	code_city = city;
 	if(typeof code_city != 'undefined' && code_city.gp_id != null && city.gp_id != code_city.gp_id) {
 		document.getElementById('map').classList.remove('city_tally_true');
 		document.getElementById('map').classList.add('city_tally_false');
