@@ -478,8 +478,8 @@ function urlDecode() {
 			initWCode_jumpToMap = false;
 		}
 		
-		if(!code_string.match(/^[A-Za-z0-9_]+$/)) {
-			window.location.replace('/404');
+		if(!code_string.match(/^[A-Za-z0-9._]+$/)) {
+			window.location.replace('/404'+'?url='+window.location.host+window.location.pathname+window.location.search);
 			return false;
 		}
 		else {			
@@ -816,14 +816,14 @@ function getCityFromName(group, name, callback) {
 
 function matchCityByGroup(list, group, name) {
 	var matchList = [];
-	var complete_id_list = [];
+	var complete_group_id_list = [];
 	if(list != null) {
 		for(let i in list) {
 			let complete_group_id = (list[i].country+'-'+list[i].administrative_level_1+'-'+list[i].administrative_level_2).toLowerCase().replace('--', '-');
 			if(!complete_group_id_list.includes(complete_group_id)) {	
-				if( group.length == 0 || complete_id.endsWith(group.join('-')) )
+				if( group.length == 0 || complete_group_id.endsWith(group.join('-')) )
 					matchList.push(i);
-				complete_id_list.push(complete_group_id);
+				complete_group_id_list.push(complete_group_id);
 			}
 		}
 	}	
