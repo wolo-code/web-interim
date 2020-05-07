@@ -33,7 +33,7 @@ ClickEventHandler.prototype.getPlaceInformation = function(placeId) {
 
 function firebaseInit() {
 	firebase.initializeApp(FIREBASE_CONFIG);
-	wait_loader.classList.remove('hide');
+	document.getElementById('wait_loader').classList.remove('hide');
 	if(typeof authInit != 'undefined')
 		authInit();
 	if(typeof firebase.analytics != 'undefined')
@@ -91,7 +91,7 @@ function onAccount() {
 }
 
 function showAccountDialog() {
-	document.getElementById('account_dialog_container').classList.remove('hide');
+	showOverlay(document.getElementById('account_dialog_container'));
 	if(current_title)
 		document.getElementById('save_title_main').value = current_title;
 	else
@@ -113,7 +113,7 @@ function showAccountDialog() {
 }
 
 function hideAccountDialog() {
-	document.getElementById('account_dialog_container').classList.add('hide');
+	hideOverlay(document.getElementById('account_dialog_container'));
 	clearAccountDialogSaveForm();
 	clearSaveEntry();
 }
@@ -360,16 +360,17 @@ function copyAddress() {
 	copyNodeText(address_text_content);
 }
 function onLogin() {
-	showAuthenticationDialog();
 	hideAccountDialog();
+	showAuthenticationDialog();
 	ui.start('#firebaseui-auth', uiConfig);	
 }
 
 function onLogout() {
-	document.getElementById('firebaseui-auth-container').classList.remove('hide');
+	document.getElementById('wait_loader').classList.remove('hide');
 	firebase.auth().signOut()
 	.then(function() {
-		document.getElementById('firebaseui-auth-container').classList.add('hide');
+		document.getElementById('wait_loader').classList.add('hide');
+		hideOverlay(document.getElementById('firebaseui-auth-container'));
 		document.getElementById('account_dialog_container').classList.add('hide');
 		document.getElementById('account_user_image').classList.add('hide');
 		document.getElementById('account_user_image').setAttribute('src', null);
@@ -386,11 +387,11 @@ function onLogout() {
 }
 
 function showAuthenticationDialog() {
-	document.getElementById('firebaseui-auth-container').classList.remove('hide');
+	showOverlay(document.getElementById('firebaseui-auth-container'));
 }
 
 function hideAuthenticationDialog() {
-	document.getElementById('firebaseui-auth-container').classList.add('hide');
+	hideOverlay(document.getElementById('firebaseui-auth-container'));
 }
 // const CURRENT_VERSION;
 // var initWCode;
@@ -448,7 +449,7 @@ function versionCheck() {
 	}
 	if(set) {
 		localStorage.note_version = CURRENT_VERSION;
-		showOverlay();
+		showInfo();
 	}
 	else
 		activateOverlayInfo_full();
@@ -497,7 +498,7 @@ var chooseCityList;
 
 function showChooseCityMessage() {
 	clearChooseCityList();
-	choose_city_by_name_message.classList.remove('hide');
+	showOverlay(document.getElementById('choose_city_by_name_message'));
 	var container = document.getElementById('choose_city_by_name_message_list');
 	for(let key in chooseCityList) {
 		var row = document.createElement('div');
@@ -509,7 +510,7 @@ function showChooseCityMessage() {
 }
 
 function hideChooseCityMessage() {
-	choose_city_by_name_message.classList.add('hide');
+	hideOverlay(document.getElementById('choose_city_by_name_message'));
 	clearChooseCityList();
 }
 
@@ -543,7 +544,7 @@ function showChooseCity_by_periphery_Message() {
 	clearChooseCity_by_periphery_List();
 	showChooseCity_by_periphery_gpid();
 	showChooseCity_by_periphery_List();
-	choose_city_by_periphery_message.classList.remove('hide');
+	showOverlay(document.getElementById('choose_city_by_periphery_message'));
 }
 
 function showChooseCity_by_periphery_List() {
@@ -562,7 +563,7 @@ function showChooseCity_by_periphery_List() {
 }
 
 function hideChooseCity_by_periphery_Message() {
-	choose_city_by_periphery_message.classList.add('hide');
+	hideOverlay(document.getElementById('choose_city_by_periphery_message'));
 	clearChooseCity_by_periphery_List();
 }
 
@@ -680,10 +681,10 @@ function getCity_by_perifery_list_fs(latLng) {
 		radius: CITY_RANGE_RADIUS
 	});
 
-	wait_loader.classList.remove('hide');
+	document.getElementById('wait_loader').classList.remove('hide');
 	geoQuery.on('ready', function() {
 		geoQuery_completed = true;
-		wait_loader.classList.add('hide');
+		document.getElementById('wait_loader').classList.add('hide');
 		geoQuery.cancel();
 
 		if(Object.keys(nearCityList_coord).length == Object.keys(nearCityList_detail).length)
@@ -751,9 +752,9 @@ function getCityFromPositionThenDecode(latLng, wcode) {
 		radius: CITY_RANGE_RADIUS
 	});
 
-	wait_loader.classList.remove('hide');
+	document.getElementById('wait_loader').classList.remove('hide');
 	geoQuery.on('ready', function() {
-		wait_loader.classList.add('hide');
+		document.getElementById('wait_loader').classList.add('hide');
 		geoQuery.cancel();
 		if(nearCity == null)
 			decode_continue(null, wcode);
@@ -782,9 +783,9 @@ function getCityFromPositionThenDecode(latLng, wcode) {
 // only detail, not center
 function getCityFromId(id, callback) {
 	var ref = database.ref('CityDetail'+'/'+id);
-	wait_loader.classList.remove('hide');
+	document.getElementById('wait_loader').classList.remove('hide');
 	ref.once('value').then(function(snapshot) {
-		wait_loader.classList.add('hide');
+		document.getElementById('wait_loader').classList.add('hide');
 		var city = snapshot.val();
 		city.id = id;
 		callback(city);
@@ -793,9 +794,9 @@ function getCityFromId(id, callback) {
 
 function getCityFromName(group, name, callback) {
 	var ref = database.ref('CityDetail');
-	wait_loader.classList.remove('hide');
+	document.getElementById('wait_loader').classList.remove('hide');
 	ref.orderByChild('name_id').equalTo(name).once('value', function(snapshot) {
-		wait_loader.classList.add('hide');
+		document.getElementById('wait_loader').classList.add('hide');
 		var list = snapshot.val();
 		let matchList;
 		matchList = matchCityByGroup(list, group, name);
@@ -840,9 +841,9 @@ function getCityCenterFromId(city, callback) {
 
 function getCitiesFromNameId(name_id, callback) {
 	var ref = database.ref('CityDetail');
-	wait_loader.classList.remove('hide');
+	document.getElementById('wait_loader').classList.remove('hide');
 	ref.orderByChild('name_id').startAt(name_id).endAt(name_id+'\uf8ff').limitToFirst(10).once('value', function(snapshot) {
-		wait_loader.classList.add('hide');
+		document.getElementById('wait_loader').classList.add('hide');
 		callback(snapshot.val());
 	});
 }
@@ -850,18 +851,18 @@ function getCitiesFromNameId(name_id, callback) {
 // unused
 function getCityIdFromNameId(name_id, callback) {
 	var ref = database.ref('CityDetail');
-	wait_loader.classList.remove('hide');
+	document.getElementById('wait_loader').classList.remove('hide');
 	ref.orderByChild('name_id').equalTo(name_id).once('value', function(snapshot) {
-		wait_loader.classList.add('hide');
+		document.getElementById('wait_loader').classList.add('hide');
 		callback(Object.keys(snapshot.val())[0]);
 	});
 }
 
 function getCityFromCityGp_id(city_gp_id, callback_success, callback_failure) {
 	var ref = database.ref('CityDetail');
-	wait_loader.classList.remove('hide');
+	document.getElementById('wait_loader').classList.remove('hide');
 	ref.orderByChild('gp_id').equalTo(city_gp_id).once('value', function(snapshot) {
-		wait_loader.classList.add('hide');
+		document.getElementById('wait_loader').classList.add('hide');
 		if (snapshot.exists()) {
 			var city = Object.values(snapshot.val())[0];
 			city.id = Object.keys(snapshot.val())[0];
@@ -964,12 +965,12 @@ function addCity(gp_id, callback) {
 	http.setRequestHeader('version', '1');
 	http.requestId = ++curAddCityRequestId;
 
-	wait_loader.classList.remove('hide');
+	document.getElementById('wait_loader').classList.remove('hide');
 	http.onreadystatechange = function() {
 		if(http.readyState == 4 && http.status == 200) {
 			if(http.requestId == curAddCityRequestId) {
 				callback(JSON.parse(http.responseText).added);
-				wait_loader.classList.add('hide');
+				document.getElementById('wait_loader').classList.add('hide');
 			}
 		}
 	}
@@ -997,11 +998,11 @@ function encode_(city, position) {
 	http.setRequestHeader('version', '1');
 	http.requestId = ++curEncRequestId;
 
-	wait_loader.classList.remove('hide');
+	document.getElementById('wait_loader').classList.remove('hide');
 	http.onreadystatechange = function() {
 		if(http.readyState == 4) {
 			if(http.requestId == curEncRequestId) {
-				wait_loader.classList.add('hide');
+				document.getElementById('wait_loader').classList.add('hide');
 				if(http.status == 200) {
 					setCodeWords(http.responseText, city, position);
 				}
@@ -1042,13 +1043,13 @@ function decode_(city, code) {
 	http.setRequestHeader('version', '1');
 	http.requestId = ++curDecRequestId;
 
-	wait_loader.classList.remove('hide');
+	document.getElementById('wait_loader').classList.remove('hide');
 	http.onreadystatechange = function() {
 		if(http.readyState == 4 && http.status == 200) {
 			if(http.requestId == curDecRequestId) {
 				setCodeCoord(city, http.responseText, code);
 				notification_top.classList.add('hide');
-				wait_loader.classList.add('hide');
+				document.getElementById('wait_loader').classList.add('hide');
 			}
 		}
 	}
@@ -1076,117 +1077,6 @@ function setCodeCoord(city, codeIndex, code) {
 	}
 	getAddress(latLng);
 	focus__(city, latLng, code);
-}
-// const WCODE_CODE_COPIED_MESSAGE;
-// const WCODE_LINK_COPIED_MESSAGE;
-
-function handleShareWCode() {
-	setTimeout( function() {
-			showNotification("Long press share icon for advanced options");
-		}, 4000);
-	
-	if (navigator.share)
-		shareWCode();
-	else
-		copyWcodeJumpLink();
-}
-
-function shareWCode() {
-	var share_address;
-	if(current_address)
-		share_address = current_address;
-	else
-		share_address = address;
-	navigator.share( {
-		title: "Wolo",
-		text: "Wolo code for: " + ' ' + share_address + ' ' + '|',
-		url: '/' + getCodeComplete().join('.').toLowerCase().replace(' ', '_') + '/'
-	} )
-	.catch((error) => console.log('Error sharing', error));
-}
-
-function showCopyWcodeMessage() {
-	var city_name_id = getCodeCityNameId();
-	var country_name = getCodeCityCountryName();
-	var group_name = getCodeCityGroupName();
-	var country_repeat_count = 0;
-	var group_repeat_count = 0;
-	var city_repeat_count = 0;
-	getCitiesFromNameId(city_name_id, function(cities) {
-		for(let key in cities) {
-			if(cities[key].country == country_name)
-				country_repeat_count++;
-			if(getCityGroupName(cities[key]) == group_name)
-				group_repeat_count++;
-			city_repeat_count++;
-		}
-		var prefix = '';
-		if(country_repeat_count != city_repeat_count) {
-			prefix = country_name + '\\';
-			multiple_country = true;
-		}
-		else
-			multiple_country = false;
-
-		if(group_repeat_count != city_repeat_count) {
-			prefix += group_name + '\\';
-			multiple_group = true;
-		}
-		else
-			multiple_group = false;
-		if(city_repeat_count)
-			multiple_city = true;
-		else
-			multiple_city = false;
-
-		copy_wcode_message_city_name.innerText = prefix+getCodeCityProperCityAccent();
-		copy_wcode_message.classList.remove('hide');
-	} );
-}
-
-function hideCopyCodeMessage() {
-	copy_wcode_message.classList.add('hide');
-	copy_wcode_message_city_name.innerText = '';
-}
-
-function copyWcodeFull() {
-	showAndCopy(getWcodeFull_formatted().join(' '));
-	showNotification(WCODE_CODE_COPIED_MESSAGE);
-	hideCopyCodeMessage();
-}
-
-function copyWcodeCode() {
-	showAndCopy(getCodeWcode_formatted().join(' '));
-	showNotification(WCODE_CODE_COPIED_MESSAGE);
-	hideCopyCodeMessage();
-}
-
-function copyWcodeLink() {
-	var code_url = location.hostname + '/' + getCodeComplete().join('.').toLowerCase().replace(' ', '_');
-	showAndCopy(code_url);
-	showNotification(WCODE_LINK_COPIED_MESSAGE);
-	hideCopyCodeMessage();
-}
-
-function copyWcodeJumpLink() {
-	var code_url = location.hostname + '/' + getCodeComplete().join('.').toLowerCase().replace(' ', '_') + '/';
-	showAndCopy(code_url);
-	showNotification(WCODE_LINK_COPIED_MESSAGE);
-	hideCopyCodeMessage();
-}
-
-function shareWCodeCopy() {
-	if(share_include_city.checked)
-		copyWcodeFull();
-	else
-		copyWcodeCode();
-}
-
-function shareWCodeLink() {
-	if(share_jumto_map.checked)
-		copyWcodeJumpLink();
-	else
-		copyWcodeLink();
 }
 // var pendingPosition;
 // var pendingWords;
@@ -1517,10 +1407,10 @@ function authInit() {
 		callbacks: {
 			signInSuccessWithAuthResult: function(authResult, redirectUrl) {
 				signedIn();
-				document.getElementById('firebaseui-auth-container').classList.add('hide');
+				hideOverlay(document.getElementById('firebaseui-auth-container'));
 			},
 			uiShown: function() {
-				wait_loader.classList.add('hide');
+				document.getElementById('wait_loader').classList.add('hide');
 			}
 		},
 		signInFlow: 'popup',
@@ -1681,6 +1571,14 @@ function getZoomByBounds(map, bounds) {
 	}
 	return 0;
 }
+function hideInfo() {
+	activateOverlayInfo_full();
+	hideOverlay(document.getElementById('info_message'));
+}
+
+function showInfo() {
+	showOverlay(document.getElementById('info_message'));
+}
 function initInfoWindow() {
 	if(typeof infoWindow == 'undefined')
 		infoWindow = new google.maps.InfoWindow({'map': map});
@@ -1735,7 +1633,7 @@ function initLocate(override_dnd) {
 					showLocateRightMessage(hide_dnd);
 				}
 				else
-					wait_loader.classList.add('hide');
+					document.getElementById('wait_loader').classList.add('hide');
 			}
 		});
 }
@@ -1746,7 +1644,7 @@ function locateExec(failure) {
 		var WATCH_LOCATION_TIMEOUT = 45000;
 		var WATCH_LOCATION_NOTICE_TIMEOUT = 5000;
 
-		wait_loader.classList.remove('hide');
+		document.getElementById('wait_loader').classList.remove('hide');
 		if (navigator.geolocation) {
 			locating = true;
 			if(myLocDot)
@@ -1836,7 +1734,7 @@ function locateExec(failure) {
 						clearTimeout(watch_location_timer);
 						showNotification(LOCATION_PERMISSION_DENIED);
 						setLocationAccess(false);
-						wait_loader.classList.add('hide');
+						document.getElementById('wait_loader').classList.add('hide');
 						failure();
 					}
 					else
@@ -1945,7 +1843,7 @@ function clearLocating(hideAccuracyContainer) {
 	if(hideAccuracyContainer)
 		document.getElementById('accuracy_container').classList.add('hide');
 	locating = false;
-	wait_loader.classList.add('hide');
+	document.getElementById('wait_loader').classList.add('hide');
 	location_icon_dot.classList.remove('blinking');
 	accuracy_indicator.classList.remove('blinking');
 	hideNotication();
@@ -1967,11 +1865,11 @@ function showLocateRightMessage(hide_dnd) {
 		locate_right_message_dnd.classList.add('hide');
 	else
 		locate_right_message_dnd.classList.remove('hide');
-	locate_right_message.classList.remove('hide');
+	showOverlay(document.getElementById('locate_right_message'));
 }
 
 function hideLocateRightMessage() {
-	locate_right_message.classList.add('hide');
+	hideOverlay(document.getElementById('locate_right_message'));
 }
 
 function locateRight_grant() {
@@ -1982,7 +1880,7 @@ function locateRight_grant() {
 }
 
 function locateRight_deny() {
-	wait_loader.classList.add('hide');
+	document.getElementById('wait_loader').classList.add('hide');
 	hideLocateRightMessage();
 	locateRight_DND_check();
 	showNotification("Choose a place on the map");
@@ -2207,11 +2105,11 @@ function toggleMapType() {
 	}
 }
 function showNoCityMessage() {
-	no_city_message.classList.remove('hide');
+	showOverlay(document.getElementById('no_city_message'));
 }
 
 function hideNoCityMessage() {
-	no_city_message.classList.add('hide');
+	hideOverlay(document.getElementById('no_city_message'));
 	noCity_hideLoader();
 }
 
@@ -2246,19 +2144,21 @@ function noCityWait_stop() {
 	hideNoCityMessage();
 	notification_top.classList.remove('hide');
 }
-function hideOverlay() {
+function hideOverlay(e) {
 	document.getElementById('overlay').classList.add('hide');
-	activateOverlayInfo_full();
+	e.classList.add('hide');
 }
 
-function showOverlay() {
+function showOverlay(e) {
 	document.getElementById('overlay').classList.remove('hide');
+	e.classList.remove('hide');
 }
 function postMap() {
 	if(pendingLocate)
 		syncLocate();
 }
 function showQR() {
+	hideOverlay(document.getElementById('copy_wcode_message'));
 	if(current_title)
 		document.getElementById('qr_title_main').value = current_title;
 	else
@@ -2291,14 +2191,14 @@ function showQR() {
 	});
 	var svg = qrcode.svg();
 	document.getElementById('qr_code').innerHTML = svg;
-	document.getElementById('qr').classList.remove('hide');
+	showOverlay(document.getElementById('qr_body'));
 	
 	window.addEventListener('beforeprint', beforeQRprint);
 	window.addEventListener('afterprint', afterQRprint);
 }
 
 function closeQR() {
-	document.getElementById('qr').classList.add('hide');
+	hideOverlay(document.getElementById('qr_body'));
 	previewQR_deactivate()
 	window.removeEventListener('afterprint', afterQRprint);
 	window.removeEventListener('beforeprint', beforeQRprint);
@@ -2364,15 +2264,15 @@ function beforeQRprint() {
 		toggleQRpreview();
 		mode_preview_activated = true;
 	}
-	document.getElementById('qr').classList.remove('overlay');
-	document.getElementById('qr').classList.add('section-to-print');
+	document.getElementById('overlay').classList.remove('overlay');
+	document.getElementById('overlay').classList.add('section-to-print');
 	document.getElementById('qr_close').classList.add('hide');
 }
 
 function afterQRprint() {
 	document.body.classList.remove('print');
-	document.getElementById('qr').classList.add('overlay');
-	document.getElementById('qr').classList.remove('section-to-print');
+	document.getElementById('overlay').classList.add('overlay');
+	document.getElementById('overlay').classList.remove('section-to-print');
 	document.getElementById('qr_close').classList.remove('hide');
 	if(mode_preview_activated)
 		toggleQRpreview();
@@ -2417,11 +2317,122 @@ function redirectCancel() {
 }
 
 function redirect_showLoader() {
-	document.getElementById('redirecting_message').classList.remove('hide');
+	showOverlay(document.getElementById('redirecting_message'));
 }
 
 function redirect_hideLoader() {
-	document.getElementById('redirecting_message').classList.add('hide');
+	hideOverlay(document.getElementById('redirecting_message'));
+}
+// const WCODE_CODE_COPIED_MESSAGE;
+// const WCODE_LINK_COPIED_MESSAGE;
+
+function handleShareWCode() {
+	setTimeout( function() {
+			showNotification("Long press share icon for advanced options");
+		}, 4000);
+	
+	if (navigator.share)
+		shareWCode();
+	else
+		copyWcodeJumpLink();
+}
+
+function shareWCode() {
+	var share_address;
+	if(current_address)
+		share_address = current_address;
+	else
+		share_address = address;
+	navigator.share( {
+		title: "Wolo",
+		text: "Wolo code for: " + ' ' + share_address + ' ' + '|',
+		url: '/' + getCodeComplete().join('.').toLowerCase().replace(' ', '_') + '/'
+	} )
+	.catch((error) => console.log('Error sharing', error));
+}
+
+function showCopyWcodeMessage() {
+	var city_name_id = getCodeCityNameId();
+	var country_name = getCodeCityCountryName();
+	var group_name = getCodeCityGroupName();
+	var country_repeat_count = 0;
+	var group_repeat_count = 0;
+	var city_repeat_count = 0;
+	getCitiesFromNameId(city_name_id, function(cities) {
+		for(let key in cities) {
+			if(cities[key].country == country_name)
+				country_repeat_count++;
+			if(getCityGroupName(cities[key]) == group_name)
+				group_repeat_count++;
+			city_repeat_count++;
+		}
+		var prefix = '';
+		if(country_repeat_count != city_repeat_count) {
+			prefix = country_name + '\\';
+			multiple_country = true;
+		}
+		else
+			multiple_country = false;
+
+		if(group_repeat_count != city_repeat_count) {
+			prefix += group_name + '\\';
+			multiple_group = true;
+		}
+		else
+			multiple_group = false;
+		if(city_repeat_count)
+			multiple_city = true;
+		else
+			multiple_city = false;
+
+		copy_wcode_message_city_name.innerText = prefix+getCodeCityProperCityAccent();
+		showOverlay(document.getElementById('copy_wcode_message'));
+	} );
+}
+
+function hideCopyCodeMessage() {
+	hideOverlay(document.getElementById('copy_wcode_message'));
+	copy_wcode_message_city_name.innerText = '';
+}
+
+function copyWcodeFull() {
+	showAndCopy(getWcodeFull_formatted().join(' '));
+	showNotification(WCODE_CODE_COPIED_MESSAGE);
+	hideCopyCodeMessage();
+}
+
+function copyWcodeCode() {
+	showAndCopy(getCodeWcode_formatted().join(' '));
+	showNotification(WCODE_CODE_COPIED_MESSAGE);
+	hideCopyCodeMessage();
+}
+
+function copyWcodeLink() {
+	var code_url = location.hostname + '/' + getCodeComplete().join('.').toLowerCase().replace(' ', '_');
+	showAndCopy(code_url);
+	showNotification(WCODE_LINK_COPIED_MESSAGE);
+	hideCopyCodeMessage();
+}
+
+function copyWcodeJumpLink() {
+	var code_url = location.hostname + '/' + getCodeComplete().join('.').toLowerCase().replace(' ', '_') + '/';
+	showAndCopy(code_url);
+	showNotification(WCODE_LINK_COPIED_MESSAGE);
+	hideCopyCodeMessage();
+}
+
+function shareWCodeCopy() {
+	if(share_include_city.checked)
+		copyWcodeFull();
+	else
+		copyWcodeCode();
+}
+
+function shareWCodeLink() {
+	if(share_jumto_map.checked)
+		copyWcodeJumpLink();
+	else
+		copyWcodeLink();
 }
 function suggestWrapper(event) {
 	if(typeof wordList != undefined && wordList != null) {
@@ -2616,10 +2627,10 @@ function setupControls() {
 	document.getElementById('account_dialog_logout').addEventListener('click', onLogout);
 	document.getElementById('save_address').addEventListener('focus', onAccountDialogAddressActive);
 	document.getElementById('account_dialog_save').addEventListener('click', onAccountDialogSave);
-	document.getElementById('overlay_message_close').addEventListener('click', hideOverlay);
-	document.getElementById('info_intro_close_button').addEventListener('click', hideOverlay);
-	document.getElementById('info_full_close_button').addEventListener('click', hideOverlay);
-	document.getElementById('info').addEventListener('click', showOverlay);
+	document.getElementById('overlay_message_close').addEventListener('click', hideInfo);
+	document.getElementById('info_intro_close_button').addEventListener('click', hideInfo);
+	document.getElementById('info_full_close_button').addEventListener('click', hideInfo);
+	document.getElementById('info').addEventListener('click', showInfo);
 	document.getElementById('no_city_message_close').addEventListener('click', hideNoCityMessage);
 	document.getElementById('locate_right_message_close').addEventListener('click', hideLocateRightMessage);
 	document.getElementById('locate_right_message_yes').addEventListener('click', locateRight_grant);

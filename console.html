@@ -453,12 +453,12 @@ button.border {
 
 .link-gray {
 	text-decoration: none;
-	color: #bbb!important;
+	color: #bbb !important;
 	transition: all ease-out .3s;
 }
 
 .hide {
-	display: none;
+	display: none !important;
 }
 
 .invisible {
@@ -718,17 +718,14 @@ button.border {
 	text-decoration: line-through;
 }
 .message_dialog {
-	position: absolute;
-	top: 230px;
-	left: 0;
-	right: 0;
+	position: relative;
 	max-width: 286px;
-	width: 286px;
+	min-width: 286px;
 	margin: auto;
 	border: 1px solid #ddd;
 	font-family: 'Abel';
 	background-color: #FFFFFF;
-	z-index: 1;
+	z-index: 2;
 }
 
 .message_dialog_prompt {
@@ -843,7 +840,13 @@ h2.message_dialog_label {
 	background-color: rgba(100, 100, 100, 0.75);
 	position: absolute;
 	margin: auto;
-	text-align: center;
+	display: flex;
+	align-items: center;
+}
+
+.overlay > div {
+	max-height: 100%;
+	margin-top: 80px !important;
 }
 
 #logo_info {
