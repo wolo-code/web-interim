@@ -6,7 +6,7 @@
 	<meta name='title' content="Wolo codes" >
 	<meta itemprop='name' content="Wolo codes" >
 	<meta name='author' content="Ujjwal Singh" >
-	<meta name='viewport' content='initial-scale=1.0, viewport-fit=cover' >
+	<meta name='viewport' content="initial-scale=1.0, viewport-fit=cover" >
 	<meta name='theme-color' content='#ffffff' >
 	<meta property="og:url" content="https://wolo.codes" />
 <meta property="og:title" content="" />
@@ -26,9 +26,25 @@
 	<link href='https://wolo.codes' rel='canonical' >
 	<title>Wolo codes</title>
 <link rel='manifest' href='/manifest.json' >
-		<script src='https://browser.sentry-cdn.com/5.11.2/bundle.min.js' integrity='sha384-FLzYisBa7tvsi/ZP1ISnzZJqBkmw5mvwk7KOmH82W9wdPZKG3bG9hSO8GQFVSlOu' crossorigin='anonymous'
+	<script>// Firebase
+var FIREBASE_CONFIG = {
+	apiKey: "AIzaSyC-ZxXuNOEEs5mNQD3Z8u4CSJtldtLztDE",
+	authDomain: "wolo.codes",
+	databaseURL: "https://wolo-codes.firebaseio.com",
+	projectId: "wolo-codes",
+	storageBucket: "wolo-codes.appspot.com",
+	messagingSenderId: "1073432021665",
+	appId: "1:1073432021665:web:29ab7635459c72c19bbee0",
+	measurementId: "G-882VJ942XZ"
+};
+
+// Code\Code
+var FUNCTIONS_BASE_URL = "https://wolo.codes/api";
+//'http://localhost:5000/waddress-5f30b/us-central1';
+</script>
+		<script src='https://browser.sentry-cdn.com/5.15.5/bundle.min.js' integrity='sha384-wF7Jc4ZlWVxe/L8Ji3hOIBeTgo/HwFuaeEfjGmS3EXAG7Y+7Kjjr91gJpJtr+PAT' crossorigin='anonymous'
 ></script>
-		<script>Sentry.init({ dsn: 'https://badf8db6081d40d48af771b728440050@sentry.io/2045587' });
+		<script>Sentry.init({ dsn: 'https://badf8db6081d40d48af771b728440050@o85995.ingest.sentry.io/2045587' });
 </script>
 	<script>
 function trackOutboundLink(title, url) {
@@ -86,25 +102,16 @@ var DEFAULT_LATLNG = {lat: -34.397, lng: 150.644};
 var DEFAULT_INIT_ZOOM = 2;
 var DEFAULT_LOCATE_ZOOM = 24;
 var pendingInitMap = true;
+var syncLocate_engage;
 
 // Firebase
-var FIREBASE_CONFIG = {
-	apiKey: "AIzaSyC-ZxXuNOEEs5mNQD3Z8u4CSJtldtLztDE",
-	authDomain: "wolo.codes",
-	databaseURL: "https://wolo-codes.firebaseio.com",
-	projectId: "wolo-codes",
-	storageBucket: "wolo-codes.appspot.com",
-	messagingSenderId: "1073432021665",
-	appId: "1:1073432021665:web:29ab7635459c72c19bbee0",
-	measurementId: "G-882VJ942XZ"
-};
 var analytics;
 var perf;
 var database;
 var refCityCenter;
 var geoFire;
 
-//Script
+// Script
 var initLoadDone = false;
 
 // UpdateMyBrowser
@@ -211,8 +218,6 @@ function trackOutboundLink(title, url) {
 var pendingLocate = false;
 
 // Code\Code
-var FUNCTIONS_BASE_URL = 'https://wolo.codes/api';
-//'http://localhost:5000/waddress-5f30b/us-central1';
 var curEncRequestId = 0;
 var curDecRequestId = 0;
 var curAddCityRequestId = 0;
@@ -915,7 +920,6 @@ h2.message_dialog_label {
 
 .overlay > div {
 	max-height: 100%;
-	margin-top: 80px !important;
 }
 
 #logo_info {
@@ -1409,6 +1413,7 @@ h2.message_dialog_label {
 	background-color: #FFFFFF;
 	color: #999999;
 	max-width: 400px;
+	margin-top: 80px !important;
 }
 
 #info_message h1 {
@@ -1747,6 +1752,7 @@ h2.message_dialog_label {
 
 }
 	</style>
+</head>
 <body>
 	<div id='overlay' class="overlay hide">
 	<div id='redirecting_message' class="message_dialog hide">
@@ -2119,7 +2125,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span>
-			2020 May 07 - 17:59:51			</span> (UTC)
+			2020 May 09 - 23:21:33			</span> (UTC)
 		</div>
 	</div>
 </div>
@@ -2448,8 +2454,8 @@ h2.message_dialog_label {
 <script src='https://www.gstatic.com/firebasejs/ui/4.3.0/firebase-ui-auth.js'></script>
 <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.3.0/firebase-ui-auth.css" />
 	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyC-ZxXuNOEEs5mNQD3Z8u4CSJtldtLztDE&libraries=places&callback=syncInitMap' async defer></script></head>
-	<script src="/geofire.min.js" async defer></script>
-	<script src="/qrcode.min.js" async defer></script>
-	<script src="/html2canvas.min.js" async defer></script>
+	<script src='/geofire.min.js' async defer></script>
+	<script src='/qrcode.min.js' async defer></script>
+	<script src='/html2canvas.min.js' async defer></script>
 </body>
 </html>

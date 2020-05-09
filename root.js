@@ -450,9 +450,12 @@ function versionCheck() {
 	if(set) {
 		localStorage.note_version = CURRENT_VERSION;
 		showInfo();
+		return false;
 	}
-	else
+	else {
 		activateOverlayInfo_full();
+		return true;
+	}
 }
 
 function activateOverlayInfo_full() {
@@ -1572,12 +1575,20 @@ function getZoomByBounds(map, bounds) {
 	return 0;
 }
 function hideInfo() {
-	activateOverlayInfo_full();
 	hideOverlay(document.getElementById('info_message'));
 }
 
 function showInfo() {
 	showOverlay(document.getElementById('info_message'));
+}
+
+function closeInfo() {
+	hideInfo();
+	activateOverlayInfo_full();
+	if(!syncLocate_engage) {
+		syncLocate();
+		syncLocate_engage = true;
+	}
 }
 function initInfoWindow() {
 	if(typeof infoWindow == 'undefined')
@@ -2571,14 +2582,21 @@ if ('serviceWorker' in navigator) {
 		});
 	});
 }
+// var syncLocate_engage;
+
 function initLoad () {
 	if(!initLoadDone && document.readyState === 'interactive') {
 		firebaseInit();
 		initApp();
 		dbInit();
-		versionCheck();
-		if(!urlDecode())
-			syncLocate();
+		syncLocate_engage = versionCheck();
+		if(!urlDecode()) {
+			if(syncLocate_engage)
+				syncLocate();
+		}
+		else
+			syncLocate_engage = true;
+			
 		syncInitMap();
 		setupControls();
 		initLoadDone = true;
@@ -2627,9 +2645,9 @@ function setupControls() {
 	document.getElementById('account_dialog_logout').addEventListener('click', onLogout);
 	document.getElementById('save_address').addEventListener('focus', onAccountDialogAddressActive);
 	document.getElementById('account_dialog_save').addEventListener('click', onAccountDialogSave);
-	document.getElementById('overlay_message_close').addEventListener('click', hideInfo);
-	document.getElementById('info_intro_close_button').addEventListener('click', hideInfo);
-	document.getElementById('info_full_close_button').addEventListener('click', hideInfo);
+	document.getElementById('overlay_message_close').addEventListener('click', closeInfo);
+	document.getElementById('info_intro_close_button').addEventListener('click', closeInfo);
+	document.getElementById('info_full_close_button').addEventListener('click', closeInfo);
 	document.getElementById('info').addEventListener('click', showInfo);
 	document.getElementById('no_city_message_close').addEventListener('click', hideNoCityMessage);
 	document.getElementById('locate_right_message_close').addEventListener('click', hideLocateRightMessage);
