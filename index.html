@@ -204,7 +204,7 @@ function syncInitMap() {
 document.addEventListener('DOMContentLoaded', function() {
 	if(typeof initLoad != 'undefined')
 		initLoad();
-	if( typeof CSS == 'undefined' || !CSS.supports("backdrop-filter: blur(8px)") ) {
+	if( typeof CSS == 'undefined' || !CSS.supports("backdrop-filter: blur()") ) {
 		document.getElementById('logo').classList.add('plain_background');
 		document.getElementById('footer-content').classList.add('plain_background');
 	}
@@ -924,6 +924,10 @@ h2.message_dialog_label {
 
 #logo_info {
 	text-align: center;
+}
+
+#info_message > p {
+	padding-left: 40px;
 }
 
 #logo_info > a {
@@ -1820,7 +1824,7 @@ h2.message_dialog_label {
 			include 
 			<span id='copy_wcode_message_city_name'></span>
 			<span class='message_dialog_control_right'>
-				<img id='share_copy_button' class="center control" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4gPHN2ZyB3aWR0aD0iMzAiIGhlaWdodD0iMTgiIHZlcnNpb249IjEuMSIgdmlld0JveD0iLTIwIC0yOCAxNjMuNjQgODEuODE4IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPiA8ZyB0cmFuc2Zvcm09Im1hdHJpeCgxLjAxMzEgMCAwIDEuMDEzMSAzNi4wMzQgLTE2LjQ3MSkiPiA8cGF0aCBkPSJtLTIwLjggNzMuOS0zMS4yLTg5LjhoOC41bDMxLjEgODkuOHoiIGZpbGw9IiNkOWQ5ZDkiLz4gPGcgdHJhbnNmb3JtPSJtYXRyaXgoLjk5OTgyIDAgMCAuOTk5ODIgLS41NzcyNyAuMDEwNzA5KSI+IDxwYXRoIGQ9Im0tMy42IDY2LjEtMjUuMi03Mi44aDEzLjVsMjUuMSA3Mi44eiIgZmlsbD0iIzY5YjdjZiIvPiA8cGF0aCBkPSJtMjYuMyAxMi42LTE1LjIgNDYuOS01LjctMTguNiAxNS4yLTQ3LjZoMTIuNmwxNy4xIDUxIDE4LjEtNTFoMTMuNGwtMjUuMyA3Mi44aC0xMi42eiIgZmlsbD0iIzY5YjdjZiIvPiA8L2c+IDxwYXRoIGQ9Im05NC40LTE1LjloOC41bC0zMC43IDg5LjhoLTguNXoiIGZpbGw9IiNkOWQ5ZDkiLz4gPC9nPiA8L3N2Zz4g" >
+				<img id='share_copy_button' class="center control" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAiIGhlaWdodD0iMTgiIHZlcnNpb249IjEuMSIgdmlld0JveD0iLTIwIC0yOCAxNjMuNjQgODEuODE4IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPiA8ZyB0cmFuc2Zvcm09Im1hdHJpeCgxLjAxMzEgMCAwIDEuMDEzMSAzNi4wMzQgLTE2LjQ3MSkiPiA8cGF0aCBkPSJtLTIwLjggNzMuOS0zMS4yLTg5LjhoOC41bDMxLjEgODkuOHoiIGZpbGw9IiNkOWQ5ZDkiLz4gPGcgdHJhbnNmb3JtPSJtYXRyaXgoLjk5OTgyIDAgMCAuOTk5ODIgLS41NzcyNyAuMDEwNzA5KSI+IDxwYXRoIGQ9Im0tMy42IDY2LjEtMjUuMi03Mi44aDEzLjVsMjUuMSA3Mi44eiIgZmlsbD0iIzY5YjdjZiIvPiA8cGF0aCBkPSJtMjYuMyAxMi42LTE1LjIgNDYuOS01LjctMTguNiAxNS4yLTQ3LjZoMTIuNmwxNy4xIDUxIDE4LjEtNTFoMTMuNGwtMjUuMyA3Mi44aC0xMi42eiIgZmlsbD0iIzY5YjdjZiIvPiA8L2c+IDxwYXRoIGQ9Im05NC40LTE1LjloOC41bC0zMC43IDg5LjhoLTguNXoiIGZpbGw9IiNkOWQ5ZDkiLz4gPC9nPiA8L3N2Zz4g" >
 			</span>
 		</p>
 		<hr>
@@ -1921,8 +1925,7 @@ h2.message_dialog_label {
 	</div>
 	<div id='logo_info'>
 		<a id=logo_wolo_info href='//wcodes.org' tabindex='1'>
-			<span class='image'><?xml version="1.0" encoding="UTF-8"?>
-<svg height="50px" version="1.1" viewBox="-55 -18 306 100" xmlns="http://www.w3.org/2000/svg">
+			<span class='image'><svg height="50px" version="1.1" viewBox="-55 -18 306 100" xmlns="http://www.w3.org/2000/svg">
 	<g transform="matrix(1.2483 0 0 1.2483 13.164 -55.438)">
 		<g transform="matrix(.78972 0 0 .70018 -9.8275 49.74)">
 			<path d="m-20.8 73.9-31.2-89.8h8.5l31.1 89.8z" fill="#d9d9d9"/>
@@ -1962,7 +1965,6 @@ h2.message_dialog_label {
 </span>
 		</a>
 	</div>
-	<div id='info_intro'>
 	<h2>
 	Word based location codes
 </h2>
@@ -1996,6 +1998,7 @@ h2.message_dialog_label {
 		Enter a Wolo code address and hit 'Decode' to go to that location
 	</li>
 </ul>
+	<div id='info_intro'>
 	<p>
 		This web app requires anonymous cookies and various third-party services to function properly<br>
 		To continue using Wolo codes you must consent to its <a class='link' href='/policy'>cookie & privacy policies</a>
@@ -2014,39 +2017,6 @@ h2.message_dialog_label {
 	</div>
 </div>
 <div id='info_full' class='hide'>
-	<h2>
-	Word based location codes
-</h2>
-<h3>
-	Simple & precise - global addressing system
-</h3>
-<p>
-	An address in this system consists of two parts
-</p>
-<div id='wcode_format' class="center blue">\ <span>City_name</span> <span>Word_1</span> <span>Word_2</span> <span>Word_3</span> /</div>
-<ul>
-	<li>
-		The first part specifies the city.<br>
-		Within the current city - this can be omitted
-	</li>
-	<li>
-		The last three words are the second part.<br>
-		They are from a limited dictionary of 1024 easy common words
-	</li>
-</ul>
-<h2>
-	Steps
-</h2>
-<ul>
-	<li>
-		Point a location to generate the corresponding Wolo code address.<br>
-		You may also let the system pick your current location automatically or search for a particular place.<br>
-		Or,
-	</li>
-	<li>
-		Enter a Wolo code address and hit 'Decode' to go to that location
-	</li>
-</ul>
 	<div class='message_dialog_control_container'>
 		<div class='message_dialog_control'>
 			<button id='info_full_close_button' class='button_highlight' type='button'><span class='indicator'><span class='image'><svg version="1.1" viewBox="0 0 3.59901 3.70417" height='12px' xmlns="http://www.w3.org/2000/svg">
@@ -2124,8 +2094,10 @@ h2.message_dialog_label {
 			Version: <span>0.1 beta</span>
 		</div>
 		<div id='updated'>Updated:
-			<span>
-			2020 May 09 - 23:21:33			</span> (UTC)
+			<span id='updated-timestamp'>
+			2020 May 11 18:51:39 UTC			</span>
+			 ~ 
+			<span id='updated-timediff'></span> ago
 		</div>
 	</div>
 </div>
@@ -2172,8 +2144,7 @@ h2.message_dialog_label {
 	<div id='qr_label' class='center'>
 		<div id='logo_qr' tabindex='1'>
 			<a id=logo_wolo_qr href='//wolo.codes'>
-				<span class='image'><?xml version="1.0" encoding="UTF-8"?>
-<svg height="50px" version="1.1" viewBox="-55 -18 306 100" xmlns="http://www.w3.org/2000/svg">
+				<span class='image'><svg height="50px" version="1.1" viewBox="-55 -18 306 100" xmlns="http://www.w3.org/2000/svg">
 	<g transform="matrix(1.2483 0 0 1.2483 13.164 -55.438)">
 		<g transform="matrix(.78972 0 0 .70018 -9.8275 49.74)">
 			<path d="m-20.8 73.9-31.2-89.8h8.5l31.1 89.8z" fill="#d9d9d9"/>
@@ -2324,8 +2295,7 @@ h2.message_dialog_label {
 <div id='wait_loader'></div>
 <div id='logo' tabindex='1'>
 	<a id=logo_wolo class='blur_background' href='//wolo.codes'>
-		<span class='image'><?xml version="1.0" encoding="UTF-8"?>
-<svg height="50px" version="1.1" viewBox="-55 -18 306 100" xmlns="http://www.w3.org/2000/svg">
+		<span class='image'><svg height="50px" version="1.1" viewBox="-55 -18 306 100" xmlns="http://www.w3.org/2000/svg">
 	<g transform="matrix(1.2483 0 0 1.2483 13.164 -55.438)">
 		<g transform="matrix(.78972 0 0 .70018 -9.8275 49.74)">
 			<path d="m-20.8 73.9-31.2-89.8h8.5l31.1 89.8z" fill="#d9d9d9"/>
@@ -2446,14 +2416,14 @@ h2.message_dialog_label {
 		<span class='address_text_button_spacer'></span>
 	</div>
 </div>
-<script src="https://www.gstatic.com/firebasejs/7.4.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/7.4.0/firebase-database.js"></script>
-<script src="https://www.gstatic.com/firebasejs/7.4.0/firebase-analytics.js"></script>
-<script src="https://www.gstatic.com/firebasejs/7.4.0/firebase-performance.js"></script>
-<script src='https://www.gstatic.com/firebasejs/7.4.0/firebase-auth.js'></script>
-<script src='https://www.gstatic.com/firebasejs/ui/4.3.0/firebase-ui-auth.js'></script>
-<link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.3.0/firebase-ui-auth.css" />
-	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyC-ZxXuNOEEs5mNQD3Z8u4CSJtldtLztDE&libraries=places&callback=syncInitMap' async defer></script></head>
+<script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-analytics.js"></script>
+<script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-performance.js"></script>
+<script src='https://www.gstatic.com/firebasejs/7.14.2/firebase-auth.js'></script>
+<script src='https://www.gstatic.com/firebasejs/ui/4.5.0/firebase-ui-auth.js'></script>
+<link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.5.0/firebase-ui-auth.css" />
+	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyC-ZxXuNOEEs5mNQD3Z8u4CSJtldtLztDE&libraries=places&callback=syncInitMap' async defer></script>
 	<script src='/geofire.min.js' async defer></script>
 	<script src='/qrcode.min.js' async defer></script>
 	<script src='/html2canvas.min.js' async defer></script>
