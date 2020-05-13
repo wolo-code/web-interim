@@ -316,7 +316,10 @@ function getAddress(latLng, callback) {
 				console.log('No geoCoding results found');
 			}
 		} else {
-			console.log('Geocoder failed due to: ' + status);
+			if(status == 'ZERO_RESULTS')
+				noCity(latLng_p);
+			else
+				console.log('Geocoder failed due to: ' + status);
 		}
 		if(pendingCitySubmit) {
 			execSubmitCity();
@@ -1743,7 +1746,7 @@ function locateExec(failure) {
 				},
 				function(error) {
 					if(error.code = error.PERMISSION_DENIED) {
-						clearTimeout(watch_location_timer);
+						clearLocating(true);
 						showNotification(LOCATION_PERMISSION_DENIED);
 						setLocationAccess(false);
 						document.getElementById('wait_loader').classList.add('hide');
@@ -1988,7 +1991,7 @@ function initMap() {
 	});
 
 	map.addListener('click', function(event) {
-		cleanUp();
+		cleanUp(true);
 		infoWindow_setContent(MESSAGE_LOADING);
 		var pos = resolveLatLng(event.latLng);
 		encode(pos);
@@ -2078,12 +2081,12 @@ function clearMap() {
 		marker.setMap(null);
 }
 
-function cleanUp() {
+function cleanUp(full = false) {
 	document.getElementById('suggestion_result').innerText = '';
 	clearNotificationTimer();
 	clearTimeout(presstimer);
 	clearTimeout(watch_location_timer);
-	clearLocating();
+	clearLocating(full);
 	clearMap();
 	navigator.geolocation.clearWatch(watch_location_id);
 	pendingPosition = null;
@@ -2185,12 +2188,10 @@ function showQR() {
 		document.getElementById('qr_title_segment').value = '';
 	if(current_address) {
 		document.getElementById('qr_address').innerText = current_address;
-		document.getElementById('qr_address').classList.remove('initial');
 		qr_address_active_first = false;
 	}
 	else {
 		document.getElementById('qr_address').innerHTML = "&nbsp;&nbsp;Address (optional)";
-		document.getElementById('qr_address').classList.add('initial');
 		qr_address_active_first = true;
 	}
 	var city_accent = getProperCityAccent(code_city);
@@ -2250,7 +2251,6 @@ function previewQR_deactivate() {
 function qr_address_active() {
 	if (qr_address_active_first) {
 		qr_address_active_first = false;
-		document.getElementById('qr_address').classList.remove('initial');
 		document.getElementById('qr_address').innerHTML = address;
 	}
 }
