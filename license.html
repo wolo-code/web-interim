@@ -686,7 +686,7 @@ body {
 	font-size: 0.875em;
 	margin-left: auto;
 	margin-right: auto;
-	margin-top: -230px;
+	margin-top: -232px;
 	position: relative
 }
 
@@ -1095,6 +1095,13 @@ body {
 
 .pml-open #nav-menu {
 	transform: translateX(0)
+}
+@media print {
+	
+	.pagebreak {
+		page-break-before: always;
+	}
+	
 }
 .shadow-scroll-top {
 	height: 4px;
@@ -1641,13 +1648,14 @@ ul li span {
 		<li>
 			<div>Original content</div>
 			<p>
-				Any original content written or created exclusively for this website are copyright protected and property of <a class="content-link XURL" href='/about_me' data-target='about_me' data-title='About me'>Ujjwal Singh</a>
+				Any original content written or created exclusively for this website are copyright protected and property of <a class="content-link XURL" href='/about_me' data-target='about_me' data-title='About me'>Ujjwal Singh</a>.<br>
+				Please refer to <a href='/terms' data-target='terms' class="content-link XURL">terms of use</a>
 			</p>
 		</li>
 		<li>
 			<div>Sourced content</div>
 			<p>
-				Disclaimer:
+				Disclaimer :
 			</p>
 			<p class="indent-c">
 				Any content sourced from the internet, unless in the public domain is property of the original owner.<br>
@@ -1682,7 +1690,7 @@ ul li span {
 		<div id='updated'>
 			Updated:
 			<span id='date'>
-				2020 Feb 17			</span>
+				2020 May 14			</span>
 		</div>
 	</div>
 	<div class='shadow-scroll-bottom'></div>

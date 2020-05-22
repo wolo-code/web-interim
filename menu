@@ -686,7 +686,7 @@ body {
 	font-size: 0.875em;
 	margin-left: auto;
 	margin-right: auto;
-	margin-top: -230px;
+	margin-top: -232px;
 	position: relative
 }
 
@@ -1095,6 +1095,13 @@ body {
 
 .pml-open #nav-menu {
 	transform: translateX(0)
+}
+@media print {
+	
+	.pagebreak {
+		page-break-before: always;
+	}
+	
 }
 .shadow-scroll-top {
 	height: 4px;
