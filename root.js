@@ -1668,6 +1668,13 @@ function locateExec(failure) {
 				accuCircle.setMap(null);
 			var watch_location_time_begin = new Date().getTime();
 			watch_location_timer = setTimeout(endWatchLocation, WATCH_LOCATION_MAX_TIMEOUT);
+			document.getElementById('proceed_container').classList.remove('hide');
+			document.getElementById('accuracy_container').classList.remove('hide');
+			document.getElementById('proceed_progress').style.transition = 'none';
+			document.getElementById('proceed_progress').style.width = "0%";
+			document.getElementById('proceed_progress').offsetWidth;
+			document.getElementById('proceed_progress').style.transition = 'width' + ' ' + WATCH_LOCATION_MAX_TIMEOUT/1000 + 's' + ' ' + 'linear';
+			document.getElementById('proceed_progress').style.width = "100%";
 			
 			accuracy_indicator.classList.add('blinking');
 			location_button.removeEventListener('mouseup', processPositionButtonUp);
@@ -2307,15 +2314,17 @@ function downloadQR() {
 		toggleQRpreview();
 		mode_preview_activated = true;
 	}
+	document.getElementById('qr_close').classList.add('hide');
+	document.getElementById('qr_controls').classList.add('hide');
 	document.getElementById('qr_body').setAttribute( 'style',
 	 "height: "+(document.getElementById('qr_body').offsetHeight-6)+"px"+"; "+
 	 "width: "+document.getElementById('qr_body').offsetWidth+"px" );
-	document.getElementById('qr_close').classList.add('hide');
 	html2canvas(document.querySelector('#qr_body')).then(canvas => {
 		if(mode_preview_activated)
 			toggleQRpreview();
 		document.getElementById('qr_body').removeAttribute('style');
-		document.getElementById('qr_close').classList.remove('hide');			
+		document.getElementById('qr_close').classList.remove('hide');
+		document.getElementById('qr_controls').classList.remove('hide');
 		var qrImage = canvas.toDataURL("image/png");
 		downloadURI('data:' + qrImage, "Wolo codes - " + getCodeFull_text() + ".png");
 	});

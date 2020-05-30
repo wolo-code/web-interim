@@ -1226,7 +1226,7 @@ h2.message_dialog_label {
 }
 
 #accuracy_container > div {
-	padding: 4px 0 4px 12px;
+	padding: 0px 0 0px 12px;
 	background: rgba(237, 240, 233, 0.75);
 	border-radius: 25px;
 	color: #707070;
@@ -1234,7 +1234,6 @@ h2.message_dialog_label {
 	text-align: center;
 	font-size: large;
 	display: inline-block;
-	line-height: 30px;
 }
 
 #accuracy_container.highlight > div {
@@ -1250,6 +1249,7 @@ h2.message_dialog_label {
 
 #accuracy_meter {
 	font-family: monospace;
+	line-height: 32px;
 }
 
 #accuracy_meter_unit {
@@ -1261,14 +1261,33 @@ h2.message_dialog_label {
 }
 
 #proceed_button {
+	position: relative;
+	overflow: hidden;
+	display: inline-flex;
 	box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
-	color: #69B7CF;
+	color: #444;
 	font-family: Roboto, Arial, sans-serif;
 	font-size: 0.9375em;
 	background-color: rgb(255, 255, 255);
 	padding: 8px 12px;
 	border: none;
 	border-radius: 28px;	
+}
+
+#proceed_progress {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	width: 0%;
+	background: #3b93ff;
+}
+
+#proceed_label {
+	position: absolute;
+	left: 0;
+	right: 0;
 }
 
 #location_icon_dot.blinking {
@@ -2090,7 +2109,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span id='updated-timestamp'>
-			2020 May 13 22:08:00 UTC			</span>
+			2020 May 30 00:59:09 UTC			</span>
 			 ~ 
 			<span id='updated-timediff'></span> ago
 		</div>
@@ -2203,7 +2222,7 @@ h2.message_dialog_label {
 	<div id='qr_webapp_url' class='center'>
 		<div>www.wolo.codes</div>
 	</div>
-	<div class="center message_dialog_control section-to-not-print">
+	<div id='qr_controls' class="center message_dialog_control section-to-not-print">
 		<button id='qr_preview' class='border' type='button'>Preview</button>
 		<button id='qr_download' class='border' type='button'>Download</button>
 		<button id='qr_print' class='border' type='button'>Print</button>
@@ -2368,7 +2387,11 @@ h2.message_dialog_label {
 		<span id='accuracy_indicator'>&nbsp;</span>
 		<span>accuracy</span> <span id='accuracy_meter'></span> <span id='accuracy_meter_unit'>m</span>
 		<span id='proceed_container'>
-			<span id='proceed_button' class='control'>Proceed</span>
+			<span id='proceed_button' class='control'>
+				<span id='proceed_label_length'>Proceed</span>
+				<span id='proceed_progress'></span>
+				<span id='proceed_label'>Proceed</span>
+			</span>
 		</span>
 	</div>
 </div>
