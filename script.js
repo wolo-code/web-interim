@@ -2,6 +2,8 @@ var notification_intrvl;
 var init_loading_intrvl;
 var fade_loading_intrvl;
 
+const TEXT_NOTIFICATION_TOP_ERROR = "Error!";
+
 function beginLoading() {
 	document.getElementById("wait_loader").classList.remove('hide');
 }
@@ -31,9 +33,11 @@ function fadeLoading() {
 }
 
 function errorLoading() {
+	document.getElementById("notification").innerText(TEXT_NOTIFICATION_TOP_ERROR);
 	document.getElementById("notification").classList.remove('hide');
 	clearTimeout(notification_intrvl); // ensure single timer
 	notification_intrvl = setInterval(function() {
+		document.getElementById("notification").innerText('');
 		document.getElementById("notification").classList.add('hide');
 	}, 3000);
 }
