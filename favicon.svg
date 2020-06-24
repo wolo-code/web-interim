@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:version="1.1-dev (dc178fd, 2020-06-01)"
+   sodipodi:docname="favicon.svg"
+   id="svg847"
+   version="1.1"
+   viewBox="-399 226 100 100"
+   y="0px"
+   x="0px"
+   width="100"
+   height="100"
+   inkscape:export-filename="C:\Users\Ujjwal\Projects\WCode\Wolo\Design\Icon\bitmap.png"
+   inkscape:export-xdpi="491.51999"
+   inkscape:export-ydpi="491.51999">
+  <defs
+     id="defs851" />
+  <sodipodi:namedview
+     inkscape:current-layer="svg847"
+     inkscape:window-maximized="1"
+     inkscape:window-y="-11"
+     inkscape:window-x="-11"
+     inkscape:cy="53.254189"
+     inkscape:cx="57.093814"
+     inkscape:zoom="7.2407734"
+     showgrid="false"
+     id="namedview849"
+     inkscape:window-height="2080"
+     inkscape:window-width="3840"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0"
+     guidetolerance="10"
+     gridtolerance="10"
+     objecttolerance="10"
+     borderopacity="1"
+     bordercolor="#666666"
+     pagecolor="#ffffff"
+     height="100px" />
+  <path
+     id="path837"
+     fill="none"
+     d="m -349,251 h 60 v 60 h -60 z" />
+  <circle
+     r="50"
+     cy="276"
+     cx="-349"
+     id="path826"
+     style="fill:#ffffff;stroke-width:1" />
+  <path
+     id="path839"
+     fill="#e0e0e0"
+     d="m -394.30152,257.301 24.805,49.699 h 5.7988 l -24.805,-49.699 z"
+     style="fill:#cccccc" />
+  <path
+     id="path841"
+     fill="#e0e0e0"
+     d="m -309.35917,257.301 -24.805,49.699 h 5.7988 l 24.805,-49.699 z"
+     style="fill:#cccccc;fill-opacity:1" />
+  <path
+     sodipodi:nodetypes="csszssc"
+     id="path843"
+     fill="#69b7cf"
+     d="m -349.20318,307.03854 c 0,0 -2.75754,-6.89862 -7.82047,-15.73431 -5.06294,-8.83569 -12.43127,-19.60843 -11.43295,-27.35667 1.99665,-15.49649 18.41954,-15.5861 19.25342,-15.5861 0.83388,0 17.40076,-0.16015 19.25342,15.5861 0.92633,7.87312 -6.442,18.64587 -11.48694,27.45033 -5.04494,8.80446 -7.76648,15.64065 -7.76648,15.64065 z"
+     style="stroke-width:0.916829" />
+  <circle
+     id="circle845"
+     fill="#f8f8f8"
+     r="9.5"
+     cy="265.41528"
+     cx="-349"
+     style="stroke-width:0.863636" />
+</svg>

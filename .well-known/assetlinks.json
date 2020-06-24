@@ -1,25 +1,25 @@
 [{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "codes.wolo.droid",
-    "sha256_cert_fingerprints":
-    ["9E:FC:9B:9F:E1:05:59:6A:4A:C8:42:21:8E:4F:5A:60:94:22:2A:20:16:15:65:E5:AD:BE:CF:DF:5B:17:20:E6"]
-  }
+	"relation": ["delegate_permission/common.handle_all_urls"],
+	"target": {
+		"namespace": "android_app",
+		"package_name": "codes.wolo.droid",
+		"sha256_cert_fingerprints":
+		["49:7C:39:5D:9B:AE:86:A5:C2:BD:48:77:71:B9:05:79:CB:FF:2E:E2:F9:4E:D7:76:CF:D5:EB:21:DB:BF:16:C1"]
+	}
 },
 {
-  "relation": ["delegate_permission/common.get_login_creds"],
-  "target": {
-    "namespace": "web",
-    "site": "https://wolo.codes"
-  }
+	"relation": ["delegate_permission/common.get_login_creds"],
+	"target": {
+		"namespace": "web",
+		"site": "https://wolo.codes"
+	}
 },
 {
-  "relation": ["delegate_permission/common.get_login_creds"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "codes.wolo.droid",
-    "sha256_cert_fingerprints":
-    ["9E:FC:9B:9F:E1:05:59:6A:4A:C8:42:21:8E:4F:5A:60:94:22:2A:20:16:15:65:E5:AD:BE:CF:DF:5B:17:20:E6"]
-  }
+	"relation": ["delegate_permission/common.get_login_creds"],
+	"target": {
+		"namespace": "android_app",
+		"package_name": "codes.wolo.droid",
+		"sha256_cert_fingerprints":
+		["49:7C:39:5D:9B:AE:86:A5:C2:BD:48:77:71:B9:05:79:CB:FF:2E:E2:F9:4E:D7:76:CF:D5:EB:21:DB:BF:16:C1"]
+	}
 }]
