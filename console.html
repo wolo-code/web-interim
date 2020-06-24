@@ -755,7 +755,8 @@ button.border {
 
 .message_dialog_body {
 	padding: 0 20px 20px;
-	color: #999999
+	color: #999999;
+	overflow: hidden;
 }
 
 .message_dialog_body p {
@@ -830,12 +831,6 @@ h2.message_dialog_label {
 	.dialog_message_secondary {
 		float: left;
 	}
-
-	.message_dialog_close {
-		position: absolute;
-		top: 0px;
-		right: 0px;
-	}
 	
 }
 .overlay {
@@ -886,6 +881,7 @@ h2.message_dialog_label {
 	
 	#overlay > div {
 		margin-top: 20px !important;
+		margin-bottom: 20px !important;
 	}
 	
 }
