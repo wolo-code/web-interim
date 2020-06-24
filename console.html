@@ -855,39 +855,18 @@ h2.message_dialog_label {
 
 .overlay > div {
 	max-height: 100%;
+	margin-left: auto;
+	margin-right: auto;
 }
 
-#logo_info {
-	text-align: center;
-}
-
-#info_message > p {
-	padding-left: 40px;
-}
-
-#logo_info > a {
-	display: inline-block;
-	border-radius: 6px;
-	border-width: thin;
-	border-color: #f0f7fa;
-	border-style: solid;
-	padding: 3px;
-}
-
-#logo_wolo_info > .image > svg {
-	height: 50px;
-}
-
-#logo_codes_info > .image > svg {
-	padding-top: 4px;
-	height: 14px;
-	width: 152px;
+.overlay > div {
+	margin-top: 80px !important;
 }
 
 .overlay h2 {
 	text-align: center;
 	margin-top: 8px;
-	margin-bottom: 12px;
+	margin-bottom: 18px;
 }
 
 .overlay h3 {
@@ -896,18 +875,19 @@ h2.message_dialog_label {
 	color: #bbb;
 }
 
-#wcode_format > span {
-	background: #f7f7f7;
-	border-radius: 6px;
-	padding: 2px 6px;
+.overlay li, ul {
+	margin-bottom: 8px;
 }
-
-#wcode_format > span:first-child {
-	margin-right: 4px;
-}
-
-.download > a {
-	display: block;
+@media (max-width: 662px) {
+	
+	#overlay {
+		background-color: white;
+	}
+	
+	#overlay > div {
+		margin-top: 20px !important;
+	}
+	
 }
 #social-links {
 	padding-bottom: 4px
