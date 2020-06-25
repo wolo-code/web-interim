@@ -735,6 +735,10 @@ button.border {
 	overflow: hidden
 }
 
+button.gm-ui-hover-effect {
+	display: none !important;
+}
+
 #show_address_button {
 	width: 26px;
 	vertical-align: bottom
@@ -851,7 +855,7 @@ button.border {
 .message_dialog_control button {
 	min-width: 100px;
 	font-size: larger;
-	margin: 2px 8px 10px;
+	margin: 10px 8px 10px;
 	padding: 8px 14px;
 	color: #69B7CF;
 	position: relative;
@@ -1030,6 +1034,8 @@ h2.message_dialog_label {
 	position: absolute;
 	right: 188px;
 	top: 18px;
+	padding: 8px;
+	margin: -8px;
 }
 
 #account_default_image.inactive > svg > path:first-child {
@@ -1075,7 +1081,8 @@ h2.message_dialog_label {
 	border-left: none;
 	border-right: none;
 	border-bottom-style: inset;
-	border-bottom-width: 2px;
+	border-bottom-width: 1px;
+	border-color: #eeeeee;
 	min-width: 240px;
 }
 
@@ -1732,6 +1739,8 @@ h2.message_dialog_label {
 	position: absolute;
 	bottom: 26px;
 	left: 11px;
+	padding: 8px;
+	margin: -8px;
 }
 
 #info svg {
@@ -2157,7 +2166,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span id='updated-timestamp'>
-			2020 Jun 24 22:34:48 UTC			</span>
+			2020 Jun 25 13:20:19 UTC			</span>
 			 ~ 
 			<span id='updated-timediff'></span> ago
 		</div>
