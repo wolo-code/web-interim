@@ -151,7 +151,7 @@ var click = function(e) {
 		return false;
 	}
 
-	handleShareWCode();
+	showCopyWcodeMessage();
 };
 
 var start = function(e) {
@@ -166,7 +166,7 @@ var start = function(e) {
 
 	if (presstimer === null) {
 		presstimer = setTimeout(function() {
-			showCopyWcodeMessage();
+			handleShareWCode();
 			longpress = true;
 		}, 500);
 	}
@@ -211,6 +211,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		document.getElementById('footer-content').classList.add('plain_background');
 	}
 });
+
+window.onerror = function myErrorHandler(errorMsg, url, lineNumber) {
+	alert("Oops! Something went wrong. Make sure you are using updated Google Chrome Browser - if this issue persists");
+	return false;
+}
 	</script>
 	<script>
 function trackOutboundLink(title, url) {
@@ -855,7 +860,7 @@ button.gm-ui-hover-effect {
 .message_dialog_control button {
 	min-width: 100px;
 	font-size: larger;
-	margin: 10px 8px 10px;
+	margin: 2px 8px 10px;
 	padding: 8px 14px;
 	color: #69B7CF;
 	position: relative;
@@ -892,6 +897,23 @@ h2.message_dialog_label {
 	color: white !important;
 	background: #69B7CF !important;
 	border-color: #69b7cf !important;
+}
+
+.message_dialog_subtitle {
+	overflow: hidden;
+}
+
+.message_dialog_subtitle_icon {
+	float: left;
+}
+
+.message_dialog_subtitle_label {
+	float: left;
+	padding: 3px 0 0 6px;
+}
+
+.message_dialog_subtitle_text {
+	padding: 10px 0 10px 14px;
 }
 @media (max-width: 512px) {
 
@@ -1352,9 +1374,8 @@ h2.message_dialog_label {
 	overflow: auto;
 	max-height: 500px;
 }
-#share_include_city, #share_jumto_map {
-	-webkit-appearance: checkbox !important;
-	margin-left: 6px;
+#copy_wcode_message {
+	border: 1px solid transparent;
 }
 
 #copy_wcode_message_city_name {
@@ -1373,11 +1394,11 @@ h2.message_dialog_label {
 }
 
 #share_link_button {
-	padding-top: 8px
+	padding-top: 6px
 }
 
 #share_qr_button {
-	padding-right: 6px;
+	padding: 4px 4px 4px 5px;
 }
 #info_message {
 	position: relative;
@@ -1506,6 +1527,10 @@ h2.message_dialog_label {
 
 #download-unified-url {
 	padding-bottom: 10px;
+}
+
+#info_full_close_button {
+	margin-top: 14px;
 }
 #locate_right_message_body {
 	padding: 2px 16px 8px;
@@ -1878,29 +1903,53 @@ h2.message_dialog_label {
 	</div>
 	<div class='message_dialog_body'>
 		<p>
-			<span>Text</span>
-			<input id='share_include_city' type='checkbox'>
-			include 
-			<span id='copy_wcode_message_city_name'></span>
-			<span class='message_dialog_control_right'>
-				<img id='share_copy_button' class="center control" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAiIGhlaWdodD0iMTgiIHZlcnNpb249IjEuMSIgdmlld0JveD0iLTIwIC0yOCAxNjMuNjQgODEuODE4IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPiA8ZyB0cmFuc2Zvcm09Im1hdHJpeCgxLjAxMzEgMCAwIDEuMDEzMSAzNi4wMzQgLTE2LjQ3MSkiPiA8cGF0aCBkPSJtLTIwLjggNzMuOS0zMS4yLTg5LjhoOC41bDMxLjEgODkuOHoiIGZpbGw9IiNkOWQ5ZDkiLz4gPGcgdHJhbnNmb3JtPSJtYXRyaXgoLjk5OTgyIDAgMCAuOTk5ODIgLS41NzcyNyAuMDEwNzA5KSI+IDxwYXRoIGQ9Im0tMy42IDY2LjEtMjUuMi03Mi44aDEzLjVsMjUuMSA3Mi44eiIgZmlsbD0iIzY5YjdjZiIvPiA8cGF0aCBkPSJtMjYuMyAxMi42LTE1LjIgNDYuOS01LjctMTguNiAxNS4yLTQ3LjZoMTIuNmwxNy4xIDUxIDE4LjEtNTFoMTMuNGwtMjUuMyA3Mi44aC0xMi42eiIgZmlsbD0iIzY5YjdjZiIvPiA8L2c+IDxwYXRoIGQ9Im05NC40LTE1LjloOC41bC0zMC43IDg5LjhoLTguNXoiIGZpbGw9IiNkOWQ5ZDkiLz4gPC9nPiA8L3N2Zz4g" >
-			</span>
+			<div class='message_dialog_subtitle'>
+				<span class='message_dialog_subtitle_icon'>
+					<img id='share_copy_button' class="center control" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAiIGhlaWdodD0iMTgiIHZlcnNpb249IjEuMSIgdmlld0JveD0iLTIwIC0yOCAxNjMuNjQgODEuODE4IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPiA8ZyB0cmFuc2Zvcm09Im1hdHJpeCgxLjAxMzEgMCAwIDEuMDEzMSAzNi4wMzQgLTE2LjQ3MSkiPiA8cGF0aCBkPSJtLTIwLjggNzMuOS0zMS4yLTg5LjhoOC41bDMxLjEgODkuOHoiIGZpbGw9IiNkOWQ5ZDkiLz4gPGcgdHJhbnNmb3JtPSJtYXRyaXgoLjk5OTgyIDAgMCAuOTk5ODIgLS41NzcyNyAuMDEwNzA5KSI+IDxwYXRoIGQ9Im0tMy42IDY2LjEtMjUuMi03Mi44aDEzLjVsMjUuMSA3Mi44eiIgZmlsbD0iIzY5YjdjZiIvPiA8cGF0aCBkPSJtMjYuMyAxMi42LTE1LjIgNDYuOS01LjctMTguNiAxNS4yLTQ3LjZoMTIuNmwxNy4xIDUxIDE4LjEtNTFoMTMuNGwtMjUuMyA3Mi44aC0xMi42eiIgZmlsbD0iIzY5YjdjZiIvPiA8L2c+IDxwYXRoIGQ9Im05NC40LTE1LjloOC41bC0zMC43IDg5LjhoLTguNXoiIGZpbGw9IiNkOWQ5ZDkiLz4gPC9nPiA8L3N2Zz4g" >
+				</span>
+				<span class='message_dialog_subtitle_label'>Text</span>
+			</div>
+			<div class='message_dialog_subtitle_text'>
+				<span>include</span> <span id='copy_wcode_message_city_name'></span> ?
+			</div>
+			<div class='message_dialog_control_container'>
+				<div class="center message_dialog_control">
+					<button id='share_copy_button_text_city' class="border dialog_message_primary button_highlight" type='button'>Yes</button>
+					<button id='share_copy_button_text_nocity' class="border dialog_message_secondary" type='button'>No</button>
+				</div>
+			</div>
 		</p>
 		<hr>
 		<p>
-			<span>Link</span>
-			<input id='share_jumto_map' type='checkbox'>
-			jump directly to map
-			<span class='message_dialog_control_right'>
-				<img id='share_link_button' class="center control" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMCIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCA0IDIyLjUgMTIiPiA8cGF0aCBkPSJtLTAuMDAzMTc3My0xLjVoMjR2MjRoLTI0eiIgZmlsbD0ibm9uZSIvPiA8cGF0aCBkPSJtMy4xNDMzIDEwYzAtMS41MjM4IDEuMzkxMi0yLjc2MjUgMy4xMDI2LTIuNzYyNWg0LjAwMzN2LTEuNjkzMWgtNC4wMDMzYy0yLjc2MjMgMC01LjAwNDEgMS45OTYxLTUuMDA0MSA0LjQ1NTYgMCAyLjQ1OTUgMi4yNDE5IDQuNDU1NiA1LjAwNDEgNC40NTU2aDQuMDAzM3YtMS42OTMxaC00LjAwMzNjLTEuNzExNCAwLTMuMTAyNi0xLjIzODctMy4xMDI2LTIuNzYyNXptNC4xMDM0IDAuODkxMTJoOC4wMDY2di0xLjc4MjJoLTguMDA2NnptOS4wMDc1LTUuMzQ2N2gtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMS43MTE0IDAgMy4xMDI2IDEuMjM4NyAzLjEwMjYgMi43NjI1IDAgMS41MjM4LTEuMzkxMiAyLjc2MjUtMy4xMDI2IDIuNzYyNWgtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMi43NjIzIDAgNS4wMDQxLTEuOTk2MSA1LjAwNDEtNC40NTU2IDAtMi40NTk1LTIuMjQxOS00LjQ1NTYtNS4wMDQxLTQuNDU1NnoiIGZpbGw9IiM2OWI3Y2YiIHN0cm9rZS13aWR0aD0iLjkiLz4gPC9zdmc+IA==" >
-			</span>
+			<div class='message_dialog_subtitle'>
+				<span class='message_dialog_subtitle_icon'>
+					<img id='share_link_button' class="center control" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMCIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCA0IDIyLjUgMTIiPiA8cGF0aCBkPSJtLTAuMDAzMTc3My0xLjVoMjR2MjRoLTI0eiIgZmlsbD0ibm9uZSIvPiA8cGF0aCBkPSJtMy4xNDMzIDEwYzAtMS41MjM4IDEuMzkxMi0yLjc2MjUgMy4xMDI2LTIuNzYyNWg0LjAwMzN2LTEuNjkzMWgtNC4wMDMzYy0yLjc2MjMgMC01LjAwNDEgMS45OTYxLTUuMDA0MSA0LjQ1NTYgMCAyLjQ1OTUgMi4yNDE5IDQuNDU1NiA1LjAwNDEgNC40NTU2aDQuMDAzM3YtMS42OTMxaC00LjAwMzNjLTEuNzExNCAwLTMuMTAyNi0xLjIzODctMy4xMDI2LTIuNzYyNXptNC4xMDM0IDAuODkxMTJoOC4wMDY2di0xLjc4MjJoLTguMDA2NnptOS4wMDc1LTUuMzQ2N2gtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMS43MTE0IDAgMy4xMDI2IDEuMjM4NyAzLjEwMjYgMi43NjI1IDAgMS41MjM4LTEuMzkxMiAyLjc2MjUtMy4xMDI2IDIuNzYyNWgtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMi43NjIzIDAgNS4wMDQxLTEuOTk2MSA1LjAwNDEtNC40NTU2IDAtMi40NTk1LTIuMjQxOS00LjQ1NTYtNS4wMDQxLTQuNDU1NnoiIGZpbGw9IiM2OWI3Y2YiIHN0cm9rZS13aWR0aD0iLjkiLz4gPC9zdmc+IA==" >
+				</span>
+				<span class='message_dialog_subtitle_label'>Link</span>
+			</div>
+			<div id='share_jumto_map' class='message_dialog_subtitle_text'>
+				jump directly to map ?
+			</div>
+			<div class='message_dialog_control_container'>
+				<div class="center message_dialog_control">
+					<button id='share_copy_button_link_jump' class="border dialog_message_primary button_highlight" type='button'>Yes</button>
+					<button id='share_copy_button_link_nojump' class="border dialog_message_secondary" type='button'>No</button>
+				</div>
+			</div>
 		</p>
 		<hr>
 		<p>
-			<span>QR</span>
-			<span class='message_dialog_control_right'>
-				<img id='share_qr_button' class="center control" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZlcnNpb249IjEuMSIgdmlld0JveD0iMCAwIDYuMzUgNi4zNSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczpjYz0iaHR0cDovL2NyZWF0aXZlY29tbW9ucy5vcmcvbnMjIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiPiA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSguMDIzNjIzNSAtMjkwLjY4MSkiPiA8cmVjdCBpZD0icmVjdDM3MzgiIHg9Ii0uMDIzNjIzNSIgeT0iMjkwLjY4MSIgd2lkdGg9IjIuMTE2NjciIGhlaWdodD0iMi4xMTY2NyIgc3R5bGU9ImZpbGwtb3BhY2l0eTouOTQxMTc2O2ZpbGw6IzY5YjdjZjtzdHJva2Utd2lkdGg6LjI2NDU4MyIvPiA8cmVjdCB4PSIyLjgwODQyIiB5PSIyOTMuNTQxIiB3aWR0aD0iMS4zMzY2OCIgaGVpZ2h0PSIxLjMzNjY4IiBzdHlsZT0iZmlsbC1vcGFjaXR5Oi45NDExNzY7ZmlsbDojNjliN2NmO3N0cm9rZS13aWR0aDouMTY3MDg0Ii8+IDx1c2UgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNC4yMzIyMykiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHhsaW5rOmhyZWY9IiNyZWN0MzczOCIvPiA8dXNlIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgNC4yMzE4KSIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgeGxpbms6aHJlZj0iI3JlY3QzNzM4Ii8+IDwvZz4gPC9zdmc+IA==" >
-			</span>
+			<div class='message_dialog_subtitle'>
+				<span class='message_dialog_subtitle_icon'>
+					<img id='share_qr_button' class="center control" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZlcnNpb249IjEuMSIgdmlld0JveD0iMCAwIDYuMzUgNi4zNSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczpjYz0iaHR0cDovL2NyZWF0aXZlY29tbW9ucy5vcmcvbnMjIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiPiA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSguMDIzNjIzNSAtMjkwLjY4MSkiPiA8cmVjdCBpZD0icmVjdDM3MzgiIHg9Ii0uMDIzNjIzNSIgeT0iMjkwLjY4MSIgd2lkdGg9IjIuMTE2NjciIGhlaWdodD0iMi4xMTY2NyIgc3R5bGU9ImZpbGwtb3BhY2l0eTouOTQxMTc2O2ZpbGw6IzY5YjdjZjtzdHJva2Utd2lkdGg6LjI2NDU4MyIvPiA8cmVjdCB4PSIyLjgwODQyIiB5PSIyOTMuNTQxIiB3aWR0aD0iMS4zMzY2OCIgaGVpZ2h0PSIxLjMzNjY4IiBzdHlsZT0iZmlsbC1vcGFjaXR5Oi45NDExNzY7ZmlsbDojNjliN2NmO3N0cm9rZS13aWR0aDouMTY3MDg0Ii8+IDx1c2UgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNC4yMzIyMykiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHhsaW5rOmhyZWY9IiNyZWN0MzczOCIvPiA8dXNlIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgNC4yMzE4KSIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgeGxpbms6aHJlZj0iI3JlY3QzNzM4Ii8+IDwvZz4gPC9zdmc+IA==" >
+				</span>
+				<span class='message_dialog_subtitle_label'>QR</span>
+			</div>
+			<div class='message_dialog_control_container'>
+				<div class="center message_dialog_control">
+					<button id='share_copy_button_qr' class="border dialog_message_primary button_highlight" type='button'>Go</button>
+				</div>
+			</div>
 		</p>
 	</div>
 </div>
@@ -2162,11 +2211,11 @@ h2.message_dialog_label {
 	
 	<div id='software_info'>
 		<div id='version'>
-			Version: <span>0.1 beta</span>
+			Version: <span>1.1</span>
 		</div>
 		<div id='updated'>Updated:
 			<span id='updated-timestamp'>
-			2020 Jun 25 13:20:19 UTC			</span>
+			2020 Jul 05 00:13:35 UTC			</span>
 			 ~ 
 			<span id='updated-timediff'></span> ago
 		</div>

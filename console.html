@@ -151,7 +151,7 @@ var click = function(e) {
 		return false;
 	}
 
-	handleShareWCode();
+	showCopyWcodeMessage();
 };
 
 var start = function(e) {
@@ -166,7 +166,7 @@ var start = function(e) {
 
 	if (presstimer === null) {
 		presstimer = setTimeout(function() {
-			showCopyWcodeMessage();
+			handleShareWCode();
 			longpress = true;
 		}, 500);
 	}
@@ -211,6 +211,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		document.getElementById('footer-content').classList.add('plain_background');
 	}
 });
+
+window.onerror = function myErrorHandler(errorMsg, url, lineNumber) {
+	alert("Oops! Something went wrong. Make sure you are using updated Google Chrome Browser - if this issue persists");
+	return false;
+}
 	</script>
 	<script>
 function trackOutboundLink(title, url) {
@@ -788,7 +793,7 @@ button.gm-ui-hover-effect {
 .message_dialog_control button {
 	min-width: 100px;
 	font-size: larger;
-	margin: 10px 8px 10px;
+	margin: 2px 8px 10px;
 	padding: 8px 14px;
 	color: #69B7CF;
 	position: relative;
@@ -825,6 +830,23 @@ h2.message_dialog_label {
 	color: white !important;
 	background: #69B7CF !important;
 	border-color: #69b7cf !important;
+}
+
+.message_dialog_subtitle {
+	overflow: hidden;
+}
+
+.message_dialog_subtitle_icon {
+	float: left;
+}
+
+.message_dialog_subtitle_label {
+	float: left;
+	padding: 3px 0 0 6px;
+}
+
+.message_dialog_subtitle_text {
+	padding: 10px 0 10px 14px;
 }
 @media (max-width: 512px) {
 

@@ -1134,7 +1134,7 @@ UMB.Widget = function () {
 		var wrapperStyle = {
 			display: 'none',
 			position: 'absolute',
-			height: '19px',
+			height: '46px',
 			fontSize: '14px',
 			lineHeight: '1em',
 			fontFamily: 'Arial, sans-serif',

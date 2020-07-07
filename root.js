@@ -374,7 +374,7 @@ function onLogout() {
 	.then(function() {
 		document.getElementById('wait_loader').classList.add('hide');
 		hideOverlay(document.getElementById('firebaseui-auth-container'));
-		document.getElementById('account_dialog_container').classList.add('hide');
+		hideOverlay(document.getElementById('account_dialog_container'));
 		document.getElementById('account_user_image').classList.add('hide');
 		document.getElementById('account_user_image').setAttribute('src', null);
 		document.getElementById('account_default_image').classList.remove('hide');
@@ -919,7 +919,8 @@ function execSubmitCity() {
 function tryDefaultCity() {
 	decode(DEFAULT_WCODE);
 	notification_top.classList.add('hide');
-	infoWindow.close();
+	if(typeof infoWindow != undefined)
+		infoWindow.close();
 }
 
 function getFullCity(city) {
@@ -2360,10 +2361,6 @@ function redirect_hideLoader() {
 // const WCODE_LINK_COPIED_MESSAGE;
 
 function handleShareWCode() {
-	setTimeout( function() {
-			showNotification("Long press share icon for advanced options");
-		}, 4000);
-	
 	if (navigator.share)
 		shareWCode();
 	else
@@ -2452,13 +2449,6 @@ function copyWcodeJumpLink() {
 	showAndCopy(code_url);
 	showNotification(WCODE_LINK_COPIED_MESSAGE);
 	hideCopyCodeMessage();
-}
-
-function shareWCodeCopy() {
-	if(share_include_city.checked)
-		copyWcodeFull();
-	else
-		copyWcodeCode();
 }
 
 function shareWCodeLink() {
@@ -2712,9 +2702,11 @@ function setupControls() {
 	document.getElementById('address_text_copy').addEventListener('click', copyAddress);
 	document.getElementById('choose_city_by_name_message_close').addEventListener('click', hideChooseCityMessage);
 	document.getElementById('choose_city_by_periphery_message_close').addEventListener('click', hideChooseCity_by_periphery_Message);
-	document.getElementById('share_copy_button').addEventListener('click', shareWCodeCopy);
-	document.getElementById('share_link_button').addEventListener('click', shareWCodeLink);
-	document.getElementById('share_qr_button').addEventListener('click', showQR);
+	document.getElementById('share_copy_button_text_city').addEventListener('click', copyWcodeFull);
+	document.getElementById('share_copy_button_text_nocity').addEventListener('click', copyWcodeCode);
+	document.getElementById('share_copy_button_link_jump').addEventListener('click', copyWcodeJumpLink);
+	document.getElementById('share_copy_button_link_nojump').addEventListener('click', copyWcodeLink);
+	document.getElementById('share_copy_button_qr').addEventListener('click', showQR);
 	document.getElementById('qr_close').addEventListener('click', closeQR);
 	document.getElementById('qr_preview').addEventListener('click', toggleQRpreview);
 	document.getElementById('qr_print').addEventListener('click', printQR);
@@ -3146,7 +3138,7 @@ UMB.Widget = function () {
 		var wrapperStyle = {
 			display: 'none',
 			position: 'absolute',
-			height: '19px',
+			height: '46px',
 			fontSize: '14px',
 			lineHeight: '1em',
 			fontFamily: 'Arial, sans-serif',
