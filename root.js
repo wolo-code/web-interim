@@ -2216,7 +2216,7 @@ function showQR() {
 	document.getElementById('qr_wcode_code').innerHTML = code_string;
 	var qrcode = new QRCode({
 		content: "https://"+location.hostname + '/' + getCodeComplete().join('.').toLowerCase().replace(' ', '_'),
-		container: "svg",
+		container: "svg-viewbox",
 		join: true,
 		xmlDeclaration: false,
 		width: 380,
@@ -2299,6 +2299,7 @@ function beforeQRprint() {
 	document.getElementById('overlay').classList.remove('overlay');
 	document.getElementById('overlay').classList.add('section-to-print');
 	document.getElementById('qr_close').classList.add('hide');
+	document.getElementById('overlay').classList.add('raster');
 }
 
 function afterQRprint() {
@@ -2306,6 +2307,7 @@ function afterQRprint() {
 	document.getElementById('overlay').classList.add('overlay');
 	document.getElementById('overlay').classList.remove('section-to-print');
 	document.getElementById('qr_close').classList.remove('hide');
+	document.getElementById('overlay').classList.remove('raster');
 	if(mode_preview_activated)
 		toggleQRpreview();
 }
@@ -2325,18 +2327,20 @@ function downloadQR() {
 	}
 	document.getElementById('qr_close').classList.add('hide');
 	document.getElementById('qr_controls').classList.add('hide');
+	document.getElementById('overlay').classList.add('raster');
 	document.getElementById('qr_body').setAttribute( 'style',
 	 "height: "+(document.getElementById('qr_body').offsetHeight-6)+"px"+"; "+
 	 "width: "+document.getElementById('qr_body').offsetWidth+"px" );
-	html2canvas(document.querySelector('#qr_body')).then(canvas => {
+	html2canvas( document.querySelector('#qr_body'), {scale:1} ).then( canvas => {
 		if(mode_preview_activated)
 			toggleQRpreview();
+		document.getElementById('overlay').classList.remove('raster');
 		document.getElementById('qr_body').removeAttribute('style');
 		document.getElementById('qr_close').classList.remove('hide');
 		document.getElementById('qr_controls').classList.remove('hide');
 		var qrImage = canvas.toDataURL("image/png");
 		downloadURI('data:' + qrImage, "Wolo codes - " + getCodeFull_text() + ".png");
-	});
+	} );
 }
 
 function downloadURI(uri, name) {

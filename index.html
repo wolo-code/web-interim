@@ -631,6 +631,12 @@ button.border {
 .front_arrow_white > svg > g > g > path {
 	fill: white !important;
 }
+
+.raster {
+	margin: auto;
+	height: 100%;
+	width: 100%;
+}
 @media (max-width: 662px) {
 	
 		#pac-input {
@@ -656,7 +662,7 @@ button.border {
 		}
 		
 		#account {
-			right: 6px !important;
+			right: 10px !important;
 		}
 		
 }
@@ -1400,6 +1406,11 @@ h2.message_dialog_label {
 #share_qr_button {
 	padding: 4px 4px 4px 5px;
 }
+
+#share_copy_button_qr {
+	margin-top: 8px;
+	width: 220px;
+}
 #info_message {
 	position: relative;
 	font-family: Abel;
@@ -1523,6 +1534,7 @@ h2.message_dialog_label {
 #info_list {
 	list-style-type: square;
 	padding-left: 16px;
+	color: #d0d0d0;
 }
 
 #download-unified-url {
@@ -1602,7 +1614,10 @@ h2.message_dialog_label {
 	text-align: left;
 	background-color: #FFFFFF;
 	color: #999999;
-	width: 420px;
+}
+
+.raster #qr_body {
+	width: 420px;	
 }
 
 #qr_label {
@@ -1639,6 +1654,8 @@ h2.message_dialog_label {
 	border-bottom-style: inset;
 	border-bottom-width: 2px;
 	min-width: 240px;
+	display: block;
+	margin: auto;
 }
 
 #qr_title_main {
@@ -1656,6 +1673,7 @@ h2.message_dialog_label {
 #qr_code {
 	margin-top: 12px;
 	margin-bottom: 4px;
+	padding: 2px 20px;
 }
 
 .preview#qr_title_main, .preview#qr_title_segment, .preview#qr_address {
@@ -1668,7 +1686,7 @@ h2.message_dialog_label {
 }
 
 #qr_wcode {
-	padding-top: 20px;
+	padding-top: 15px;
 }
 
 #qr_sticker_title {
@@ -1690,15 +1708,20 @@ h2.message_dialog_label {
 
 #qr_wcode_left {
 	text-align: left;
+	margin-bottom: 4px;
 }
 
 #qr_wcode_code {
-	font-size: x-large;
+	font-size: xx-large;
+	font-weight: bold;
 }
 
 #qr_address {
-	margin: 0 66px 20px 66px;
 	text-align: left;
+	width: 240px;
+	margin-top: 6px;
+	margin-bottom: 20px;
+	padding: 2px 2px;
 }
 
 #qr_webapp_url {
@@ -2215,7 +2238,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span id='updated-timestamp'>
-			2020 Jul 05 00:13:35 UTC			</span>
+			2020 Jul 07 00:45:07 UTC			</span>
 			 ~ 
 			<span id='updated-timediff'></span> ago
 		</div>
