@@ -2347,16 +2347,6 @@ function showQR() {
 	var code_string = code_wcode.join(' ');
 	document.getElementById('qr_wcode_city').innerHTML = city_accent;
 	document.getElementById('qr_wcode_code').innerHTML = code_string;
-	var qrcode = new QRCode({
-		content: "https://"+location.hostname + '/' + getCodeComplete().join('.').toLowerCase().replace(' ', '_'),
-		container: "svg-viewbox",
-		join: true,
-		xmlDeclaration: false,
-		width: 380,
-		height: 380
-	});
-	// var svg = qrcode.svg();
-	// document.getElementById('qr_code').innerHTML = svg;
 	showOverlay(document.getElementById('qr_body'));
 	
 	window.addEventListener('beforeprint', beforeQRprint);
