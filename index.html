@@ -126,32 +126,30 @@ var _umb = {
 		safari: 29
 	}
 };
-var longpress = false;
-var presstimer = null;
-var longtarget = null;
+var listPressTimer = [];
 
 var cancel = function(e) {
-	if (presstimer !== null) {
-		clearTimeout(presstimer);
-		presstimer = null;
+	if (this.presstimer !== null) {
+		clearTimeout(this.presstimer);
+		listPressTimer[this.pressTimerIndex] = this.presstimer = null;
 	}
 
 	this.classList.remove('longpress');
 };
 
 var click = function(e) {
-	if (presstimer !== null) {
-		clearTimeout(presstimer);
-		presstimer = null;
+	if (this.presstimer !== null) {
+		clearTimeout(this.presstimer);
+		listPressTimer[this.pressTimerIndex] = this.presstimer = null;
 	}
 
 	this.classList.remove('longpress');
 
-	if (longpress) {
+	if (this.longpress) {
 		return false;
 	}
 
-	showCopyWcodeMessage();
+	this.fnShort();
 };
 
 var start = function(e) {
@@ -160,21 +158,22 @@ var start = function(e) {
 		return;
 	}
 
-	longpress = false;
+	this.longpress = false;
 
 	this.classList.add('longpress');
 
-	if (presstimer === null) {
-		presstimer = setTimeout(function() {
-			handleShareWCode();
-			longpress = true;
+	var parent = this;
+	if (this.presstimer === null) {
+		listPressTimer[this.pressTimerIndex] = this.presstimer = setTimeout(function() {
+			parent.fnLong();
+			parent.longpress = true;
 		}, 500);
 	}
 
 	return false;
 };
 
-function addLongpressListener(node) {
+function addLongpressListener(node, fnShort, fnLong) {
 	node.addEventListener('mousedown', start);
 	node.addEventListener('touchstart', start);
 	node.addEventListener('click', click);
@@ -182,6 +181,12 @@ function addLongpressListener(node) {
 	node.addEventListener('touchend', cancel);
 	node.addEventListener('touchleave', cancel);
 	node.addEventListener('touchcancel', cancel);
+	node.longpress = false;
+	node.presstimer = null;
+	node.longtarget = null;
+	node.fnShort = fnShort;
+	node.fnLong = fnLong;
+	node.pressTimerIndex = listPressTimer.length;
 }
 var pendingInitMap;
 var clickHandler;
@@ -213,7 +218,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 window.onerror = function myErrorHandler(errorMsg, url, lineNumber) {
-	alert("Oops! Something went wrong. Make sure you are using updated Google Chrome Browser - if this issue persists");
+	alert("Oops! Something went wrong. Make sure you are connected to the Internet and are using latest Google Chrome Browser - if this issue persists");
 	return false;
 }
 	</script>
@@ -246,6 +251,7 @@ var current_city_gp_id;
 var is_current_city;
 
 var encode_session_id;
+var dencode_session_id;
 
 // Code\Model
 var code_city;
@@ -494,6 +500,10 @@ button.border {
 	width: 152px;
 }
 
+body > #pac-input {
+	display: none;
+}
+
 #pac-input {
 	position: absolute;
 	left: 0px !important;
@@ -511,6 +521,7 @@ button.border {
 	box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
 	border-top-left-radius: 5px;
 	border-bottom-left-radius: 5px;
+	text-transform: lowercase;
 }
 
 #pac-input:focus {
@@ -659,7 +670,7 @@ button.border {
 		}
 
 		#footer-content-container {
-			bottom: 14px;
+			bottom: 8px;
 			font-size: 0.7em
 		}
 		
@@ -780,8 +791,8 @@ button.gm-ui-hover-effect {
 	border-radius: 5px
 }
 
-#external_map_button {
-	width: 28px;
+#external_launch_button {
+	width: 26px;
 	vertical-align: bottom;
 }
 
@@ -1274,6 +1285,7 @@ h2.message_dialog_label {
 #accuracy_meter {
 	font-family: monospace;
 	line-height: 32px;
+	min-width: 18px;
 }
 
 #accuracy_meter_unit {
@@ -1410,12 +1422,121 @@ h2.message_dialog_label {
 }
 
 #share_qr_button {
-	padding: 4px 4px 4px 5px;
 }
 
 #share_copy_button_qr {
 	margin-top: 8px;
 	width: 220px;
+}
+#decode_interface_overlay {
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+	position: absolute;
+	font-family: 'Abel';
+	z-index: 0;
+	display: none;
+}
+
+.decode #decode_interface_overlay {
+	background-color: #efefef;
+	display: block;
+}
+
+.decode #decode_input_container {
+	margin: auto;
+	text-align: center;
+}
+
+.decode #map_type_button {
+	color: rgba(0,0,0,.14);
+} 
+
+.decode #account {
+	left: 12px;
+}
+
+#decode_input_container {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	max-width: 468px;
+	max-height: 166px;
+}
+
+.decode #decode_input, #decode_input_shadow {
+	font-family: Roboto;
+	font-size: 1.38em;
+	font-weight: 300;
+	border: none;
+	min-width: 262px;
+	margin-left: 12px;
+	margin-right: 12px;
+	max-width: 92%;
+	text-transform: lowercase;
+}
+
+.decode #decode_input {
+	padding: 8px;
+	display: inline-block;
+	height: 26px;
+	background-color: transparent;
+	text-overflow: ellipsis;
+	border-bottom: 1px solid #8e8e8e;
+}
+
+#decode_input_shadow {
+	visibility: hidden;
+	position: absolute;
+	bottom: 36px;
+	max-width: 92%;
+	overflow: hidden;
+}
+
+#decode_input {
+	display: none;
+}
+
+#decode_input_button {
+	z-index: 1;
+	display: inline-block;
+	height: 26px;
+	color: #69B7CF;
+	font-family: Roboto, Arial, sans-serif;
+	font-size: 0.9375em;
+	border: none;
+	vertical-align: middle;
+	margin-left: -10px;
+}
+
+.decode #wait_loader {
+	display: none;
+}
+
+.decode #decode_button, .decode #map_input_suggestion_result {
+	display: none;
+}
+
+.decode #info svg {
+	box-shadow: rgb(0 0 0 / 6%) 0px 1px 4px -1px;
+}
+
+.decode #location_button {
+	box-shadow: rgb(0 0 0 / 6%) 0px 1px 4px -1px;
+}
+
+.decode #map_type_button {
+	box-shadow: rgb(0 0 0 / 6%) 0px 1px 4px -1px;
+}
+
+.decode #logo_wolo, .decode #logo_codes {
+	border-radius: 6px;
+	border-width: thin;
+	border-color: #f0f7fa;
+	border-style: solid;
 }
 #info_message {
 	position: relative;
@@ -1712,8 +1833,15 @@ h2.message_dialog_label {
 }
 
 #qr_wcode_container {
-	max-width: 240px;
+	max-width: 260px;
 	color: #69b7cf;
+	padding-left: 12px;
+	padding-top: 8px;
+	padding-bottom: 12px;
+	padding-right: 4px;
+	border: 1px solid;
+	border-radius: 10px;
+	margin-bottom: 8px;
 }
 
 #qr_wcode_left {
@@ -1758,13 +1886,7 @@ h2.message_dialog_label {
 	margin-top: 10px;
 	margin-bottom: 12px;
 }
-#suggestion_result {
-	position: absolute;
-	top: 8px;
-	left: 12px;
-}
-
-#suggestion_result > div {
+.suggestion_result > div {
 	display: inline-block;
 	background-color: #FFFFFF;
 	border-radius: 20px;
@@ -1775,12 +1897,24 @@ h2.message_dialog_label {
 	border: 1px solid #CDCDCD
 }
 
+#decode_input_suggestion_result {
+	min-height: 2em;
+	margin-left: 78px;
+	text-align: left;	
+}
+
+#map_input_suggestion_result {
+	position: absolute;
+	top: 10px;
+	left: 12px;
+}
+
 #decode_button {
 	z-index: 1;
 	position: absolute;
 	left: 428px;
 	top: 36px;
-	height: 42px;
+	height: 26px;
 	box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
 	color: #69B7CF;
 	font-family: Roboto, Arial, sans-serif;
@@ -1802,7 +1936,7 @@ h2.message_dialog_label {
 }
 
 #info svg {
-	box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
+	box-shadow: rgb(0 0 0 / 30%) 0px 1px 4px -1px;
 	background-color: rgb(255, 255, 255);
 	border-radius: 25px;
 }
@@ -1847,17 +1981,23 @@ h2.message_dialog_label {
 		right: 10px !important;
 	}
 
-	#suggestion_result {
+	#map_input_suggestion_result {
 		top: 74px !important;
 	}
-
+	
 }
 
 @media (max-width: 390px) {
+	
 	#decode_button {
 		left: auto !important;
 		right: 10px !important;
 	}
+	
+	#map_input_suggestion_result {
+		top: 100px !important;
+	}
+	
 }
 
 @media (max-width: 316px) {
@@ -1866,15 +2006,37 @@ h2.message_dialog_label {
 		top: 126px !important;
 	}
 
-	#suggestion_result {
-		top: 100px !important;
-	}
-
 }
 	</style>
 </head>
-<body>
-	<div id='overlay' class="overlay hide">
+<body class='decode'>
+	<div id='map'></div>
+<div id='map_input_suggestion_result' class='suggestion_result' data-input='pac-input' data-resize_input='false'></div>
+<input id='pac-input' data-suggest='map_input_suggestion_result' data-handler='decode_button' class='controls' type='text' placeholder='Search' tabindex='3' >
+<div id='decode_button' class='control' tabindex='4'>
+	<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
+	 height="26" width="24"
+	 viewBox="0 0 24 24">
+	<path d="M8 5v14l11-7z" fill="#69B7CF"/>
+</svg>
+</span>
+</div>
+<div id='decode_interface_overlay'>
+	<div id='decode_input_container'>
+		<div id='decode_input_suggestion_result' class='suggestion_result' data-input='decode_input' data-resize_input='true'></div>
+		<input id='decode_input' data-suggest='decode_input_suggestion_result' data-handler='decode_input_button' type='text' placeholder="\ Wolo code /" autocomplete='off'>
+		<div id='decode_input_button' class='control' tabindex='4'>
+			<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
+	 height="26" width="24"
+	 viewBox="0 0 24 24">
+	<path d="M8 5v14l11-7z" fill="#69B7CF"/>
+</svg>
+</span>
+		</div>
+	</div>
+	<span id='decode_input_shadow'></span>
+</div>
+<div id='overlay' class="overlay hide">
 	<div>
 	<div id='redirecting_message' class="message_dialog hide">
 	<h2 class='message_dialog_label'>
@@ -1976,9 +2138,9 @@ h2.message_dialog_label {
 		<p>
 			<div class='message_dialog_subtitle'>
 				<span class='message_dialog_subtitle_icon'>
-					<img id='share_qr_button' class='center' src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCA2LjM1IDYuMzUiPiA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSguMDIzNjIzNSAtMjkwLjY4MSkiPiA8cmVjdCBpZD0icmVjdDM3MzgiIHg9Ii0uMDIzNjIzNSIgeT0iMjkwLjY4MSIgd2lkdGg9IjIuMTE2NjciIGhlaWdodD0iMi4xMTY2NyIgc3R5bGU9ImZpbGwtb3BhY2l0eTouOTQxMTc2O2ZpbGw6IzY5YjdjZjtzdHJva2Utd2lkdGg6LjI2NDU4MyIvPiA8cmVjdCB4PSIyLjgwODQyIiB5PSIyOTMuNTQxIiB3aWR0aD0iMS4zMzY2OCIgaGVpZ2h0PSIxLjMzNjY4IiBzdHlsZT0iZmlsbC1vcGFjaXR5Oi45NDExNzY7ZmlsbDojNjliN2NmO3N0cm9rZS13aWR0aDouMTY3MDg0Ii8+IDx1c2UgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNC4yMzIyMykiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHhsaW5rOmhyZWY9IiNyZWN0MzczOCIvPiA8dXNlIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgNC4yMzE4KSIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgeGxpbms6aHJlZj0iI3JlY3QzNzM4Ii8+IDwvZz4gPC9zdmc+IA==" >
+					<img id='share_qr_button' class='center' src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMCcgaGVpZ2h0PSczMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZD0iTTAgMGgyNHYyNEgweiIgZmlsbD0nbm9uZScvPiA8cGF0aCBkPSJNMTcuNjMgNS44NEMxNy4yNyA1LjMzIDE2LjY3IDUgMTYgNUw1IDUuMDFDMy45IDUuMDEgMyA1LjkgMyA3djEwYzAgMS4xLjkgMS45OSAyIDEuOTlMMTYgMTljLjY3IDAgMS4yNy0uMzMgMS42My0uODRMMjIgMTJsLTQuMzctNi4xNnoiIHN0eWxlPSJmaWxsOiM2OWI3Y2Y7c3Ryb2tlLXdpZHRoOjEuMTMzMzMiLz4gPC9zdmc+IA==" >
 				</span>
-				<span class='message_dialog_subtitle_label'>QR</span>
+				<span class='message_dialog_subtitle_label'>Label</span>
 			</div>
 			<div class='message_dialog_control_container'>
 				<div class="center message_dialog_control">
@@ -2119,19 +2281,19 @@ h2.message_dialog_label {
 	<h2>
 	simple precise addresses
 </h2>
-<div id='wcode_format' class="center blue"><span>\</span> <span>City_name</span> <span>Word_1</span> <span>Word_2</span> <span>Word_3</span> <span>/</span></div>
+<div id='wcode_format' class="center blue"><span>\</span> <span>City</span> <span>Word 1</span> <span>Word 2</span> <span>Word 3</span> <span>/</span></div>
 <div id='wcode_example' class="center blue"><span>e.g.</span> <span>\</span> <span>Bengaluru</span> <span>cat</span> <span>apple</span> <span>tomato</span> <span>/</span></div>
 <p>
 	An address in this system consists of two parts:
 </p>
 <ol>
 	<li>
-		<strong>City_name</strong> specifies the city.<br>
-		Within the current city - it can be omitted
+		<strong>City</strong> specifies the distinct city.<br>
+		Within the same city - it can be omitted.
 	</li>
 	<li>
-		The last <strong>three words</strong> specify exactly where in that city.<br>
-		They are from a limited <a class='link' href='https://wcodes.org/wordlist'>list</a>  of 1024 easy common words
+		The last <strong>three words</strong> specify exactly 'where' in that city.<br>
+		They are from a limited <a class='link' href='https://wcodes.org/wordlist'>list</a>  of 1,024 easy common words.
 	</li>
 </ol>
 <h2>
@@ -2139,12 +2301,14 @@ h2.message_dialog_label {
 </h2>
 <ul>
 	<li>
-		Point a location to generate the corresponding Wolo code address.<br>
-		You may also let the system pick your current location automatically or search for a particular place.<br>
-		Or,
+		Enter a Wolo code address and hit the proceed button to go to that location. Or
 	</li>
 	<li>
-		Enter a Wolo code address and hit 'Decode' to go to that location
+		Point a location on the map to generate the corresponding Wolo code address.
+	</li>
+	<li>
+		You may also search for a particular place. Or,<br>
+		let the system pick your current location automatically.
 	</li>
 </ul>
 	<div id='info_intro'>
@@ -2444,7 +2608,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span id='updated-timestamp'>
-			2021 Jan 07 17:49:25 UTC			</span>
+			2021 Mar 24 13:18:16 UTC			</span>
 			 ~ 
 			<span id='updated-timediff'></span> ago
 		</div>
@@ -2557,7 +2721,7 @@ h2.message_dialog_label {
 			</div>
 		</div>
 	</div>
-	<div id='qr_code' class='center'></div>
+	<!-- <div id='qr_code' class='center'></div> -->
 	<div id='qr_address_container' class='center'>
 		<div id='qr_address' class='initial' contentEditable>&nbsp;&nbsp;Address&nbsp; &nbsp;(optional)</div>
 	</div>
@@ -2649,8 +2813,6 @@ h2.message_dialog_label {
 </div>
 	</div>
 </div>
-
-<div id='map'></div>
 <div id='wait_loader'></div>
 <div id='logo' tabindex='1'>
 	<a id=logo_wolo class='blur_background' href='//wolo.codes'>
@@ -2710,9 +2872,6 @@ h2.message_dialog_label {
 </span>
 	</span>
 </div>
-<input id='pac-input' class='controls' type='text' placeholder='Search' tabindex='3' >
-<div id='suggestion_result'></div>
-<input id='decode_button' class='control' type='button' value='Decode' tabindex='4' >
 <div id='location_button' class='control' tabindex='5'>
 	<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
 	 width='24' height='24'
@@ -2750,7 +2909,7 @@ h2.message_dialog_label {
 <div id='notification_bottom' class="notification_bar hide"></div>
 <div id='footer-content-container' class='center'>
 	<div id='footer-content' class='blur_background'>
-		<a class='link-gray' href='/license'>Copyright &copy; 2020</a>
+		<a class='link-gray' href='/license'>&copy; 2021 </a>
 		<a class='link' href='/about_me' rel='author'>Ujjwal Singh</a>
 	</div>
 </div>

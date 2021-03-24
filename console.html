@@ -126,32 +126,30 @@ var _umb = {
 		safari: 29
 	}
 };
-var longpress = false;
-var presstimer = null;
-var longtarget = null;
+var listPressTimer = [];
 
 var cancel = function(e) {
-	if (presstimer !== null) {
-		clearTimeout(presstimer);
-		presstimer = null;
+	if (this.presstimer !== null) {
+		clearTimeout(this.presstimer);
+		listPressTimer[this.pressTimerIndex] = this.presstimer = null;
 	}
 
 	this.classList.remove('longpress');
 };
 
 var click = function(e) {
-	if (presstimer !== null) {
-		clearTimeout(presstimer);
-		presstimer = null;
+	if (this.presstimer !== null) {
+		clearTimeout(this.presstimer);
+		listPressTimer[this.pressTimerIndex] = this.presstimer = null;
 	}
 
 	this.classList.remove('longpress');
 
-	if (longpress) {
+	if (this.longpress) {
 		return false;
 	}
 
-	showCopyWcodeMessage();
+	this.fnShort();
 };
 
 var start = function(e) {
@@ -160,21 +158,22 @@ var start = function(e) {
 		return;
 	}
 
-	longpress = false;
+	this.longpress = false;
 
 	this.classList.add('longpress');
 
-	if (presstimer === null) {
-		presstimer = setTimeout(function() {
-			handleShareWCode();
-			longpress = true;
+	var parent = this;
+	if (this.presstimer === null) {
+		listPressTimer[this.pressTimerIndex] = this.presstimer = setTimeout(function() {
+			parent.fnLong();
+			parent.longpress = true;
 		}, 500);
 	}
 
 	return false;
 };
 
-function addLongpressListener(node) {
+function addLongpressListener(node, fnShort, fnLong) {
 	node.addEventListener('mousedown', start);
 	node.addEventListener('touchstart', start);
 	node.addEventListener('click', click);
@@ -182,6 +181,12 @@ function addLongpressListener(node) {
 	node.addEventListener('touchend', cancel);
 	node.addEventListener('touchleave', cancel);
 	node.addEventListener('touchcancel', cancel);
+	node.longpress = false;
+	node.presstimer = null;
+	node.longtarget = null;
+	node.fnShort = fnShort;
+	node.fnLong = fnLong;
+	node.pressTimerIndex = listPressTimer.length;
 }
 var pendingInitMap;
 var clickHandler;
@@ -213,7 +218,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 window.onerror = function myErrorHandler(errorMsg, url, lineNumber) {
-	alert("Oops! Something went wrong. Make sure you are using updated Google Chrome Browser - if this issue persists");
+	alert("Oops! Something went wrong. Make sure you are connected to the Internet and are using latest Google Chrome Browser - if this issue persists");
 	return false;
 }
 	</script>
@@ -425,6 +430,10 @@ button.border {
 	width: 152px;
 }
 
+body > #pac-input {
+	display: none;
+}
+
 #pac-input {
 	position: absolute;
 	left: 0px !important;
@@ -442,6 +451,7 @@ button.border {
 	box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
 	border-top-left-radius: 5px;
 	border-bottom-left-radius: 5px;
+	text-transform: lowercase;
 }
 
 #pac-input:focus {
@@ -590,7 +600,7 @@ button.border {
 		}
 
 		#footer-content-container {
-			bottom: 14px;
+			bottom: 8px;
 			font-size: 0.7em
 		}
 		
@@ -711,8 +721,8 @@ button.gm-ui-hover-effect {
 	border-radius: 5px
 }
 
-#external_map_button {
-	width: 28px;
+#external_launch_button {
+	width: 26px;
 	vertical-align: bottom;
 }
 
@@ -1165,7 +1175,7 @@ input:valid {
 }
 	</style>
 </head>
-<body>
+<body >
 	<div id='container'>
 	<div id='wait_loader'></div>
 	<div id='restrict_block' class='hide'>
@@ -1275,7 +1285,7 @@ input:valid {
 		<div id='notification_bottom' class="notification_bar hide"></div>
 		<div id='footer-content-container' class='center'>
 			<div id='footer-content' class='blur_background'>
-				<a class='link-gray' href='/license'>Copyright &copy; 2020</a>
+				<a class='link-gray' href='/license'>&copy; 2021</a>
 				<a class='link' href='/about_me' rel='author'>Ujjwal Singh</a>
 			</div>
 		</div>
