@@ -45,15 +45,16 @@
 	<loc>https://wolo.codes/about_me</loc>
 </url>
 <url>
-	<loc>https://wolo.codes/about_me</loc>
-</url>
-<url>
-	<loc>https://wolo.codes/get</loc>
-</url>
-<url>
 	<loc>https://wolo.codes/get/app</loc>
 </url>
 <url>
 	<loc>https://wolo.codes/droid</loc>
 </url>
+<url>
+	<loc>https://wolo.codes/media</loc>
+</url>
+<url>
+	<loc>https://wolo.codes/press_release/launch</loc>
+</url>
+
 </urlset>
