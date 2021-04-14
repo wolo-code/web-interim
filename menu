@@ -1639,6 +1639,7 @@ ul li span {
 		<div class='sidebar-nav-li sidebar-sub'>
 <div class='sidebar-nav-group page-list'>
 			<a class="content-link item_block" href='//wolo.codes' ><div>App</div></a>
+			<a class="XURL item_block" href='/press_release\launch' data-target='press_release\launch' data-title='Launch'><div>Launch</div></a>
 <div class='sidebar-nav-norm item_block-placeholder'></div><div class='sidebar-nav-norm item_block-placeholder'></div><div class='sidebar-nav-norm item_block-placeholder'></div><div class='sidebar-nav-norm item_block-placeholder'></div><div class='sidebar-nav-norm item_block-placeholder'></div><div class='sidebar-nav-norm item_block-placeholder'></div><div class='sidebar-nav-norm item_block-placeholder'></div></div>
 <div class='sidebar-nav-group page-list'>
 			<a class="XURL item_block" href='/about' data-target='about' data-title='About'><div>About</div></a>
@@ -1663,6 +1664,7 @@ ul li span {
 <div class='sidebar-nav-norm item_block-placeholder'></div><div class='sidebar-nav-norm item_block-placeholder'></div><div class='sidebar-nav-norm item_block-placeholder'></div><div class='sidebar-nav-norm item_block-placeholder'></div><div class='sidebar-nav-norm item_block-placeholder'></div><div class='sidebar-nav-norm item_block-placeholder'></div><div class='sidebar-nav-norm item_block-placeholder'></div></div>
 <div class='sidebar-nav-group page-list'>
 			<a class="XURL item_block" href='/about_me' data-target='about_me' data-title='About me'><div>About me</div></a>
+			<a class="XURL item_block" href='/media' data-target='media' data-title='Media'><div>Media</div></a>
 <div class='sidebar-nav-norm item_block-placeholder'></div><div class='sidebar-nav-norm item_block-placeholder'></div><div class='sidebar-nav-norm item_block-placeholder'></div><div class='sidebar-nav-norm item_block-placeholder'></div><div class='sidebar-nav-norm item_block-placeholder'></div><div class='sidebar-nav-norm item_block-placeholder'></div><div class='sidebar-nav-norm item_block-placeholder'></div></div>
 		</div>
 	</div>
