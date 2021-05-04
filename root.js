@@ -1875,7 +1875,8 @@ function proceedPosition() {
 
 function processPosition(pos) {
 	clearLocating(false);
-	navigator.geolocation.clearWatch(watch_location_id);
+	if(typeof navigator.geolocation !== 'undefined')
+		navigator.geolocation.clearWatch(watch_location_id);
 	clearTimeout(watch_location_timer);
 	document.getElementById('proceed_container').classList.add('hide');
 	document.getElementById('accuracy_container').classList.add('highlight');
@@ -1972,7 +1973,7 @@ function getCityFromPositionViaGMap(position, callback_success) {
 }
 
 function getCoarseLocation(callback_success, callback_failure) {
-	if(navigator.geolocation) {
+	if(typeof navigator.geolocation !== 'undefined') {
 		var options = { timeout: 60000 };
 		navigator.geolocation.getCurrentPosition (callback_success, callback_failure, options);
 	} else {
@@ -2587,14 +2588,14 @@ function shareWCodeLink() {
 function suggestWrapper(event) {
 	if(typeof wordList != 'undefined' && wordList != null) {
 		cityNameList = [];
-		getCitiesFromNameId(event.srcElement.value.toLowerCase(), function(cityList) {
+		getCitiesFromNameId(event.target.value.toLowerCase(), function(cityList) {
 			for(let key in cityList)
 				if(cityNameList.indexOf(getProperCityAccent(cityList[key])) == -1)
 					cityNameList.push(getProperCityAccent(cityList[key]));
 			city_styled_wordlist = cityNameList.concat(wordList.curList);
-			suggestComplete(event.srcElement);
+			suggestComplete(event.target);
 		});
-		suggestComplete(event.srcElement);
+		suggestComplete(event.target);
 	}
 }
 
@@ -2678,13 +2679,13 @@ function changeInput(e, list, val) {
 }
 
 function chooseWord(event) {
-	var cur_word = document.getElementById(event.srcElement.parentElement.getAttribute('data-input')).value.split(' ');
+	var cur_word = document.getElementById(event.target.parentElement.getAttribute('data-input')).value.split(' ');
 	cur_word[cur_word.length-1] = this.innerText;
-	document.getElementById(event.srcElement.parentElement.getAttribute('data-input')).value = cur_word.join(' ') + ' ';
-	document.getElementById(event.srcElement.parentElement.getAttribute('data-input')).focus();
-	if( document.getElementById(event.srcElement.parentElement.getAttribute('data-resize_input')) == 'true' )
-		resizeInput.call( document.getElementById(event.srcElement.parentElement.getAttribute('data-input')) );
-	event.srcElement.parentElement.innerText = '';
+	document.getElementById(event.target.parentElement.getAttribute('data-input')).value = cur_word.join(' ') + ' ';
+	document.getElementById(event.target.parentElement.getAttribute('data-input')).focus();
+	if( document.getElementById(event.target.parentElement.getAttribute('data-resize_input')) == 'true' )
+		resizeInput.call( document.getElementById(event.target.parentElement.getAttribute('data-input')) );
+	event.target.parentElement.innerText = '';
 }
 function arrayContainsArray(superset, subset) {
 	return subset.every(function (value) {
@@ -2750,7 +2751,7 @@ function sessionForwarder(session_id, fwd_function, ar_param) {
 function enterHandler(event) {
 	if (event.keyCode === 13) {
 		event.preventDefault();
-		document.getElementById(event.srcElement.getAttribute('data-handler')).click();
+		document.getElementById(event.target.getAttribute('data-handler')).click();
 	}
 }
 if ('serviceWorker' in navigator) {
