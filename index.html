@@ -1539,6 +1539,22 @@ h2.message_dialog_label {
 	border-color: #f0f7fa;
 	border-style: solid;
 }
+
+.decode #map_type_button > span > svg > g:first-of-type > path:first-of-type {
+	    fill: #adadad;
+}
+
+.decode #map_type_button > span > svg > g:last-of-type {
+	    display: none
+}
+
+.map #map_type_button > span > svg > g:last-of-type {
+	    display: none
+}
+
+.satellite #map_type_button > span > svg > g:first-of-type {
+	    display: none
+}
 #info_message {
 	position: relative;
 	font-family: Abel;
@@ -1951,7 +1967,7 @@ h2.message_dialog_label {
 	left: 0;
 	right: 0;
 	bottom: 28px;
-	width: 84px;
+	width: 32px;
 	box-shadow: rgba(0, 0, 0, 0.298039) 0px 1px 4px -1px;
 	color: #69B7CF;
 	font-family: Roboto, Arial, sans-serif;
@@ -2609,7 +2625,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span id='updated-timestamp'>
-			2021 May 12 22:48:45 UTC			</span>
+			2021 May 15 17:14:18 UTC			</span>
 			 ~ 
 			<span id='updated-timediff'></span> ago
 		</div>
@@ -2882,7 +2898,31 @@ h2.message_dialog_label {
 </svg>
 </span>
 </div>
-<input id='map_type_button' class='control' type='button' value='Map' tabindex='6' >
+<div id='map_type_button' class='control' tabindex='6'>
+	<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+	 width='20' height='20'
+	 viewBox="0 0 24 24">
+	<g
+		transform="matrix(1.1668521,0,0,1.1668521,-2.0022246,-2.0022246)">
+		<path
+			d="m 20.5,4.8812448 -0.16,0.03 -5.34,2.07 -6,-2.1 -5.64,1.9 c -0.21,0.07 -0.36,0.25 -0.36,0.48 V 22.381234 c 0,0.28 0.22,0.5 0.5,0.5 l 0.16,-0.03 5.34,-2.07 6,2.1 5.64,-1.9 c 0.21,-0.07 0.36,-0.25 0.36,-0.48 V 5.3812448 c 0,-0.28 -0.22,-0.5 -0.5,-0.5 z M 15,20.881234 l -6,-2.11 V 6.8812448 l 6,2.11 z"
+			fill="#69b7cf" />
+		<path
+			d="M 0,0 H 24 V 24 H 0 Z"
+			fill="none" />
+	</g>
+	<g
+		transform="matrix(1.2333704,0,0,1.2333704,-2.7870969,-0.91835483)">
+		<path
+			d="M 0,0 H 24 V 24 H 0 Z"
+			fill="none" />
+		<path
+			d="M 19,3 H 5 C 3.9,3 3,3.9 3,5 v 14 c 0,1.1 0.9,2 2,2 h 14 c 1.1,0 2,-0.9 2,-2 V 5 C 21,3.9 20.1,3 19,3 Z m 0,16 H 5 V 5 H 19 Z M 8.57,6 H 6 V 8.58 C 7.42,8.58 8.57,7.42 8.57,6 Z M 12,6 h -1.71 c 0,2.36 -1.92,4.29 -4.29,4.29 V 12 c 3.32,0 6,-2.69 6,-6 z m 2.14,5.86 -3,3.87 L 9,13.15 6,17 h 12 z"
+			style="fill:#69b7cf;fill-opacity:1" />
+	</g>
+</svg>
+</span>
+</div>
 <div id='info' class='control' tabindex='7'>
 	<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
 	 width='39' height='39'
