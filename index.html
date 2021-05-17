@@ -481,7 +481,7 @@ button.border {
 	display: inline-block;
 	border-radius: 6px;
 	border-width: thin;
-	border-color: #fbfbfb28;
+	border-color: #e7e5e5;
 	border-style: solid;
 	padding: 2px;
 }
@@ -491,7 +491,7 @@ button.border {
 }
 
 #logo_wolo, #logo_codes {
-	box-shadow: rgb(0 0 0 / 13%) 0px 1px;
+	/* box-shadow: rgb(0 0 0 / 13%) 0px 1px; */
 }
 
 #logo_codes {
@@ -843,7 +843,7 @@ button.gm-ui-hover-effect {
 
 .message_dialog_close {
 	position: absolute;
-	top: 8px;
+	top: 4px;
 	right: 10px;
 }
 
@@ -1539,8 +1539,8 @@ h2.message_dialog_label {
 
 .decode #logo_wolo, .decode #logo_codes {
 	border-radius: 6px;
-	border-width: thin;
-	border-color: #f0f7fa;
+	border-width: 1px;
+	border-color: #cecece;
 	border-style: solid;
 }
 
@@ -1758,11 +1758,16 @@ h2.message_dialog_label {
 	}
 	
 }
+#qr_container {
+	position: relative;
+}
+
 #qr_body {
 	position: relative;
 	border-top: 6px solid #69b7cf;
 	font-family: Abel;
 	margin: 0 auto;
+	padding-bottom: 11px;
 	text-align: left;
 	background-color: #FFFFFF;
 	color: #999999;
@@ -2123,7 +2128,7 @@ h2.message_dialog_label {
 		<p>
 			<div class='message_dialog_subtitle'>
 				<span class='message_dialog_subtitle_icon'>
-					<img id='share_copy_button' class='center' src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMCcgaGVpZ2h0PScxOCcgdmlld0JveD0iLTIwIC0yOCAxNjMuNjQgODEuODE4Ij4gPGcgdHJhbnNmb3JtPSJtYXRyaXgoMS4wMTMxIDAgMCAxLjAxMzEgMzYuMDM0IC0xNi40NzEpIj4gPHBhdGggZD0ibS0yMC44IDczLjktMzEuMi04OS44aDguNWwzMS4xIDg5Ljh6IiBmaWxsPSIjZDlkOWQ5Ii8+IDxnIHRyYW5zZm9ybT0ibWF0cml4KC45OTk4MiAwIDAgLjk5OTgyIC0uNTc3MjcgLjAxMDcwOSkiPiA8cGF0aCBkPSJtLTMuNiA2Ni4xLTI1LjItNzIuOGgxMy41bDI1LjEgNzIuOHoiIGZpbGw9IiM2OWI3Y2YiLz4gPHBhdGggZD0ibTI2LjMgMTIuNi0xNS4yIDQ2LjktNS43LTE4LjYgMTUuMi00Ny42aDEyLjZsMTcuMSA1MSAxOC4xLTUxaDEzLjRsLTI1LjMgNzIuOGgtMTIuNnoiIGZpbGw9IiM2OWI3Y2YiLz4gPC9nPiA8cGF0aCBkPSJtOTQuNC0xNS45aDguNWwtMzAuNyA4OS44aC04LjV6IiBmaWxsPSIjZDlkOWQ5Ii8+IDwvZz4gPC9zdmc+IA==" >
+					<img id='share_copy_button' class='center' src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMCcgaGVpZ2h0PScxOCcgdmlld0JveD0iLTIwIC0yOCAxNjMuNjQgODEuODE4Ij4gPGcgdHJhbnNmb3JtPSJtYXRyaXgoMS4wMTMxIDAgMCAxLjAxMzEgMzYuMDM0IC0xNi40NzEpIj4gPHBhdGggZD0ibS0yMC44IDczLjktMzEuMi04OS44aDguNWwzMS4xIDg5Ljh6IiBmaWxsPSIjY2VjZWNlIi8+IDxnIHRyYW5zZm9ybT0ibWF0cml4KC45OTk4MiAwIDAgLjk5OTgyIC0uNTc3MjcgLjAxMDcwOSkiPiA8cGF0aCBkPSJtLTMuNiA2Ni4xLTI1LjItNzIuOGgxMy41bDI1LjEgNzIuOHoiIGZpbGw9IiNjZWNlY2UiLz4gPHBhdGggZD0ibTI2LjMgMTIuNi0xNS4yIDQ2LjktNS43LTE4LjYgMTUuMi00Ny42aDEyLjZsMTcuMSA1MSAxOC4xLTUxaDEzLjRsLTI1LjMgNzIuOGgtMTIuNnoiIGZpbGw9IiNjZWNlY2UiLz4gPC9nPiA8cGF0aCBkPSJtOTQuNC0xNS45aDguNWwtMzAuNyA4OS44aC04LjV6IiBmaWxsPSIjY2VjZWNlIi8+IDwvZz4gPC9zdmc+IA==" >
 				</span>
 				<span class='message_dialog_subtitle_label'>Text</span>
 			</div>
@@ -2141,7 +2146,7 @@ h2.message_dialog_label {
 		<p>
 			<div class='message_dialog_subtitle'>
 				<span class='message_dialog_subtitle_icon'>
-					<img id='share_link_button' class='center' src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMCcgaGVpZ2h0PScxNicgdmlld0JveD0iMCA0IDIyLjUgMTIiPiA8cGF0aCBkPSJtLTAuMDAzMTc3My0xLjVoMjR2MjRoLTI0eiIgZmlsbD0ibm9uZSIvPiA8cGF0aCBkPSJtMy4xNDMzIDEwYzAtMS41MjM4IDEuMzkxMi0yLjc2MjUgMy4xMDI2LTIuNzYyNWg0LjAwMzN2LTEuNjkzMWgtNC4wMDMzYy0yLjc2MjMgMC01LjAwNDEgMS45OTYxLTUuMDA0MSA0LjQ1NTYgMCAyLjQ1OTUgMi4yNDE5IDQuNDU1NiA1LjAwNDEgNC40NTU2aDQuMDAzM3YtMS42OTMxaC00LjAwMzNjLTEuNzExNCAwLTMuMTAyNi0xLjIzODctMy4xMDI2LTIuNzYyNXptNC4xMDM0IDAuODkxMTJoOC4wMDY2di0xLjc4MjJoLTguMDA2NnptOS4wMDc1LTUuMzQ2N2gtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMS43MTE0IDAgMy4xMDI2IDEuMjM4NyAzLjEwMjYgMi43NjI1IDAgMS41MjM4LTEuMzkxMiAyLjc2MjUtMy4xMDI2IDIuNzYyNWgtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMi43NjIzIDAgNS4wMDQxLTEuOTk2MSA1LjAwNDEtNC40NTU2IDAtMi40NTk1LTIuMjQxOS00LjQ1NTYtNS4wMDQxLTQuNDU1NnoiIGZpbGw9IiM2OWI3Y2YiIHN0cm9rZS13aWR0aD0iLjkiLz4gPC9zdmc+IA==" >
+					<img id='share_link_button' class='center' src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMCcgaGVpZ2h0PScxNicgdmlld0JveD0iMCA0IDIyLjUgMTIiPiA8cGF0aCBkPSJtLTAuMDAzMTc3My0xLjVoMjR2MjRoLTI0eiIgZmlsbD0ibm9uZSIvPiA8cGF0aCBkPSJtMy4xNDMzIDEwYzAtMS41MjM4IDEuMzkxMi0yLjc2MjUgMy4xMDI2LTIuNzYyNWg0LjAwMzN2LTEuNjkzMWgtNC4wMDMzYy0yLjc2MjMgMC01LjAwNDEgMS45OTYxLTUuMDA0MSA0LjQ1NTYgMCAyLjQ1OTUgMi4yNDE5IDQuNDU1NiA1LjAwNDEgNC40NTU2aDQuMDAzM3YtMS42OTMxaC00LjAwMzNjLTEuNzExNCAwLTMuMTAyNi0xLjIzODctMy4xMDI2LTIuNzYyNXptNC4xMDM0IDAuODkxMTJoOC4wMDY2di0xLjc4MjJoLTguMDA2NnptOS4wMDc1LTUuMzQ2N2gtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMS43MTE0IDAgMy4xMDI2IDEuMjM4NyAzLjEwMjYgMi43NjI1IDAgMS41MjM4LTEuMzkxMiAyLjc2MjUtMy4xMDI2IDIuNzYyNWgtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMi43NjIzIDAgNS4wMDQxLTEuOTk2MSA1LjAwNDEtNC40NTU2IDAtMi40NTk1LTIuMjQxOS00LjQ1NTYtNS4wMDQxLTQuNDU1NnoiIGZpbGw9IiNjZWNlY2UiIHN0cm9rZS13aWR0aD0iLjkiLz4gPC9zdmc+IA==" >
 				</span>
 				<span class='message_dialog_subtitle_label'>Link</span>
 			</div>
@@ -2159,7 +2164,7 @@ h2.message_dialog_label {
 		<p>
 			<div class='message_dialog_subtitle'>
 				<span class='message_dialog_subtitle_icon'>
-					<img id='share_qr_button' class='center' src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMCcgaGVpZ2h0PSczMCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZD0iTTAgMGgyNHYyNEgweiIgZmlsbD0nbm9uZScvPiA8cGF0aCBkPSJNMTcuNjMgNS44NEMxNy4yNyA1LjMzIDE2LjY3IDUgMTYgNUw1IDUuMDFDMy45IDUuMDEgMyA1LjkgMyA3djEwYzAgMS4xLjkgMS45OSAyIDEuOTlMMTYgMTljLjY3IDAgMS4yNy0uMzMgMS42My0uODRMMjIgMTJsLTQuMzctNi4xNnoiIHN0eWxlPSJmaWxsOiM2OWI3Y2Y7c3Ryb2tlLXdpZHRoOjEuMTMzMzMiLz4gPC9zdmc+IA==" >
+					<img id='share_qr_button' class='center' src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyOCcgaGVpZ2h0PScyOCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZD0iTTAgMGgyNHYyNEgweiIgZmlsbD0nbm9uZScvPiA8cGF0aCBkPSJNMTcuNjMgNS44NEMxNy4yNyA1LjMzIDE2LjY3IDUgMTYgNUw1IDUuMDFDMy45IDUuMDEgMyA1LjkgMyA3djEwYzAgMS4xLjkgMS45OSAyIDEuOTlMMTYgMTljLjY3IDAgMS4yNy0uMzMgMS42My0uODRMMjIgMTJsLTQuMzctNi4xNnoiIHN0eWxlPSJmaWxsOm5vbmU7c3Ryb2tlOiNjZWNlY2U7c3Ryb2tlLXdpZHRoOjEiLz4gPC9zdmc+IA==" >
 				</span>
 				<span class='message_dialog_subtitle_label'>Label</span>
 			</div>
@@ -2629,7 +2634,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span id='updated-timestamp'>
-			2021 May 16 20:55:41 UTC			</span>
+			2021 May 17 21:08:37 UTC			</span>
 			 ~ 
 			<span id='updated-timediff'></span> ago
 		</div>
@@ -2668,7 +2673,10 @@ h2.message_dialog_label {
 		</div>
 	</div>
 </div>
-<div id='qr_body' class='hide'>
+<div id='qr_container' class='hide'>
+	<h2 class='message_dialog_label section-to-not-print'>
+		Label
+	</h2>
 	<div id='qr_close' class="message_dialog_close control">
 		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
 	 height='22' width='22'
@@ -2678,10 +2686,11 @@ h2.message_dialog_label {
 </svg>
 </span>
 	</div>
-	<div id='qr_label' class='center'>
-		<div id='logo_qr' tabindex='1'>
-			<a id=logo_wolo_qr href='//wolo.codes'>
-				<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
+	<div id='qr_body'>
+		<div id='qr_label' class='center'>
+			<div id='logo_qr' tabindex='1'>
+				<a id=logo_wolo_qr href='//wolo.codes'>
+					<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
 	 height="50px"
 	 viewBox="-55 -18 306 100">
 	<g transform="matrix(1.2483 0 0 1.2483 13.164 -55.438)">
@@ -2709,9 +2718,9 @@ h2.message_dialog_label {
 	</g>
 </svg>
 </span>
-			</a>
-			<a id=logo_codes_qr href='//wolo.codes'>
-				<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+				</a>
+				<a id=logo_codes_qr href='//wolo.codes'>
+					<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
 	 width='152px' height='14px'
 	 viewBox="0 0 152 10">
 	<g style="fill:#69b7cf;stroke-width:.471333" aria-label="CODES">
@@ -2723,30 +2732,31 @@ h2.message_dialog_label {
 	</g>
 </svg>
 </span>
-			</a>
-		</div>
-	</div>
-	<div id='qr_title_container' class='center'>
-		<input id='qr_title_main' type='text' placeholder="&nbsp;&nbsp;Title&nbsp; &nbsp;e.g. Taj Mahal">
-		<input id='qr_title_segment' type='text' placeholder="&nbsp;&nbsp;Segment&nbsp; &nbsp;e.g. West gate">
-	</div>
-	<div id='qr_wcode'>
-		<div id='qr_wcode_container' class='center'>
-			<div id='qr_wcode_left'>
-				<span class='slash'>\</span>
-				<span class='infowindow_code' id='qr_wcode_city'></span>
-			</div>
-			<div id='qr_wcode_right'>
-				<span class='infowindow_code' id='qr_wcode_code'></span>
-				<span class='slash'>/</span>
+				</a>
 			</div>
 		</div>
-	</div>
-	<div id='qr_address_container' class='center'>
-		<div id='qr_address' class='initial' contentEditable>&nbsp;&nbsp;Address&nbsp; &nbsp;(optional)</div>
-	</div>
-	<div id='qr_webapp_url' class='center'>
-		<div>www.wolo.codes</div>
+		<div id='qr_title_container' class='center'>
+			<input id='qr_title_main' type='text' placeholder="&nbsp;&nbsp;Title&nbsp; &nbsp;e.g. Taj Mahal">
+			<input id='qr_title_segment' type='text' placeholder="&nbsp;&nbsp;Segment&nbsp; &nbsp;e.g. West gate">
+		</div>
+		<div id='qr_wcode'>
+			<div id='qr_wcode_container' class='center'>
+				<div id='qr_wcode_left'>
+					<span class='slash'>\</span>
+					<span class='infowindow_code' id='qr_wcode_city'></span>
+				</div>
+				<div id='qr_wcode_right'>
+					<span class='infowindow_code' id='qr_wcode_code'></span>
+					<span class='slash'>/</span>
+				</div>
+			</div>
+		</div>
+		<div id='qr_address_container' class='center'>
+			<div id='qr_address' class='initial' contentEditable>&nbsp;&nbsp;Address&nbsp; &nbsp;(optional)</div>
+		</div>
+		<div id='qr_webapp_url' class='center'>
+			<div>www.wolo.codes</div>
+		</div>
 	</div>
 	<div id='qr_controls' class="center message_dialog_control section-to-not-print">
 		<button id='qr_preview' class='border' type='button'>Preview</button>
