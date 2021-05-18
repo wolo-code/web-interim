@@ -490,10 +490,6 @@ button.border {
 	height: 50px;
 }
 
-#logo_wolo, #logo_codes {
-	/* box-shadow: rgb(0 0 0 / 13%) 0px 1px; */
-}
-
 #logo_codes {
 	text-decoration: none;
 }
@@ -1260,7 +1256,13 @@ h2.message_dialog_label {
 	background: white;
 	color: #69B7CF;
 }
-#accuracy_container {
+
+#account > span.image {
+    box-shadow: rgb(0 0 0 / 46%) 0px 0px 3px;
+    height: 42px;
+    display: inline-block;
+    border-radius: 20px;
+}#accuracy_container {
 	bottom: 88px;
 	z-index: 1;
 }
@@ -1550,6 +1552,14 @@ h2.message_dialog_label {
 
 .decode #map_type_button > span > svg > g:last-of-type {
 	display: none
+}
+
+.decode #proceed_button_shape {
+	filter: url(#dropshadow);
+}
+
+.decode #address_text {
+	display: none;
 }
 
 .map #map_type_button > span > svg > g:last-of-type {
@@ -2043,7 +2053,18 @@ h2.message_dialog_label {
 	<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
 	 height="26" width="24"
 	 viewBox="0 0 24 24">
-	<path d="M8 5v14l11-7z" fill="#69B7CF"/>
+	<filter id="dropshadow">
+		<feGaussianBlur in="SourceAlpha" stdDeviation="0.70"/>
+			<feOffset dx="0" dy="0" result="offsetblur"/>
+			<feComponentTransfer>
+			<feFuncA type="linear" slope="0.45"/>
+		</feComponentTransfer>
+		<feMerge>
+			<feMergeNode/>
+			<feMergeNode in="SourceGraphic"/>
+		</feMerge>
+	</filter>
+	<path id='proceed_button_shape' d="M8 5v14l11-7z" fill="#69B7CF"/>
 </svg>
 </span>
 </div>
@@ -2055,7 +2076,18 @@ h2.message_dialog_label {
 			<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
 	 height="26" width="24"
 	 viewBox="0 0 24 24">
-	<path d="M8 5v14l11-7z" fill="#69B7CF"/>
+	<filter id="dropshadow">
+		<feGaussianBlur in="SourceAlpha" stdDeviation="0.70"/>
+			<feOffset dx="0" dy="0" result="offsetblur"/>
+			<feComponentTransfer>
+			<feFuncA type="linear" slope="0.45"/>
+		</feComponentTransfer>
+		<feMerge>
+			<feMergeNode/>
+			<feMergeNode in="SourceGraphic"/>
+		</feMerge>
+	</filter>
+	<path id='proceed_button_shape' d="M8 5v14l11-7z" fill="#69B7CF"/>
 </svg>
 </span>
 		</div>
@@ -2634,7 +2666,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span id='updated-timestamp'>
-			2021 May 17 21:08:37 UTC			</span>
+			2021 May 18 17:05:04 UTC			</span>
 			 ~ 
 			<span id='updated-timediff'></span> ago
 		</div>
