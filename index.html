@@ -1556,7 +1556,7 @@ h2.message_dialog_label {
 }
 
 .decode #proceed_button_shape {
-	filter: url(#dropshadow);
+	filter: drop-shadow(0px 0px 3px rgba(0, 0, 0, 0.30));
 }
 
 .decode #address_text {
@@ -2057,17 +2057,6 @@ h2.message_dialog_label {
 	<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
 	 height="26" width="24"
 	 viewBox="0 0 24 24">
-	<filter id="dropshadow">
-		<feGaussianBlur in="SourceAlpha" stdDeviation="0.70"/>
-			<feOffset dx="0" dy="0" result="offsetblur"/>
-			<feComponentTransfer>
-			<feFuncA type="linear" slope="0.45"/>
-		</feComponentTransfer>
-		<feMerge>
-			<feMergeNode/>
-			<feMergeNode in="SourceGraphic"/>
-		</feMerge>
-	</filter>
 	<path id='proceed_button_shape' d="M8 5v14l11-7z" fill="#69B7CF"/>
 </svg>
 </span>
@@ -2080,17 +2069,6 @@ h2.message_dialog_label {
 			<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
 	 height="26" width="24"
 	 viewBox="0 0 24 24">
-	<filter id="dropshadow">
-		<feGaussianBlur in="SourceAlpha" stdDeviation="0.70"/>
-			<feOffset dx="0" dy="0" result="offsetblur"/>
-			<feComponentTransfer>
-			<feFuncA type="linear" slope="0.45"/>
-		</feComponentTransfer>
-		<feMerge>
-			<feMergeNode/>
-			<feMergeNode in="SourceGraphic"/>
-		</feMerge>
-	</filter>
 	<path id='proceed_button_shape' d="M8 5v14l11-7z" fill="#69B7CF"/>
 </svg>
 </span>
@@ -2670,7 +2648,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span id='updated-timestamp'>
-			2021 May 18 20:28:43 UTC			</span>
+			2021 May 19 21:49:44 UTC			</span>
 			 ~ 
 			<span id='updated-timediff'></span> ago
 		</div>
