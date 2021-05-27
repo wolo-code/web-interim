@@ -355,9 +355,8 @@ function clearAddress() {
 }
 
 function refreshAddress() {
-	if(!address_text.classList.contains('hide')) {
-		address_text_content.innerText = address;
-	}
+	address_text_content.innerText = address;
+	external_address.innerText = address;
 }
 
 function copyAddress() {
@@ -400,6 +399,7 @@ function hideAuthenticationDialog() {
 // const CURRENT_VERSION;
 // var initWCode;
 // var initWCode_jumpToMap;
+// var initWCode_jump_ask;
 
 function setLocationAccess(status) {
 	if (typeof(Storage) !== 'undefined') {
@@ -490,7 +490,8 @@ function urlDecode() {
 			window.location.replace('/404'+'?url='+window.location.host+window.location.pathname+window.location.search);
 			return false;
 		}
-		else {			
+		else {
+			document.getElementById('wait_loader').classList.remove('hide');
 			var code = code_string.toLowerCase().replace('_', ' ');
 			pendingWords = code.split('.');
 			initWCode = true;
@@ -1120,10 +1121,15 @@ function setCodeCoord(city, codeIndex, code) {
 	if(initWCode_jumpToMap) {
 		initWCode_jumpToMap = false;
 		window.location.replace(getIntentURL(latLng, city.name + ' ' + code.join(' ')));
-		return;
 	}
-	getAddress(latLng);
-	focus__(city, latLng, code);
+	else {
+		if(initWCode_jump_ask) {
+			initWCode_jump_ask = false;
+			external_show(latLng, city.name, code.join(' '));
+		}
+		getAddress(latLng);
+		focus__(city, latLng, code);
+	}
 }
 // var pendingPosition;
 // var pendingWords;
@@ -1473,8 +1479,33 @@ function initData() {
 		encode(pendingPosition);
 	}
 	else if(pendingWords != null) {
+		initWCode_jump_ask = true;
 		decode(pendingWords);
 	}
+}
+//var external_latLng;
+//var external_complete_wolo_code_string;
+
+function external_close() {
+	// toggle screen
+	external_hide();
+}
+
+function external_proceed() {
+	window.location.replace(getIntentURL(external_latLng, external_complete_wolo_code_string));
+}
+
+function external_show(latLng, city_string, wcode_string) {
+	external_latLng = latLng;
+	external_complete_wolo_code_string = city_string + ' ' + wcode_string;
+	showOverlay(document.getElementById('external_message'));
+	document.getElementById('external_wcode_city').innerText = city_string;
+	document.getElementById('external_wcode_code').innerText = wcode_string;
+	document.getElementById('external_address').innerText = '';
+}
+
+function external_hide() {
+	hideOverlay(document.getElementById('external_message'));
 }
 var uiConfig;
 var ui;
@@ -2142,7 +2173,7 @@ function decode_input_from_form() {
 }
 
 function decode_input_from_form_external() {
-	initWCode_jumpToMap = true;
+	initWCode_jump_ask = true;
 	decode_input_from_form();
 }
 
@@ -2860,6 +2891,8 @@ function setupControls() {
 	document.getElementById('qr_download').addEventListener('click', downloadQR);
 	document.getElementById('qr_address').addEventListener('focus', qr_address_active);
 	document.getElementById('decode_input').addEventListener('input', resizeInput);
+	document.getElementById('external_close').addEventListener('click', external_close);
+	document.getElementById('external_proceed').addEventListener('click', external_proceed);
 }
 
 function resizeInput() {

@@ -44,7 +44,7 @@ var FIREBASE_CONFIG = {
 var FUNCTIONS_BASE_URL = "https://wolo.codes/api";
 //'http://localhost:5000/waddress-5f30b/us-central1';
 </script>
-		<script src='https://browser.sentry-cdn.com/6.2.5/bundle.min.js' integrity='sha384-+0tgGyP4idWu9/NA6Jbmnj3SApxIg65/GR1zo3qSieRNyzmmDQ/5a1Yu6mfmUw+v' crossorigin='anonymous'
+		<script src='https://browser.sentry-cdn.com/6.4.1/bundle.min.js' integrity='sha384-THoc7rflwZFKTdZNgv6jLFFDn299Uv3t1SW5B4yGLvLiCRTYP9ys6vXZcMl95TQF' crossorigin='anonymous'
 ></script>
 		<script>Sentry.init({ dsn: 'https://badf8db6081d40d48af771b728440050@o85995.ingest.sentry.io/2045587' });
 </script>
@@ -267,6 +267,7 @@ var gpId = '';
 var CURRENT_VERSION = 1;
 var initWCode = false;
 var initWCode_jumpToMap = false;
+var initWCode_jump_ask = false;
 
 // City
 var DEFAULT_WCODE = ['bengaluru', 'diesel', 'hall', 'planet'];
@@ -293,6 +294,10 @@ var pendingFocusPos;
 
 // Focus
 var selfBoundsChangedCount = 1;
+
+// External
+var external_latLng;
+var external_complete_wolo_code_string;
 
 // QR
 var mode_preview = false;
@@ -923,6 +928,11 @@ h2.message_dialog_label {
 	border-color: #69b7cf !important;
 }
 
+.message_dialog_section {
+	margin-block-start: 1.2em;
+	margin-block-end: 1.2em;
+}
+
 .message_dialog_subtitle {
 	overflow: hidden;
 }
@@ -977,7 +987,7 @@ h2.message_dialog_label {
 
 .overlay h2 {
 	text-align: center;
-	margin-top: 8px;
+	margin-top: 16px;
 	margin-bottom: 18px;
 }
 
@@ -1555,7 +1565,7 @@ h2.message_dialog_label {
 	display: none
 }
 
-.decode #proceed_button_shape {
+#decode_input_button .proceed_button_shape {
 	filter: drop-shadow(0px 0px 3px rgba(0, 0, 0, 0.30));
 }
 
@@ -1569,6 +1579,68 @@ h2.message_dialog_label {
 
 .satellite #map_type_button > span > svg > g:first-of-type {
 	display: none
+}
+#external_wcode {
+	padding-top: 15px;
+}
+
+#external_sticker_title {
+	width: 188px;
+}
+
+#external_sticker_title_segment {
+	width: 188px;	
+}
+
+#external_label > a {
+	text-decoration: none;
+}
+
+#external_wcode_container {
+	max-width: 260px;
+	color: #69b7cf;
+	padding-left: 12px;
+	padding-top: 8px;
+	padding-bottom: 12px;
+	padding-right: 4px;
+	border: 1px solid;
+	border-radius: 10px;
+	margin-bottom: 16px;
+}
+
+#external_wcode_left {
+	text-align: left;
+	margin-bottom: 4px;
+}
+
+#external_wcode_code {
+	font-size: xx-large;
+	font-weight: bold;
+}
+
+#external_down_arrow {
+	width: 32px;
+	margin-top: 20px;
+}
+
+#external_address {
+	text-align: center;
+	width: 240px;
+	margin-top: 6px;
+	margin-bottom: 20px;
+	padding: 2px 2px;
+}
+
+#external_webapp_url {
+	color: #ffffff;
+	background-color: #69B7CF;
+	font-size: large;
+	padding-top: 7px;
+	padding-bottom: 10px;
+}
+
+#external_controls {
+	margin-top: 10px;
 }
 #info_message {
 	position: relative;
@@ -1877,7 +1949,7 @@ h2.message_dialog_label {
 	padding-right: 4px;
 	border: 1px solid;
 	border-radius: 10px;
-	margin-bottom: 8px;
+	margin-bottom: 16px;
 }
 
 #qr_wcode_left {
@@ -1906,10 +1978,10 @@ h2.message_dialog_label {
 	padding-bottom: 10px;
 }
 
-
 #qr_controls {
-    margin-top: 10px;
-}@media print {
+	margin-top: 10px;
+}
+@media print {
 
 	html {
 		background: none;
@@ -2057,7 +2129,7 @@ h2.message_dialog_label {
 	<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
 	 height="26" width="24"
 	 viewBox="0 0 24 24">
-	<path id='proceed_button_shape' d="M8 5v14l11-7z" fill="#69B7CF"/>
+	<path class='proceed_button_shape' d="M8 5v14l11-7z" fill="#69B7CF"/>
 </svg>
 </span>
 </div>
@@ -2069,7 +2141,7 @@ h2.message_dialog_label {
 			<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
 	 height="26" width="24"
 	 viewBox="0 0 24 24">
-	<path id='proceed_button_shape' d="M8 5v14l11-7z" fill="#69B7CF"/>
+	<path class='proceed_button_shape' d="M8 5v14l11-7z" fill="#69B7CF"/>
 </svg>
 </span>
 		</div>
@@ -2086,6 +2158,57 @@ h2.message_dialog_label {
 		<div id= 'redirecting_message_loader' class="loader center"></div>
 		<div class="center message_dialog_control">
 			<button id='redirect_cancel' class="border control" type='button'>Cancel</button>
+		</div>
+	</div>
+</div>
+<div id='external_message' class="message_dialog hide">
+	<h2 class='message_dialog_label'>
+		Redirecting...
+	</h2>
+	<div id='external_close' class="message_dialog_close control">
+		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+	 height='22' width='22'
+	 viewBox="0 0 24 24">
+	<path fill='#CECECE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+	<path fill='none' d="M0 0h24v24H0z" />
+</svg>
+</span>
+	</div>
+	<div class='message_dialog_body'>
+		<div id= 'external_message_loader' class="center"></div>
+		<div id='external_wcode'>
+			<div id='external_wcode_container' class='center'>
+				<div id='external_wcode_left'>
+					<span class='slash'>\</span>
+					<span class='infowindow_code' id='external_wcode_city'></span>
+				</div>
+				<div id='external_wcode_right'>
+					<span class='infowindow_code' id='external_wcode_code'></span>
+					<span class='slash'>/</span>
+				</div>
+			</div>
+		</div>
+		<div id='external_down_arrow' class='center'>
+			<span class="image front_arrow_white"><svg xmlns='http://www.w3.org/2000/svg' x='0px' y='0px'
+	 viewBox="-245 368.9 88.099996 83.099998">
+	<path fill='#D9D9D9' d="m -166.9,408.1 h -19.5 v -29.2 h -29.1 v 29.2 H -235 l 34,33.9 z" />
+</svg>
+</span>
+		</div>
+		<div id='external_address_container' class='center'>
+			<div id='external_address' class='initial' contentEditable>Address</div>
+		</div>
+		<div class="center message_dialog_control">
+			<button id='external_proceed' class="border button_active control" type='button'>Proceed <span class="image front_arrow_white"> <svg xmlns='http://www.w3.org/2000/svg'
+	 height='14px'
+	 viewBox="0 0 3.59901 3.70417">
+	<g transform="translate(-53.989 -99.4533)">
+		<g transform="scale(.264583)" style="fill:#000000" aria-label="◄">
+			<path d="m217.656 382.887-13.6026-7v14z" style="fill:#69b7cf;stroke-width:.417737"/>
+		</g>
+	</g>
+</svg>
+</span></button>
 		</div>
 	</div>
 </div>
@@ -2139,10 +2262,10 @@ h2.message_dialog_label {
 </span>
 	</div>
 	<div class='message_dialog_body'>
-		<p>
+		<div class='message_dialog_section'>
 			<div class='message_dialog_subtitle'>
 				<span class='message_dialog_subtitle_icon'>
-					<img id='share_copy_button' class='center' src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMCcgaGVpZ2h0PScxOCcgdmlld0JveD0iLTIwIC0yOCAxNjMuNjQgODEuODE4Ij4gPGcgdHJhbnNmb3JtPSJtYXRyaXgoMS4wMTMxIDAgMCAxLjAxMzEgMzYuMDM0IC0xNi40NzEpIj4gPHBhdGggZD0ibS0yMC44IDczLjktMzEuMi04OS44aDguNWwzMS4xIDg5Ljh6IiBmaWxsPSIjY2VjZWNlIi8+IDxnIHRyYW5zZm9ybT0ibWF0cml4KC45OTk4MiAwIDAgLjk5OTgyIC0uNTc3MjcgLjAxMDcwOSkiPiA8cGF0aCBkPSJtLTMuNiA2Ni4xLTI1LjItNzIuOGgxMy41bDI1LjEgNzIuOHoiIGZpbGw9IiNjZWNlY2UiLz4gPHBhdGggZD0ibTI2LjMgMTIuNi0xNS4yIDQ2LjktNS43LTE4LjYgMTUuMi00Ny42aDEyLjZsMTcuMSA1MSAxOC4xLTUxaDEzLjRsLTI1LjMgNzIuOGgtMTIuNnoiIGZpbGw9IiNjZWNlY2UiLz4gPC9nPiA8cGF0aCBkPSJtOTQuNC0xNS45aDguNWwtMzAuNyA4OS44aC04LjV6IiBmaWxsPSIjY2VjZWNlIi8+IDwvZz4gPC9zdmc+IA==" >
+					<img id='share_copy_button' alt='Copy Wolo Code text button' class='center' src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMCcgaGVpZ2h0PScxOCcgdmlld0JveD0iLTIwIC0yOCAxNjMuNjQgODEuODE4Ij4gPGcgdHJhbnNmb3JtPSJtYXRyaXgoMS4wMTMxIDAgMCAxLjAxMzEgMzYuMDM0IC0xNi40NzEpIj4gPHBhdGggZD0ibS0yMC44IDczLjktMzEuMi04OS44aDguNWwzMS4xIDg5Ljh6IiBmaWxsPSIjY2VjZWNlIi8+IDxnIHRyYW5zZm9ybT0ibWF0cml4KC45OTk4MiAwIDAgLjk5OTgyIC0uNTc3MjcgLjAxMDcwOSkiPiA8cGF0aCBkPSJtLTMuNiA2Ni4xLTI1LjItNzIuOGgxMy41bDI1LjEgNzIuOHoiIGZpbGw9IiNjZWNlY2UiLz4gPHBhdGggZD0ibTI2LjMgMTIuNi0xNS4yIDQ2LjktNS43LTE4LjYgMTUuMi00Ny42aDEyLjZsMTcuMSA1MSAxOC4xLTUxaDEzLjRsLTI1LjMgNzIuOGgtMTIuNnoiIGZpbGw9IiNjZWNlY2UiLz4gPC9nPiA8cGF0aCBkPSJtOTQuNC0xNS45aDguNWwtMzAuNyA4OS44aC04LjV6IiBmaWxsPSIjY2VjZWNlIi8+IDwvZz4gPC9zdmc+IA==" >
 				</span>
 				<span class='message_dialog_subtitle_label'>Text</span>
 			</div>
@@ -2155,12 +2278,12 @@ h2.message_dialog_label {
 					<button id='share_copy_button_text_nocity' class="border dialog_message_secondary" type='button'>No</button>
 				</div>
 			</div>
-		</p>
+		</div>
 		<hr>
-		<p>
+		<div class='message_dialog_section'>
 			<div class='message_dialog_subtitle'>
 				<span class='message_dialog_subtitle_icon'>
-					<img id='share_link_button' class='center' src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMCcgaGVpZ2h0PScxNicgdmlld0JveD0iMCA0IDIyLjUgMTIiPiA8cGF0aCBkPSJtLTAuMDAzMTc3My0xLjVoMjR2MjRoLTI0eiIgZmlsbD0ibm9uZSIvPiA8cGF0aCBkPSJtMy4xNDMzIDEwYzAtMS41MjM4IDEuMzkxMi0yLjc2MjUgMy4xMDI2LTIuNzYyNWg0LjAwMzN2LTEuNjkzMWgtNC4wMDMzYy0yLjc2MjMgMC01LjAwNDEgMS45OTYxLTUuMDA0MSA0LjQ1NTYgMCAyLjQ1OTUgMi4yNDE5IDQuNDU1NiA1LjAwNDEgNC40NTU2aDQuMDAzM3YtMS42OTMxaC00LjAwMzNjLTEuNzExNCAwLTMuMTAyNi0xLjIzODctMy4xMDI2LTIuNzYyNXptNC4xMDM0IDAuODkxMTJoOC4wMDY2di0xLjc4MjJoLTguMDA2NnptOS4wMDc1LTUuMzQ2N2gtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMS43MTE0IDAgMy4xMDI2IDEuMjM4NyAzLjEwMjYgMi43NjI1IDAgMS41MjM4LTEuMzkxMiAyLjc2MjUtMy4xMDI2IDIuNzYyNWgtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMi43NjIzIDAgNS4wMDQxLTEuOTk2MSA1LjAwNDEtNC40NTU2IDAtMi40NTk1LTIuMjQxOS00LjQ1NTYtNS4wMDQxLTQuNDU1NnoiIGZpbGw9IiNjZWNlY2UiIHN0cm9rZS13aWR0aD0iLjkiLz4gPC9zdmc+IA==" >
+					<img id='share_link_button' alt='Copy Wolo code link button' class='center' src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMCcgaGVpZ2h0PScxNicgdmlld0JveD0iMCA0IDIyLjUgMTIiPiA8cGF0aCBkPSJtLTAuMDAzMTc3My0xLjVoMjR2MjRoLTI0eiIgZmlsbD0ibm9uZSIvPiA8cGF0aCBkPSJtMy4xNDMzIDEwYzAtMS41MjM4IDEuMzkxMi0yLjc2MjUgMy4xMDI2LTIuNzYyNWg0LjAwMzN2LTEuNjkzMWgtNC4wMDMzYy0yLjc2MjMgMC01LjAwNDEgMS45OTYxLTUuMDA0MSA0LjQ1NTYgMCAyLjQ1OTUgMi4yNDE5IDQuNDU1NiA1LjAwNDEgNC40NTU2aDQuMDAzM3YtMS42OTMxaC00LjAwMzNjLTEuNzExNCAwLTMuMTAyNi0xLjIzODctMy4xMDI2LTIuNzYyNXptNC4xMDM0IDAuODkxMTJoOC4wMDY2di0xLjc4MjJoLTguMDA2NnptOS4wMDc1LTUuMzQ2N2gtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMS43MTE0IDAgMy4xMDI2IDEuMjM4NyAzLjEwMjYgMi43NjI1IDAgMS41MjM4LTEuMzkxMiAyLjc2MjUtMy4xMDI2IDIuNzYyNWgtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMi43NjIzIDAgNS4wMDQxLTEuOTk2MSA1LjAwNDEtNC40NTU2IDAtMi40NTk1LTIuMjQxOS00LjQ1NTYtNS4wMDQxLTQuNDU1NnoiIGZpbGw9IiNjZWNlY2UiIHN0cm9rZS13aWR0aD0iLjkiLz4gPC9zdmc+IA==" >
 				</span>
 				<span class='message_dialog_subtitle_label'>Link</span>
 			</div>
@@ -2173,12 +2296,12 @@ h2.message_dialog_label {
 					<button id='share_copy_button_link_nojump' class="border dialog_message_secondary" type='button'>No</button>
 				</div>
 			</div>
-		</p>
+		</div>
 		<hr>
-		<p>
+		<div class='message_dialog_section'>
 			<div class='message_dialog_subtitle'>
 				<span class='message_dialog_subtitle_icon'>
-					<img id='share_qr_button' class='center' src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyOCcgaGVpZ2h0PScyOCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZD0iTTAgMGgyNHYyNEgweiIgZmlsbD0nbm9uZScvPiA8cGF0aCBkPSJNMTcuNjMgNS44NEMxNy4yNyA1LjMzIDE2LjY3IDUgMTYgNUw1IDUuMDFDMy45IDUuMDEgMyA1LjkgMyA3djEwYzAgMS4xLjkgMS45OSAyIDEuOTlMMTYgMTljLjY3IDAgMS4yNy0uMzMgMS42My0uODRMMjIgMTJsLTQuMzctNi4xNnoiIHN0eWxlPSJmaWxsOm5vbmU7c3Ryb2tlOiNjZWNlY2U7c3Ryb2tlLXdpZHRoOjEiLz4gPC9zdmc+IA==" >
+					<img id='share_qr_button' alt='Generate Wolo Code label' class='center' src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyOCcgaGVpZ2h0PScyOCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZD0iTTAgMGgyNHYyNEgweiIgZmlsbD0nbm9uZScvPiA8cGF0aCBkPSJNMTcuNjMgNS44NEMxNy4yNyA1LjMzIDE2LjY3IDUgMTYgNUw1IDUuMDFDMy45IDUuMDEgMyA1LjkgMyA3djEwYzAgMS4xLjkgMS45OSAyIDEuOTlMMTYgMTljLjY3IDAgMS4yNy0uMzMgMS42My0uODRMMjIgMTJsLTQuMzctNi4xNnoiIHN0eWxlPSJmaWxsOm5vbmU7c3Ryb2tlOiNjZWNlY2U7c3Ryb2tlLXdpZHRoOjEiLz4gPC9zdmc+IA==" >
 				</span>
 				<span class='message_dialog_subtitle_label'>Label</span>
 			</div>
@@ -2187,7 +2310,7 @@ h2.message_dialog_label {
 					<button id='share_copy_button_qr' class="border dialog_message_primary button_highlight" type='button'>Go</button>
 				</div>
 			</div>
-		</p>
+		</div>
 	</div>
 </div>
 <div id='choose_city_by_name_message' class="choose_city_message message_dialog hide">
@@ -2648,7 +2771,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span id='updated-timestamp'>
-			2021 May 19 21:49:44 UTC			</span>
+			2021 May 26 22:34:10 UTC			</span>
 			 ~ 
 			<span id='updated-timediff'></span> ago
 		</div>
@@ -2906,7 +3029,7 @@ h2.message_dialog_label {
 </div>
 <div id='account' class="control">
 	<span class='image'>
-		<img id='account_user_image' class='hide'>
+		<img id='account_user_image' alt='Account user image' class='hide' src='data:,'>
 		<span id='account_default_image' class="inactive hide"><svg xmlns='http://www.w3.org/2000/svg'
 	 width='42' height='42'
 	 viewBox="0 0 24 24">
