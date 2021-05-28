@@ -1502,10 +1502,12 @@ function external_show(latLng, city_string, wcode_string) {
 	document.getElementById('external_wcode_city').innerText = city_string;
 	document.getElementById('external_wcode_code').innerText = wcode_string;
 	document.getElementById('external_address').innerText = '';
+	document.body.classList.add('external');
 }
 
 function external_hide() {
 	hideOverlay(document.getElementById('external_message'));
+	document.body.classList.remove('external');
 }
 var uiConfig;
 var ui;

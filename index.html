@@ -1446,10 +1446,6 @@ h2.message_dialog_label {
 	margin-top: 8px;
 	width: 220px;
 }
-.decode #logo {
-	z-index: 101;
-}
-
 #decode_interface_overlay {
 	top: 0;
 	left: 0;
@@ -1583,6 +1579,13 @@ h2.message_dialog_label {
 
 .satellite #map_type_button > span > svg > g:first-of-type {
 	display: none
+}
+@media (max-width: 662px) {
+
+	.external #logo {
+		z-index: 101;
+	}
+
 }
 #external_wcode {
 	padding-top: 15px;
@@ -2780,7 +2783,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span id='updated-timestamp'>
-			2021 May 27 22:06:23 UTC			</span>
+			2021 May 28 20:57:49 UTC			</span>
 			 ~ 
 			<span id='updated-timediff'></span> ago
 		</div>
