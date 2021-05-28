@@ -297,7 +297,7 @@ var selfBoundsChangedCount = 1;
 
 // External
 var external_latLng;
-var external_complete_wolo_code_string;
+var external_wolo_code_string;
 
 // QR
 var mode_preview = false;
@@ -1446,6 +1446,10 @@ h2.message_dialog_label {
 	margin-top: 8px;
 	width: 220px;
 }
+.decode #logo {
+	z-index: 101;
+}
+
 #decode_interface_overlay {
 	top: 0;
 	left: 0;
@@ -2085,6 +2089,11 @@ h2.message_dialog_label {
 	border: none;
 	border-radius: 25px;
 }
+
+.satellite #logo_wolo, .satellite #logo_codes {
+	border-color: #a09f9fc7;
+	border-style: solid;
+}
 @media (max-width: 662px) {
 
 	#decode_button {
@@ -2163,7 +2172,7 @@ h2.message_dialog_label {
 </div>
 <div id='external_message' class="message_dialog hide">
 	<h2 class='message_dialog_label'>
-		Redirecting...
+		Redirecting
 	</h2>
 	<div id='external_close' class="message_dialog_close control">
 		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
@@ -2771,7 +2780,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span id='updated-timestamp'>
-			2021 May 26 22:34:10 UTC			</span>
+			2021 May 27 22:06:23 UTC			</span>
 			 ~ 
 			<span id='updated-timediff'></span> ago
 		</div>
