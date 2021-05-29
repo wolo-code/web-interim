@@ -33,7 +33,7 @@ ClickEventHandler.prototype.getPlaceInformation = function(placeId) {
 
 function firebaseInit() {
 	firebase.initializeApp(FIREBASE_CONFIG);
-	document.getElementById('wait_loader').classList.remove('hide');
+	pushLoader();
 	if(typeof authInit != 'undefined')
 		authInit();
 	if(typeof firebase.analytics != 'undefined')

@@ -149,7 +149,7 @@ var click = function(e) {
 		return false;
 	}
 
-	this.fnShort();
+	this.fnShort(e);
 };
 
 var start = function(e) {
@@ -165,7 +165,7 @@ var start = function(e) {
 	var parent = this;
 	if (this.presstimer === null) {
 		listPressTimer[this.pressTimerIndex] = this.presstimer = setTimeout(function() {
-			parent.fnLong();
+			parent.fnLong(e);
 			parent.longpress = true;
 		}, 500);
 	}
@@ -226,6 +226,9 @@ window.onerror = function myErrorHandler(errorMsg, url, lineNumber) {
 function trackOutboundLink(title, url) {
 	analytics.logEvent('outbound_link', {title: title, url: url});
 }
+// Loader
+var loaderCount = 0;
+
 // .\Script
 var pendingLocate = false;
 
@@ -1531,7 +1534,7 @@ h2.message_dialog_label {
 }
 
 .decode #wait_loader {
-	display: none;
+	/* display: none; */
 }
 
 .decode #decode_button, .decode #map_input_suggestion_result {
@@ -2134,7 +2137,8 @@ h2.message_dialog_label {
 	</style>
 </head>
 <body class='decode'>
-	<div id='map'></div>
+	<div id='wait_loader'></div>
+<div id='map'></div>
 <div id='map_input_suggestion_result' class='suggestion_result' data-input='pac-input' data-resize_input='false'></div>
 <input id='pac-input' data-suggest='map_input_suggestion_result' data-handler='decode_button' class='controls' type='text' placeholder='Search' tabindex='3' >
 <div id='decode_button' class='control' tabindex='4'>
@@ -2783,7 +2787,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span id='updated-timestamp'>
-			2021 May 28 20:57:49 UTC			</span>
+			2021 May 29 21:35:08 UTC			</span>
 			 ~ 
 			<span id='updated-timediff'></span> ago
 		</div>
@@ -2992,7 +2996,6 @@ h2.message_dialog_label {
 </div>
 	</div>
 </div>
-<div id='wait_loader'></div>
 <div id='logo' tabindex='1'>
 	<a id=logo_wolo class='blur_background' href='//wolo.codes'>
 		<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
