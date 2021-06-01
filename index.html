@@ -1669,6 +1669,8 @@ h2.message_dialog_label {
 #info_message h1 {
 	text-align: center;
 	color: #69B7CF;
+	font-size: 1.6em;
+	margin-bottom: 1.1em;
 }
 
 #logo_info {
@@ -1696,6 +1698,12 @@ h2.message_dialog_label {
 	padding-top: 4px;
 	height: 14px;
 	width: 152px;
+}
+
+#info_intro > p:first-of-type {
+	text-align: justify;
+	margin-top: 2em;
+	margin-bottom: 2em;
 }
 
 #info_full > p:first-of-type {
@@ -1789,7 +1797,12 @@ h2.message_dialog_label {
 }
 
 #info_full_close_button {
-	margin-top: 14px;
+	margin-top: 16px;
+}
+
+#info_intro_close_button {
+	margin-top: 2px;
+	margin-bottom: 18px;
 }
 #locate_right_message_body {
 	padding: 2px 16px 8px;
@@ -2466,47 +2479,17 @@ h2.message_dialog_label {
 </span>
 		</a>
 	</div>
-	<h2>
+	<h1>
 	simple precise addresses
-</h2>
-<div id='wcode_format' class="center blue"><span>\</span> <span>City</span> <span>Word 1</span> <span>Word 2</span> <span>Word 3</span> <span>/</span></div>
-<div id='wcode_example' class="center blue"><span>e.g.</span> <span>\</span> <span>Bengaluru</span> <span>cat</span> <span>apple</span> <span>tomato</span> <span>/</span></div>
-<p>
-	An address in this system consists of two parts:
-</p>
-<ol>
-	<li>
-		<strong>City</strong> specifies the distinct city.<br>
-		Within the same city - it can be omitted.
-	</li>
-	<li>
-		The last <strong>three words</strong> specify exactly 'where' in that city.<br>
-		They are from a limited <a class='link' href='https://wcodes.org/wordlist'>list</a>  of 1,024 easy common words.
-	</li>
-</ol>
-<h2>
-	Steps
-</h2>
-<ul>
-	<li>
-		Enter a Wolo code address and hit the proceed button to go to that location. Or
-	</li>
-	<li>
-		Point a location on the map to generate the corresponding Wolo code address.
-	</li>
-	<li>
-		You may also search for a particular place. Or,<br>
-		let the system pick your current location automatically.
-	</li>
-</ul>
+</h1>
 	<div id='info_intro'>
 	<p>
-		This web app requires anonymous cookies and various third-party services to function properly.<br>
-		To continue using Wolo Codes you must consent to its <a class='link' href='/policy'>cookie & privacy policies</a>
+		This web app requires anonymous cookies and various third-party services to function properly.
+		By continuing to use Wolo Codes you are agreeing to its <a class='link' href='/policy'>cookie & privacy policies</a>
 	</p>
 	<div class='message_dialog_control_container'>
 		<div class='message_dialog_control'>
-			<button id='info_intro_close_button' class='button_highlight' type='button'>Start <span class="image front_arrow_white"><svg xmlns='http://www.w3.org/2000/svg'
+			<button id='info_intro_close_button' class='button_highlight' type='button'><span class="image front_arrow_white"><svg xmlns='http://www.w3.org/2000/svg'
 	 height='14px'
 	 viewBox="0 0 3.59901 3.70417">
 	<g transform="translate(-53.989 -99.4533)">
@@ -2520,6 +2503,38 @@ h2.message_dialog_label {
 	</div>
 </div>
 <div id='info_full' class='hide'>
+
+	<div id='wcode_format' class="center blue"><span>\</span> <span>City</span> <span>Word 1</span> <span>Word 2</span> <span>Word 3</span> <span>/</span></div>
+	<div id='wcode_example' class="center blue"><span>e.g.</span> <span>\</span> <span>Bengaluru</span> <span>cat</span> <span>apple</span> <span>tomato</span> <span>/</span></div>
+	<p>
+		An address in this system consists of two parts:
+	</p>
+	<ol>
+		<li>
+			<strong>City</strong> specifies the distinct city.<br>
+			Within the same city - it can be omitted.
+		</li>
+		<li>
+			The last <strong>three words</strong> specify exactly 'where' in that city.<br>
+			They are from a limited <a class='link' href='https://wcodes.org/wordlist'>list</a>  of 1,024 easy common words.
+		</li>
+	</ol>
+
+	<h2>
+		Steps
+	</h2>
+	<ul>
+		<li>
+			Enter a Wolo code address and hit the proceed button to go to that location. Or,
+		</li>
+		<li>
+			Point a location on the map to generate the corresponding Wolo code address.
+		</li>
+		<li>
+			You may also search for a particular place. Or,<br>
+			let the system pick your current location automatically.
+		</li>
+	</ul>
 	
 	<div class='message_dialog_control_container'>
 		<div class='message_dialog_control'>
@@ -2532,7 +2547,7 @@ h2.message_dialog_label {
 		</g>
 	</g>
 </svg>
-</span></span> return</button>
+</span></span></button>
 		</div>
 	</div>
 	
@@ -2784,10 +2799,6 @@ h2.message_dialog_label {
 </svg>
 </span></a>
 	</div>
-		
-	<ul id='info_list'>
-		<li>Tested to work with Google Chrome</li>
-	</ul>
 	
 	<div id='credits'>Wolo codes makes use of these opensource projects: <a class='link' href="https://wolo.codes/credits">wolo.codes/credits</a></div>
 	<div id='software_info'>
@@ -2796,7 +2807,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span id='updated-timestamp'>
-			2021 May 30 21:06:25 UTC			</span>
+			2021 Jun 01 21:39:34 UTC			</span>
 			 ~ 
 			<span id='updated-timediff'></span> ago
 		</div>
