@@ -474,6 +474,7 @@ function versionCheck() {
 
 function activateOverlayInfo_full() {
 	info_intro.classList.add('hide');
+	info_message_close.classList.remove('hide');
 	info_full.classList.remove('hide');
 }
 
@@ -1746,24 +1747,6 @@ function showInfoWindow() {
 	initInfoWindow();
 	infoWindow.open(map, marker);
 }
-//var loaderCount;
-
-function pushLoader() {
-	document.getElementById('wait_loader').classList.remove('hide');
-	loaderCount++;
-}
-
-function popLoader() {
-	if(loaderCount)
-		loaderCount--;
-	if(!loaderCount)
-		document.getElementById('wait_loader').classList.add('hide');
-}
-
-function clearLoader() {
-	loaderCount = 0;
-	document.getElementById('wait_loader').classList.add('hide');
-}
 // var location_button_begin_time;
 // var location_button_PRESS_THRESHOLD = 500;
 // var locating = false;
@@ -2903,7 +2886,7 @@ function setupControls() {
 	document.getElementById('account_dialog_logout').addEventListener('click', onLogout);
 	document.getElementById('save_address').addEventListener('focus', onAccountDialogAddressActive);
 	document.getElementById('account_dialog_save').addEventListener('click', onAccountDialogSave);
-	document.getElementById('overlay_message_close').addEventListener('click', closeInfo);
+	document.getElementById('info_message_close').addEventListener('click', closeInfo);
 	document.getElementById('info_intro_close_button').addEventListener('click', closeInfo);
 	document.getElementById('info_full_close_button').addEventListener('click', closeInfo);
 	document.getElementById('info').addEventListener('click', showInfo);

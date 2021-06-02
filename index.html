@@ -126,6 +126,27 @@ var _umb = {
 		safari: 29
 	}
 };
+
+// Loader
+var loaderCount = 0;
+//var loaderCount;
+
+function pushLoader() {
+	document.getElementById('wait_loader').classList.remove('hide');
+	loaderCount++;
+}
+
+function popLoader() {
+	if(loaderCount)
+		loaderCount--;
+	if(!loaderCount)
+		document.getElementById('wait_loader').classList.add('hide');
+}
+
+function clearLoader() {
+	loaderCount = 0;
+	document.getElementById('wait_loader').classList.add('hide');
+}
 var listPressTimer = [];
 
 var cancel = function(e) {
@@ -226,9 +247,6 @@ window.onerror = function myErrorHandler(errorMsg, url, lineNumber) {
 function trackOutboundLink(title, url) {
 	analytics.logEvent('outbound_link', {title: title, url: url});
 }
-// Loader
-var loaderCount = 0;
-
 // .\Script
 var pendingLocate = false;
 
@@ -1014,6 +1032,16 @@ h2.message_dialog_label {
 		margin-bottom: 20px !important;
 	}
 	
+	#overlay > div > div {
+		max-width: none;
+		padding: 16px 10px;
+	}
+	
+	#overlay > div > div > div > ol {
+		margin-block-start: 0.5em;
+		margin-block-end: 0.5em;
+	}
+
 }
 #social-links {
 	padding-bottom: 4px
@@ -1698,6 +1726,10 @@ h2.message_dialog_label {
 	padding-top: 4px;
 	height: 14px;
 	width: 152px;
+}
+
+#info_intro {
+	margin: 30% 6%;
 }
 
 #info_intro > p:first-of-type {
@@ -2424,7 +2456,7 @@ h2.message_dialog_label {
 	</div>
 </div>
 <div id='info_message' class='hide'>
-	<div id='overlay_message_close' class="message_dialog_close control">
+	<div id='info_message_close' class="message_dialog_close control hide">
 		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
 	 height='22' width='22'
 	 viewBox="0 0 24 24">
@@ -2480,7 +2512,7 @@ h2.message_dialog_label {
 		</a>
 	</div>
 	<h1>
-	simple precise addresses
+	<a class='link' href='/about'>simple precise addresses</a>
 </h1>
 	<div id='info_intro'>
 	<p>
@@ -2807,7 +2839,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span id='updated-timestamp'>
-			2021 Jun 01 21:39:34 UTC			</span>
+			2021 Jun 02 16:24:15 UTC			</span>
 			 ~ 
 			<span id='updated-timediff'></span> ago
 		</div>
