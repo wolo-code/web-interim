@@ -312,6 +312,7 @@ var watch_location_timer;
 var watch_location_id;
 var watch_location_notice_timer;
 var pendingFocusPos;
+var locateRight_callback;
 
 // Focus
 var selfBoundsChangedCount = 1;
@@ -341,7 +342,7 @@ var current_address;
 // var pendingLocate;
 function syncLocate(override_dnd) {
 	if (typeof google === 'object' && typeof google.maps === 'object' && typeof map == 'object') {
-		initLocate(override_dnd);
+		initLocate(override_dnd, locateExec);
 		pendingLocate = false;
 	}
 	else
@@ -1299,12 +1300,13 @@ h2.message_dialog_label {
 }
 
 #account > span.image {
-    box-shadow: rgb(0 0 0 / 46%) 0px 0px 3px;
-    height: 42px;
-    display: inline-block;
-    border-radius: 20px;
-    background: #a7a7a7;
-}#accuracy_container {
+	box-shadow: rgb(0 0 0 / 46%) 0px 0px 3px;
+	height: 42px;
+	display: inline-block;
+	border-radius: 20px;
+	background: #a7a7a7;
+}
+#accuracy_container {
 	bottom: 88px;
 	z-index: 1;
 }
@@ -1621,7 +1623,7 @@ h2.message_dialog_label {
 
 }
 #external_wcode {
-	padding-top: 15px;
+	padding-top: 22px;
 }
 
 #external_sticker_title {
@@ -1679,8 +1681,8 @@ h2.message_dialog_label {
 	padding-bottom: 10px;
 }
 
-#external_controls {
-	margin-top: 10px;
+#external_controls_container {
+	margin-top: 22px;
 }
 #info_message {
 	position: relative;
@@ -1770,7 +1772,7 @@ h2.message_dialog_label {
 }
 
 #credits {
-    padding: 20px 0;
+	padding: 20px 0;
 }
 
 #software_info {
@@ -2233,7 +2235,7 @@ h2.message_dialog_label {
 </div>
 <div id='external_message' class="message_dialog hide">
 	<h2 class='message_dialog_label'>
-		Redirecting
+		Proceed
 	</h2>
 	<div id='external_close' class="message_dialog_close control">
 		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
@@ -2268,8 +2270,8 @@ h2.message_dialog_label {
 		<div id='external_address_container' class='center'>
 			<div id='external_address' class='initial' contentEditable>Address</div>
 		</div>
-		<div class="center message_dialog_control">
-			<button id='external_proceed' class="border button_active control" type='button'>Proceed <span class="image front_arrow_white"> <svg xmlns='http://www.w3.org/2000/svg'
+		<div id='external_controls_container' class="center message_dialog_control">
+			<button id='external_proceed' class="border button_active control" type='button'><span class="image front_arrow_white"> <svg xmlns='http://www.w3.org/2000/svg'
 	 height='14px'
 	 viewBox="0 0 3.59901 3.70417">
 	<g transform="translate(-53.989 -99.4533)">
@@ -2548,7 +2550,7 @@ h2.message_dialog_label {
 		</li>
 		<li>
 			The last <strong>three words</strong> specify exactly 'where' in that city.<br>
-			They are from a limited <a class='link' href='https://wcodes.org/wordlist'>list</a>  of 1,024 easy common words.
+			They are from a limited <a class='link' href='https://wcodes.org/wordlist'>list</a> of 1,024 easy common words.
 		</li>
 	</ol>
 
@@ -2839,7 +2841,7 @@ h2.message_dialog_label {
 		</div>
 		<div id='updated'>Updated:
 			<span id='updated-timestamp'>
-			2021 Jun 03 13:20:57 UTC			</span>
+			2021 Jun 06 15:24:05 UTC			</span>
 			 ~ 
 			<span id='updated-timediff'></span> ago
 		</div>

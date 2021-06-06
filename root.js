@@ -66,7 +66,7 @@ function showNotification(message, duration) {
 	notification_bottom.innerHTML = message;
 	notification_bottom.classList.remove('hide');
 	clearNotificationTimer();
-	notification_timer = setTimeout(function()  {
+	notification_timer = setTimeout(function() {
 		notification_bottom.innerText = '';
 		notification_bottom.classList.add('hide');
 	}, duration);
@@ -1300,13 +1300,15 @@ function decode(words) {
 							showNotification(PURE_WCODE_CITY_PICKED);
 						}
 						else {
-							getCoarseLocation(function(position) {
-								getCityFromPositionViaGMap(position, function(city) {
-									getCityCenterFromId(city, function() {
-										decode_continue(city, words);
-									} );
-								}, handleLocationError) }, handleLocationError);
-							return;
+							initLocate(false, function() {
+								getCoarseLocation(function(position) {
+									getCityFromPositionViaGMap(position, function(city) {
+										getCityCenterFromId(city, function() {
+											decode_continue(city, words);
+										} );
+									}, handleLocationError) }, handleLocationError);
+								return;
+							});
 						}
 					}
 					else {
@@ -1755,12 +1757,15 @@ function showInfoWindow() {
 // var watch_location_id;
 // var watch_location_notice_timer;
 // var pendingFocusPos;
+// var locateRight_callback;
 
-function initLocate(override_dnd) {
-	if(!locationAccessInitCheck())
+function initLocate(override_dnd, callback) {
+	if(!locationAccessInitCheck()) {
+		locateRight_callback = callback;
 		showLocateRightMessage(true);
+	}
 	else
-		locateExec(function() {
+		callback(function() {
 			if(!locationAccessCheck()) {
 				var hide_dnd = typeof override_dnd == 'undefined' || override_dnd || !locationAccessDNDstatus();
 				if(override_dnd || !locationAccessDNDcheck()) {
@@ -2028,6 +2033,8 @@ function getCoarseLocation(callback_success, callback_failure) {
 		alert("Sorry, browser does not support geolocation!");
 	}
 }
+// var locateRight_callback;
+
 function showLocateRightMessage(hide_dnd) {
 	if(hide_dnd == true)
 		locate_right_message_dnd.classList.add('hide');
@@ -2042,7 +2049,7 @@ function hideLocateRightMessage() {
 
 function locateRight_grant() {
 	setLocationAccess(true);
-	initLocate(false);
+	initLocate(false, locateRight_callback);
 	hideLocateRightMessage();
 	locateRight_DND_check();
 }

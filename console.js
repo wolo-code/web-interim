@@ -66,7 +66,7 @@ function showNotification(message, duration) {
 	notification_bottom.innerHTML = message;
 	notification_bottom.classList.remove('hide');
 	clearNotificationTimer();
-	notification_timer = setTimeout(function()  {
+	notification_timer = setTimeout(function() {
 		notification_bottom.innerText = '';
 		notification_bottom.classList.add('hide');
 	}, duration);
