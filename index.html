@@ -318,6 +318,7 @@ var pendingCity = false;
 var pendingCitySubmit = false;
 
 var INCORRECT_WCODE = 'INCORRECT INPUT! Should be at least 3 Wolo code words, optionally preceded by a city. E.g: "Bengaluru cat apple tomato"';
+var INCORRECT_CITY = "City not found - check the Wolo code";
 var MESSAGE_LOADING = 'Loading ..';
 var LOCATION_PERMISSION_DENIED = "Location permission was denied. Click to point or retry with the locate button";
 
@@ -1741,7 +1742,10 @@ h2.message_dialog_label {
 	max-width: 400px;
 }
 
-div#wolo_about {text-align: center;margin-top: 15px;}
+#wolo_about {
+	text-align: center;
+	margin-top: 15px;
+}
 
 #info_message h1 {
 	text-align: center;
@@ -2086,6 +2090,21 @@ div#wolo_about {text-align: center;margin-top: 15px;}
 
 #qr_controls {
 	margin-top: 10px;
+}
+
+.qr_minimal #qr_body {
+	height: auto;
+	width: auto;
+	border-top: none;
+}
+
+.qr_minimal #qr_wcode_container {
+	border: none;
+	color: black;
+}
+
+.qr_minimal #qr_wcode {
+	padding-top: unset;
 }
 @media print {
 
@@ -2491,11 +2510,8 @@ div#wolo_about {text-align: center;margin-top: 15px;}
 	<div class='message_dialog_body'>
 		<div>
 			<p>
-				Your current city has been determined to be: <span id='ip_city'></span>
-			</p>
-			<p>
-				You may change the city manually next, or:<br>
-				for accurate city detection - please grant location access.
+				For automatic location detection - please grant location access. Or,<br>
+				you may pick a location manually next.
 			</p>
 		</div>
 		<div>
@@ -2904,7 +2920,7 @@ div#wolo_about {text-align: center;margin-top: 15px;}
 	</div>
 	<div id='updated'>Updated:
 		<span id='updated-timestamp'>
-		2022 May 11 21:00:15 UTC		</span>
+		2023 Apr 02 20:20:04 UTC		</span>
 		 ~ 
 		<span id='updated-timediff'></span> ago
 	</div>
@@ -3218,7 +3234,7 @@ div#wolo_about {text-align: center;margin-top: 15px;}
 <div id='notification_bottom' class="notification_bar hide"></div>
 <div id='footer-content-container' class='center'>
 	<div id='footer-content' class='blur_background'>
-		<a class='link-gray' href='/license'>&copy; 2022 </a>
+		<a class='link-gray' href='/license'>&copy; 2023 </a>
 		<span id='footer_author' class='link'>Wolo Codes</span>
 	</div>
 </div>
@@ -3263,7 +3279,7 @@ div#wolo_about {text-align: center;margin-top: 15px;}
 <script src='https://www.gstatic.com/firebasejs/7.14.2/firebase-auth.js'></script>
 <script src='https://www.gstatic.com/firebasejs/ui/4.5.0/firebase-ui-auth.js'></script>
 <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.5.0/firebase-ui-auth.css" />
-	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyC-ZxXuNOEEs5mNQD3Z8u4CSJtldtLztDE&libraries=places&callback=syncInitMap' async defer></script>
+	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyAeEV2fXhER2f4EP8OBn6ydDVjfkg9h8rE&libraries=places&callback=syncInitMap' async defer></script>
 	<script src='/geofire.min.js' async defer></script>
 	<script src='/html2canvas.min.js' async defer></script>
 </body>

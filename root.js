@@ -1369,7 +1369,7 @@ function decode_continue(city, wcode) {
 	if(city != null)
 		decode_(city, wcode);
 	else
-		showNotification(INCORRECT_WCODE);
+		showNotification(INCORRECT_CITY);
 }
 
 function decodeWithIpCity(words) {
@@ -2626,7 +2626,32 @@ function downloadQR() {
 		document.getElementById('qr_close').classList.remove('hide');
 		document.getElementById('qr_controls').classList.remove('hide');
 		var qrImage = canvas.toDataURL("image/png");
-		downloadURI('data:' + qrImage, "Wolo codes - " + getCodeFull_text() + ".png");
+		downloadURI(qrImage, "Wolo codes - " + getCodeFull_text() + ".png");
+	} );
+}
+
+function downloadQR_minimal() {
+	if(!mode_preview) {
+		toggleQRpreview();
+		mode_preview_activated = true;
+	}
+	document.getElementById('qr_close').classList.add('hide');
+	document.getElementById('qr_controls').classList.add('hide');
+	document.getElementById('overlay').classList.add('raster');
+	document.getElementById('overlay').classList.add('qr_minimal');
+	document.getElementById('qr_label').classList.add('hide');
+	document.getElementById('qr_webapp_url').classList.add('hide');
+	html2canvas( document.querySelector('#qr_body'), {scale:1} ).then( canvas => {
+		if(mode_preview_activated)
+			toggleQRpreview();
+		document.getElementById('overlay').classList.remove('raster');
+		document.getElementById('overlay').classList.remove('qr_minimal');
+		document.getElementById('qr_label').classList.remove('hide');
+		document.getElementById('qr_webapp_url').classList.remove('hide');
+		document.getElementById('qr_close').classList.remove('hide');
+		document.getElementById('qr_controls').classList.remove('hide');
+		var qrImage = canvas.toDataURL("image/png");
+		downloadURI(qrImage, "Wolo codes - " + getCodeFull_text() + ".png");
 	} );
 }
 
@@ -3051,6 +3076,7 @@ function setupControls() {
 	document.getElementById('decode_input').addEventListener('input', resizeInput);
 	document.getElementById('external_close').addEventListener('click', external_close);
 	addLongpressListener(document.getElementById('external_proceed'), external_proceed_external, external_proceed_internal);
+	addLongpressListener(document.getElementById('qr_download'), downloadQR, downloadQR_minimal);
 }
 
 function resizeInput() {
