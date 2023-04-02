@@ -32,8 +32,9 @@ ClickEventHandler.prototype.getPlaceInformation = function(placeId) {
 // var geoFire;
 
 function firebaseInit() {
-	firebase.initializeApp(FIREBASE_CONFIG);
 	pushLoader();
+	firebase.initializeApp(FIREBASE_CONFIG);
+	popLoader();
 	if(typeof authInit != 'undefined')
 		authInit();
 	if(typeof firebase.analytics != 'undefined')

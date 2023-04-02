@@ -32,8 +32,9 @@ ClickEventHandler.prototype.getPlaceInformation = function(placeId) {
 // var geoFire;
 
 function firebaseInit() {
-	firebase.initializeApp(FIREBASE_CONFIG);
 	pushLoader();
+	firebase.initializeApp(FIREBASE_CONFIG);
+	popLoader();
 	if(typeof authInit != 'undefined')
 		authInit();
 	if(typeof firebase.analytics != 'undefined')
@@ -474,8 +475,16 @@ function versionCheck() {
 
 function activateOverlayInfo_full() {
 	info_intro.classList.add('hide');
+	info_links.classList.add('hide');
 	info_message_close.classList.remove('hide');
 	info_full.classList.remove('hide');
+	info_agency.classList.add('hide');
+}
+
+function activateOverlayInfo_links() {
+	info_full.classList.add('hide');
+	info_links.classList.remove('hide');
+	info_agency.classList.remove('hide');
 }
 
 function urlDecode() {
@@ -1040,106 +1049,117 @@ function stringifyAddCityData(gp_id) {
 	return JSON.stringify(object);
 }
 // const FUNCTIONS_BASE_URL;
-// var curEncRequestId;
-// var curDecRequestId;
 // var curAddCityRequestId;
 
-function encode_(city, position, session_id) {
-	if(typeof session_id != 'undefined' && session_id == encode_session_id)
-		code_city = city;
-	else
-		code_city = null;
-	var http = new XMLHttpRequest();
-	http.open('POST', FUNCTIONS_BASE_URL+'/'+'encode', true);
+// 2^(10+5)
+const N = 32768;
+const A = 6378137;
+const B = 6356752.314140;
+const E_SQ = (A*A-B*B)/(A*A);
+const DEG_RAD = Math.PI/180;
 
-	http.setRequestHeader('Content-type', 'application/json');
-	http.setRequestHeader('version', '1');
-	http.requestId = ++curEncRequestId;
+function lat_span_half(lat) {
+	const lat_r = DEG_RAD*lat;
+	const x = Math.sqrt(1-E_SQ*Math.sin(lat_r)*Math.sin(lat_r));
+	return Math.abs((x*x*x)/(DEG_RAD*A*(1-E_SQ)));
+}
 
-	pushLoader();
-	http.onreadystatechange = function() {
-		if(http.readyState == 4) {
-			if(http.requestId == curEncRequestId)
-				if(typeof session_id != 'undefined' && session_id == encode_session_id) {
-					popLoader();
-					if(http.status == 200) {
-						setCodeWords(http.responseText, city, position);
-					}
-					else if(http.status == 416) {
-						notInRange(position);
-					}
-				}
-		}
+function lng_span_half(lat) {
+	const lat_r = DEG_RAD*lat;
+	return Math.abs(Math.sqrt(1-E_SQ*Math.sin(lat_r)*Math.sin(lat_r))/(DEG_RAD*A*Math.cos(lat_r)));
+}
+
+function encodeData(value, d) {
+	const i = Math.round(value/d);
+	if(i < 0 || i > N) {
+		console.log("Error: Out of data limit");
+		console.log("Value: " + value);
+		console.log("d: " + d);
 	}
+	else
+		return i;
+}
 
-	http.send( stringifyEncodeData(city.center, position) );
-	return '';
+function decodeData(data, d) {
+	return data*d;
+}
+
+function getCityBegin(cityCenter) {
+	const lat = cityCenter.lat - lat_span_half(cityCenter.lat)*N;
+	const lng = cityCenter.lng - lng_span_half(cityCenter.lat)*N;
+	return {'lat': lat, 'lng': lng};
+}
+
+function encode_(city, position) {
+	code_city = city;
+	const code = encode__(getCityBegin(city.center), position);
+	for(var i of code)
+		if(i < 0 || i > 1023) {
+			console.log("Error: Out of WCode index limit");
+			noCity(position);
+			notification_top.classList.remove('hide');
+			wait_loader.classList.add('hide');
+		}
+	setCodeWords(code, city, position);
 }
 
 function setCodeWords(code, city, position) {
 	var message = [];
-	var object = JSON.parse(code).code;
 
-	for(const i of object)
+	for(const i of code)
 		message.push(wordList.getWord(i));
 
 	setCode(city, message, position);
 }
 
-function stringifyEncodeData(city_center, position) {
-	var object = {};
-	object['city_center'] = city_center;
-	object['position'] = position;
-	return JSON.stringify(object);
-}
-
 function decode_(city, code) {
-	code_city = city;
-	var http = new XMLHttpRequest();
-	http.open('POST', FUNCTIONS_BASE_URL+'/'+'decode', true);
-
-	http.setRequestHeader('Content-type', 'application/json');
-	http.setRequestHeader('version', '1');
-	http.requestId = ++curDecRequestId;
-
-	pushLoader();
-	http.onreadystatechange = function() {
-		if(http.readyState == 4 && http.status == 200) {
-			if(http.requestId == curDecRequestId) {
-				setCodeCoord(city, http.responseText, code);
-				notification_top.classList.add('hide');
-				popLoader();
-			}
-		}
-	}
-
 	var data = [];
 	data[0] = wordList.indexOf(code[0]);
 	data[1] = wordList.indexOf(code[1]);
 	data[2] = wordList.indexOf(code[2]);
-	http.send( stringifyDecodeData(city.center, data) );
+	var position = decode__(getCityBegin(city.center), data)	;
+	setCodeCoord(city, position, code);
+	notification_top.classList.add('hide');
+	wait_loader.classList.add('hide');
 }
 
-function stringifyDecodeData(city_center, code) {
-	var object = {};
-	object['city_center'] = city_center;
-	object['code'] = code;
-	return JSON.stringify(object);
+function encode__(city_begin, position) {
+	const lat_diff = encodeData(position.lat - city_begin.lat, lat_span_half(city_begin.lat)*2);
+	const lng_diff = encodeData(position.lng - city_begin.lng, lng_span_half(city_begin.lat)*2);
+	const word_index_1 = lat_diff >> 5;
+	const word_index_2 = lng_diff >> 5;
+	const word_index_3 = (lat_diff & 0x001F) << 5 | (lng_diff & 0x001F);
+	const code = [word_index_1, word_index_2, word_index_3];
+
+	return code;
 }
 
-function setCodeCoord(city, codeIndex, code) {
-	var latLng = JSON.parse(codeIndex);
+function decode__(city_begin, code) {
+	const word_index_1 = code[0];
+	const word_index_2 = code[1];
+	const word_index_3 = code[2];
+	const lat_diff_bin = word_index_1 << 5 | word_index_3 >> 5;
+	const lng_diff_bin = word_index_2 << 5 | word_index_3 & 0x001F;
+	const lat_diff = decodeData(lat_diff_bin, lat_span_half(city_begin.lat)*2);
+	const lng_diff = decodeData(lng_diff_bin, lng_span_half(city_begin.lat)*2);
+	const lat = city_begin.lat + lat_diff;
+	const lng = city_begin.lng + lng_diff;
+
+	return({"lat":lat, "lng":lng});
+}
+
+function setCodeCoord(city, position, code) {
 	if(initWCode_jumpToMap) {
 		initWCode_jumpToMap = false;
-		window.location.replace(getIntentURL(latLng, city.name + ' ' + code.join(' ')));
+		window.location.replace(getIntentURL(position, city.name + ' ' + code.join(' ')));
 	}
 	else {
 		if(initWCode_jump_ask) {
 			initWCode_jump_ask = false;
-			external_show(latLng, city.name, code.join(' '));
+			external_show(position, city.name, code.join(' '));
 		}
-		getAddress(latLng);
-		focus__(city, latLng, code);
+		getAddress(position);
+		focus__(city, position, code);
 	}
 }
 // var pendingPosition;
@@ -1260,6 +1280,7 @@ function getCityGpId(address_components) {
 }
 
 function decode(words) {
+	pushLoader();
 	var city_words_length = words.length-3;
 
 	var valid;
@@ -1289,37 +1310,53 @@ function decode(words) {
 				});
 			}
 			else if (words.length == 3) {
+				
 				if(typeof(current_city_gp_id) != 'undefined' && current_city_gp_id != null)
 					getCityFromCityGp_idThenDecode(current_city_gp_id, words);
 				else {
-					var position;
-					if(myLocDot == null) {
-						if(marker != null && marker.position != null) {
-							position = marker.position;
-							focus___(position);
-							showNotification(PURE_WCODE_CITY_PICKED);
-						}
-						else {
-							initLocate(false, function() {
-								getCoarseLocation(function(position) {
-									getCityFromPositionViaGMap(position, function(city) {
-										getCityCenterFromId(city, function() {
-											decode_continue(city, words);
-										} );
-									}, handleLocationError) }, handleLocationError);
-								return;
-							});
-						}
+					
+					if(!locationAccessCheck()) {
+						if(geoIp_city_name && geoIp_city_name != '')
+							decodeWithIpCity(words);
 					}
 					else {
-						position = myLocDot.position;
+						
+						var position;
+						if(myLocDot == null) {
+							if(marker != null && marker.position != null) {
+								position = marker.position;
+								focus___(position);
+								showNotification(PURE_WCODE_CITY_PICKED);
+							}
+							else {
+								initLocate(false, function() {
+									getCoarseLocation(function(position) {
+										getCityFromPositionViaGMap(position, function(city) {
+											getCityCenterFromId(city, function() {
+												decode_continue(city, words);
+											} );
+										}, handleLocationError) }, handleLocationError);
+									return;
+								});
+							}
+						}
+						else {
+							position = myLocDot.position;
+						}
+					
+						if(position != null)
+							getCityFromPositionThenDecode(resolveLatLng(position), words);
+						else {
+							if(!geoIp_city_name && geoIp_city_name != '')
+								decodeWithIpCity(words);
+							else
+								showNotification(PURE_WCODE_CITY_FAILED);
+						}
+							
 					}
 					
-					if(position != null)
-						getCityFromPositionThenDecode(resolveLatLng(position), words);
-					else
-						showNotification(PURE_WCODE_CITY_FAILED);
 				}
+				
 			}
 
 	}
@@ -1328,10 +1365,24 @@ function decode(words) {
 }
 
 function decode_continue(city, wcode) {
+	popLoader();
 	if(city != null)
 		decode_(city, wcode);
 	else
 		showNotification(INCORRECT_WCODE);
+}
+
+function decodeWithIpCity(words) {
+	if(geoIp_city_name) {
+		popLoader();
+		if(geoIP_city)
+			decode_(geoIP_city, words);
+		else
+			decode([geoIp_city_name.toLowerCase()].concat(words));
+		showNotification(IP_CITY_DECODE);
+	}
+	else
+		pendingWords_geo = words;
 }
 // var code_city;
 // var code_wcode;
@@ -1715,6 +1766,11 @@ function closeInfo() {
 	// 	syncLocate_engage = true;
 	// }
 }
+
+function showInfoLinks() {
+	activateOverlayInfo_links();
+	showInfo();
+}
 function initInfoWindow() {
 	if(typeof infoWindow == 'undefined')
 		infoWindow = new google.maps.InfoWindow({'map': map});
@@ -2033,6 +2089,43 @@ function getCoarseLocation(callback_success, callback_failure) {
 		alert("Sorry, browser does not support geolocation!");
 	}
 }
+function getCityByIp() {
+
+	var http = new XMLHttpRequest();
+	http.open('POST', FUNCTIONS_BASE_URL+'/'+'cityByIp', true);
+
+	http.setRequestHeader('Content-type', 'application/json');
+	http.setRequestHeader('version', '1');
+	http.requestId = ++curGeoIpRequestId;
+
+	pushLoader();
+	http.onreadystatechange = function() {
+		if(http.readyState == 4) {
+			if(http.requestId == curGeoIpRequestId) {
+				popLoader();
+				if(http.status == 200) {
+
+						if(http.responseText == '')
+							console.log(http.responseText);
+						else {
+							geoIp_country_code = JSON.parse(http.responseText).country;
+							geoIp_city_name = JSON.parse(http.responseText).city;
+							document.getElementById('decode_input_city').innerText = geoIp_city_name;
+							if(pendingWords_geo)
+								decodeWithIpCity(pendingWords_geo);
+						}
+				}
+				else if(http.status == 416) {
+					notInRange(position);
+				}
+			}
+		}
+	}
+
+	http.send( );
+	return '';
+	
+}
 // var locateRight_callback;
 
 function showLocateRightMessage(hide_dnd) {
@@ -2058,7 +2151,10 @@ function locateRight_deny() {
 	popLoader();
 	hideLocateRightMessage();
 	locateRight_DND_check();
-	showNotification("Choose a place on the map");
+	if(!geoIp_city_name && geoIp_city_name != '')
+		getCityByIp();
+	else
+		showNotification("Choose a place on the map");
 }
 
 function locateRight_DND_check() {
@@ -2821,6 +2917,33 @@ function enterHandler(event) {
 		document.getElementById(event.target.getAttribute('data-handler')).click();
 	}
 }
+const IP_GEO_BASE_URL = "https://extreme-ip-lookup.com"
+var curIpGeoRequestId = 0;
+
+function getCityFromIp(callback, ar_param) {
+	var http = new XMLHttpRequest();
+	http.open('POST', IP_GEO_BASE_URL+'/'+'json', true);
+
+	http.setRequestHeader('Content-type', 'application/json');
+	http.setRequestHeader('version', '1');
+	http.requestId = ++curIpGeoRequestId;
+
+	pushLoader();
+	http.onreadystatechange = function() {
+		if(http.readyState == 4) {
+			if(http.requestId == curIpGeoRequestId)
+				if(true) {
+					popLoader();
+					if(http.status == 200) {
+						callback(JSON.parse(http.responseText));
+					}
+				}
+		}
+	}
+
+	http.send();
+
+}
 if ('serviceWorker' in navigator) {
 	window.addEventListener('load', function() {
 		navigator.serviceWorker.register('/sw.js').then(function(registration) {
@@ -2897,6 +3020,7 @@ function setupControls() {
 	document.getElementById('info_intro_close_button').addEventListener('click', closeInfo);
 	document.getElementById('info_full_close_button').addEventListener('click', closeInfo);
 	document.getElementById('info').addEventListener('click', showInfo);
+	document.getElementById('footer_author').addEventListener('click', showInfoLinks);
 	document.getElementById('no_city_message_close').addEventListener('click', hideNoCityMessage);
 	document.getElementById('locate_right_message_close').addEventListener('click', hideLocateRightMessage);
 	document.getElementById('locate_right_message_yes').addEventListener('click', locateRight_grant);

@@ -225,6 +225,26 @@ function syncInitMap() {
 			backgroundColor: 'none'
 		});
 		initMap();
+		
+		if(!locationAccessCheck()) {
+			getCityByIp();
+		}
+		else {
+			
+			var position;
+			initLocate(false, function() {
+				getCoarseLocation(function(position) {
+					getCityFromPositionViaGMap(position, function(city) {
+						document.getElementById('decode_input_city').innerText = city.name;
+						getCityCenterFromId(city, function() {
+							geoIP_city = city;
+						} );
+					}, handleLocationError) }, handleLocationError);
+				return;
+			});
+				
+		}
+		
 		pendingInitMap = false;
 	}
 }
@@ -254,6 +274,7 @@ var pendingLocate = false;
 var curEncRequestId = 0;
 var curDecRequestId = 0;
 var curAddCityRequestId = 0;
+var curGeoIpRequestId = 0;
 
 // Code\Copy_wcode
 var city_styled_wordlist = [];
@@ -265,6 +286,7 @@ var WCODE_LINK_COPIED_MESSAGE = "Wolo code link copied to clipboard";
 // Code\Core
 var PURE_WCODE_CITY_PICKED = "Since your city is not set - city was chosen from the last location";
 var PURE_WCODE_CITY_FAILED = "Since your city is not set - you must first choose the city or preceed the Wolo code with city name";
+var IP_CITY_DECODE = "Current city determined using your connection - verify";
 var pendingPosition;
 var pendingWords;
 var wordList;
@@ -339,6 +361,12 @@ var account_dialog_address_active_first;
 var current_title;
 var current_segment;
 var current_address;
+
+// GeoIp
+var geoIp_country_code;
+var geoIp_city_name;
+var pendingWords_geo;
+var geoIP_city;
 // var pendingLocate;
 function syncLocate(override_dnd) {
 	if (typeof google === 'object' && typeof google.maps === 'object' && typeof map == 'object') {
@@ -655,6 +683,10 @@ body > #pac-input {
 	border-radius: 5px;
 }
 
+#footer_author {
+	cursor: pointer;
+}
+
 .blur_background {
 	backdrop-filter: blur(8px);
 	background-color: #fbfbfb60;
@@ -851,7 +883,7 @@ button.gm-ui-hover-effect {
 }
 .message_dialog {
 	position: relative;
-	max-width: 286px;
+	max-width: 450px;
 	min-width: 286px;
 	margin: auto;
 	border: 1px solid #ddd;
@@ -1069,11 +1101,11 @@ h2.message_dialog_label {
 	fill: #56b4d1
 }
 #wait_loader {
+	z-index: 102;
 	position: absolute;
 	top: 0;
 	width: 100%;
 	height: 8px;
-	
 	background: linear-gradient(90deg, #69B7CF, #ddf2f9);
 	background-size: 400% 400%;
 	-webkit-animation: Gradient 2s ease infinite;
@@ -1176,7 +1208,7 @@ h2.message_dialog_label {
 
 #save_address {
 	margin: 0 4px;
-	color: #444444;
+	color: #6a6a6a;
 }
 
 #account > span > img {
@@ -1189,7 +1221,8 @@ h2.message_dialog_label {
 	background-color: #69B7CF;
 	color: #ffffff;
 	font-size: larger;
-	border-radius: 5px;
+	border-bottom-right-radius: 5px;
+	border-bottom-left-radius: 5px;
 	margin: 6px 8px;
 	cursor: pointer;
 }
@@ -1218,7 +1251,6 @@ h2.message_dialog_label {
 }
 
 .row-header {
-	border: 1px solid #69B7CF;
 	background: #69B7CF !important;
 	color: white !important;
 }
@@ -1290,7 +1322,7 @@ h2.message_dialog_label {
 	pointer-events: none;
 }
 
-#account_dialog_save_list > div {
+#account_dialog_save_list > div.active {
 	border: 1px solid #69B7CF;
 }
 
@@ -1615,6 +1647,10 @@ h2.message_dialog_label {
 .satellite #map_type_button > span > svg > g:first-of-type {
 	display: none
 }
+
+#decode_input_city {
+	color: #7f7f7f;
+}
 @media (max-width: 662px) {
 
 	.external #logo {
@@ -1623,7 +1659,7 @@ h2.message_dialog_label {
 
 }
 #external_wcode {
-	padding-top: 22px;
+	padding-top: 26px;
 }
 
 #external_sticker_title {
@@ -1684,6 +1720,15 @@ h2.message_dialog_label {
 #external_controls_container {
 	margin-top: 22px;
 }
+
+#external_close {
+	top: unset;
+	bottom: -42px;
+	right: 50%;
+	left: 50%;
+	display: flex;
+	justify-content: center;
+}
 #info_message {
 	position: relative;
 	font-family: Abel;
@@ -1695,6 +1740,8 @@ h2.message_dialog_label {
 	color: #999999;
 	max-width: 400px;
 }
+
+div#wolo_about {text-align: center;margin-top: 15px;}
 
 #info_message h1 {
 	text-align: center;
@@ -1804,7 +1851,7 @@ h2.message_dialog_label {
 	padding-left: 10px;
 }
 
-#agency {
+#info_agency {
 	text-align: right;
 }
 
@@ -2152,7 +2199,7 @@ h2.message_dialog_label {
 
 #map_type_button svg {
 	background-color: rgb(255, 255, 255);
-	border-radius: 25px;
+	border-radius: 10px;
 	padding: 8px;
 	box-shadow: rgb(0 0 0 / 30%) 0px 1px 4px -1px;
 }
@@ -2207,6 +2254,7 @@ h2.message_dialog_label {
 </div>
 <div id='decode_interface_overlay'>
 	<div id='decode_input_container'>
+		<div id='decode_input_city'>&nbsp;</div>
 		<div id='decode_input_suggestion_result' class='suggestion_result' data-input='decode_input' data-resize_input='true'></div>
 		<input id='decode_input' data-suggest='decode_input_suggestion_result' data-handler='decode_input_button' type='text' placeholder="\ Wolo code /" autocomplete='off'>
 		<div id='decode_input_button' class='control' tabindex='4'>
@@ -2234,18 +2282,6 @@ h2.message_dialog_label {
 	</div>
 </div>
 <div id='external_message' class="message_dialog hide">
-	<h2 class='message_dialog_label'>
-		Proceed
-	</h2>
-	<div id='external_close' class="message_dialog_close control">
-		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
-	 height='22' width='22'
-	 viewBox="0 0 24 24">
-	<path fill='#CECECE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-	<path fill='none' d="M0 0h24v24H0z" />
-</svg>
-</span>
-	</div>
 	<div class='message_dialog_body'>
 		<div id= 'external_message_loader' class="center"></div>
 		<div id='external_wcode'>
@@ -2282,6 +2318,15 @@ h2.message_dialog_label {
 </svg>
 </span></button>
 		</div>
+	</div>
+	<div id='external_close' class="message_dialog_close control">
+		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+	 height='22' width='22'
+	 viewBox="0 0 24 24">
+	<path fill='#CECECE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+	<path fill='none' d="M0 0h24v24H0z" />
+</svg>
+</span>
 	</div>
 </div>
 <div id='no_city_message' class="message_dialog hide">
@@ -2444,9 +2489,20 @@ h2.message_dialog_label {
 </span>
 	</div>
 	<div class='message_dialog_body'>
-		<p>
-			Do you wish to allow this app to access your location?
-		</p>
+		<div>
+			<p>
+				Your current city has been determined to be: <span id='ip_city'></span>
+			</p>
+			<p>
+				You may change the city manually next, or:<br>
+				for accurate city detection - please grant location access.
+			</p>
+		</div>
+		<div>
+			<p>
+				Do you wish to allow this app to access your location?
+			</p>
+		</div>
 		<div class="center message_dialog_control">
 			<button id='locate_right_message_yes' class="border dialog_message_primary button_highlight" type='button'>Yes</button>
 			<button id='locate_right_message_no' class="border dialog_message_secondary" type='button'>No</button>
@@ -2559,14 +2615,14 @@ h2.message_dialog_label {
 	</h2>
 	<ul>
 		<li>
-			Enter a Wolo code address and hit the proceed button to go to that location. Or,
+			Enter a Wolo code address to go to that location. Or,
 		</li>
 		<li>
-			Point a location on the map to generate the corresponding Wolo code address.
+			Switch modes using the map icon and point a location on the map to generate the corresponding Wolo code address.
 		</li>
 		<li>
 			You may also search for a particular place. Or,<br>
-			let the system pick your current location automatically.
+			let the app pick your current location automatically.
 		</li>
 	</ul>
 	
@@ -2585,28 +2641,35 @@ h2.message_dialog_label {
 		</div>
 	</div>
 	
-	<table>
-		<tr>
-			<td>About:</td>
-			<td><a class='link' href='/about'>wolo.codes/about</a></td>
-		</tr>
-		<tr>
-			<td>Terms of use:</td>
-			<td><a class='link' href='/terms'>wolo.codes/terms</a></td>
-		</tr>
-		<tr>
-			<td>Privacy policy:</td>
-			<td><a class='link' href='/policy'>wolo.codes/policy</a></td>
-		</tr>
-		<tr>
-			<td>contact:</td>
-			<td><a class='link' href="mailto:ujjwal@wolo.codes?subject=Wolo">ujjwal@wolo.codes</a></td>
-		</tr>
-	</table>
+	<div id='wolo_about'>
+		<a class='link' href='https://wolo.codes/about'>wolo.codes/about</a>
+	</div>
+	
+</div>
+<div id='info_links' class='hide'>
 
-	<div id='social-links' class='center'>
-		<span class='social grow'>
-			<a href='https://twitter.com/wolocodes' id='site-twitter' onclick="trackOutboundLink('wolo-twitter', 'https://twitter.com/wolocodes')"><span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+<table>
+	<tr>
+		<td>About:</td>
+		<td><a class='link' href='/about'>wolo.codes/about</a></td>
+	</tr>
+	<tr>
+		<td>Terms of use:</td>
+		<td><a class='link' href='/terms'>wolo.codes/terms</a></td>
+	</tr>
+	<tr>
+		<td>Privacy policy:</td>
+		<td><a class='link' href='/policy'>wolo.codes/policy</a></td>
+	</tr>
+	<tr>
+		<td>contact:</td>
+		<td><a class='link' href="mailto:ujjwal@wolo.codes?subject=Wolo">ujjwal@wolo.codes</a></td>
+	</tr>
+</table>
+
+<div id='social-links' class='center'>
+	<span class='social grow'>
+		<a href='https://twitter.com/wolocodes' id='site-twitter' onclick="trackOutboundLink('wolo-twitter', 'https://twitter.com/wolocodes')"><span class='image'><svg xmlns='http://www.w3.org/2000/svg'
 	 x='0px' y='0px'
 	 viewBox="0 0 76 76">
 	<path fill='#D9D9D9' d="M76,14.4c-2.8,1.2-5.8,2.1-9,2.5c3.2-1.9,5.7-5,6.9-8.6c-3,1.8-6.3,3.1-9.9,3.8c-2.8-3-6.9-4.9-11.4-4.9
@@ -2616,9 +2679,9 @@ h2.message_dialog_label {
 		c0-0.7,0-1.3,0-2C71.3,20.3,73.9,17.6,76,14.4z" />
 </svg>
 </span></a>
-		</span>
-		<span class='social grow'>
-			<a href='https://facebook.com/wolocodes' id='site-facebook' onclick="trackOutboundLink('wolo-facebook', 'https://facebook.com/wolocodes')"><span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+	</span>
+	<span class='social grow'>
+		<a href='https://facebook.com/wolocodes' id='site-facebook' onclick="trackOutboundLink('wolo-facebook', 'https://facebook.com/wolocodes')"><span class='image'><svg xmlns='http://www.w3.org/2000/svg'
 	 x='0px' y='0px'
 	 viewBox="0 0 76 76">
 	<path fill='#D9D9D9' d="M68.7,3.5H7.3c-2.1,0-3.8,1.7-3.8,3.8v61.4c0,2.1,1.7,3.8,3.8,3.8h33V45.8h-9V35.4h9v-7.7
@@ -2626,9 +2689,9 @@ h2.message_dialog_label {
 	 c2.1,0,3.8-1.7,3.8-3.8V7.3C72.5,5.2,70.8,3.5,68.7,3.5z" />
 </svg>
 </span></a>
-		</span>
-		<span class='social grow'>
-			<a href='https://www.youtube.com/channel/UCnKSws8Lro8U9Ewtf1Xi5jg' id='site-youtube' onclick="trackOutboundLink('wolo-youtube', 'https://www.youtube.com/channel/UCnKSws8Lro8U9Ewtf1Xi5jg')"><span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+	</span>
+	<span class='social grow'>
+		<a href='https://www.youtube.com/channel/UCnKSws8Lro8U9Ewtf1Xi5jg' id='site-youtube' onclick="trackOutboundLink('wolo-youtube', 'https://www.youtube.com/channel/UCnKSws8Lro8U9Ewtf1Xi5jg')"><span class='image'><svg xmlns='http://www.w3.org/2000/svg'
 	 id='youtube_icon'
 	 x='0px' y='0px'
 	 viewBox="0 -158 1024 1024">
@@ -2640,14 +2703,14 @@ h2.message_dialog_label {
 		C1023.2,238.9,1013,156.3,1013,156.3z M407,493l0-287l276,144L407,493z" />
 </svg>
 </span></a>
-		</span>
-	</div>
-	
-	<div id='download-unified-url' class='center'>
-		<span>app:</span> <a class='link' href="https://wolo.codes/get">wolo.codes/get</a>
-	</div>
-	<div id='download-android-bottom' class="download center">
-		<a href='https://play.google.com/store/apps/details?id=codes.wolo.droid' id='site-google-play' onclick="trackOutboundLink('wolo-appandroid', 'https://play.google.com/store/apps/details?id=codes.wolo.droid')"><span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+	</span>
+</div>
+
+<div id='download-unified-url' class='center'>
+	<span>app:</span> <a class='link' href="https://wolo.codes/get">wolo.codes/get</a>
+</div>
+<div id='download-android-bottom' class="download center">
+	<a href='https://play.google.com/store/apps/details?id=codes.wolo.droid' id='site-google-play' onclick="trackOutboundLink('wolo-appandroid', 'https://play.google.com/store/apps/details?id=codes.wolo.droid')"><span class='image'><svg xmlns='http://www.w3.org/2000/svg'
 	 width='180' height='53.333'
 	 viewBox="0 0 180 53.333"
 	 xml:space='preserve'>
@@ -2832,23 +2895,23 @@ h2.message_dialog_label {
 	</g>
 </svg>
 </span></a>
-	</div>
-	
-	<div id='credits'>Wolo codes makes use of these opensource projects: <a class='link' href="https://wolo.codes/credits">wolo.codes/credits</a></div>
-	<div id='software_info'>
-		<div id='version'>
-			Version: <span>1.1</span>
-		</div>
-		<div id='updated'>Updated:
-			<span id='updated-timestamp'>
-			2022 Jan 04 16:03:35 UTC			</span>
-			 ~ 
-			<span id='updated-timediff'></span> ago
-		</div>
-	</div>
-	
 </div>
-	<div id='agency'>
+
+<div id='credits'>Wolo codes makes use of these opensource projects: <a class='link' href="https://wolo.codes/credits">wolo.codes/credits</a></div>
+<div id='software_info'>
+	<div id='version'>
+		Version: <span>1.1</span>
+	</div>
+	<div id='updated'>Updated:
+		<span id='updated-timestamp'>
+		2022 May 11 21:00:15 UTC		</span>
+		 ~ 
+		<span id='updated-timediff'></span> ago
+	</div>
+</div>
+
+</div>
+	<div id='info_agency'>
 		by <a class='link' href='https://wcodes.org/about_me'>Ujjwal Singh</a>
 	</div>
 </div>
@@ -3156,7 +3219,7 @@ h2.message_dialog_label {
 <div id='footer-content-container' class='center'>
 	<div id='footer-content' class='blur_background'>
 		<a class='link-gray' href='/license'>&copy; 2022 </a>
-		<a class='link' href='/about_me' rel='author'>Ujjwal Singh</a>
+		<span id='footer_author' class='link'>Wolo Codes</span>
 	</div>
 </div>
 <div id='address_text' class='hide'>

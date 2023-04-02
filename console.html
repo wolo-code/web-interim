@@ -225,6 +225,26 @@ function syncInitMap() {
 			backgroundColor: 'none'
 		});
 		initMap();
+		
+		if(!locationAccessCheck()) {
+			getCityByIp();
+		}
+		else {
+			
+			var position;
+			initLocate(false, function() {
+				getCoarseLocation(function(position) {
+					getCityFromPositionViaGMap(position, function(city) {
+						document.getElementById('decode_input_city').innerText = city.name;
+						getCityCenterFromId(city, function() {
+							geoIP_city = city;
+						} );
+					}, handleLocationError) }, handleLocationError);
+				return;
+			});
+				
+		}
+		
 		pendingInitMap = false;
 	}
 }
@@ -579,6 +599,10 @@ body > #pac-input {
 	border-radius: 5px;
 }
 
+#footer_author {
+	cursor: pointer;
+}
+
 .blur_background {
 	backdrop-filter: blur(8px);
 	background-color: #fbfbfb60;
@@ -775,7 +799,7 @@ button.gm-ui-hover-effect {
 }
 .message_dialog {
 	position: relative;
-	max-width: 286px;
+	max-width: 450px;
 	min-width: 286px;
 	margin: auto;
 	border: 1px solid #ddd;
@@ -993,11 +1017,11 @@ h2.message_dialog_label {
 	fill: #56b4d1
 }
 #wait_loader {
+	z-index: 102;
 	position: absolute;
 	top: 0;
 	width: 100%;
 	height: 8px;
-	
 	background: linear-gradient(90deg, #69B7CF, #ddf2f9);
 	background-size: 400% 400%;
 	-webkit-animation: Gradient 2s ease infinite;
