@@ -722,6 +722,7 @@ body > #pac-input {
 
 #infowindow_code_right_code {
 	font-size: x-large;
+	cursor: pointer;
 }
 
 .gm-style-iw {
@@ -753,7 +754,7 @@ button.gm-ui-hover-effect {
 	z-index: 1;
 }
 
-#share_code_button {
+#share_qr_button {
 	position: relative;
 	width: 24px;
 	display: inline-block;
@@ -769,7 +770,11 @@ button.gm-ui-hover-effect {
 
 #external_launch_button {
 	width: 26px;
-	vertical-align: bottom;
+	display: inline-block;
+}
+
+#external_launch_button > img {
+	margin-bottom: -2px;
 }
 
 #infowindow_actions {
@@ -786,6 +791,7 @@ button.gm-ui-hover-effect {
 
 #infowindow_actions > :last-child {
 	margin-right: 0;
+	padding-left: 2px;
 }
 
 .different_city #infowindow_code_left_code > span {

@@ -807,6 +807,7 @@ body > #pac-input {
 
 #infowindow_code_right_code {
 	font-size: x-large;
+	cursor: pointer;
 }
 
 .gm-style-iw {
@@ -838,7 +839,7 @@ button.gm-ui-hover-effect {
 	z-index: 1;
 }
 
-#share_code_button {
+#share_qr_button {
 	position: relative;
 	width: 24px;
 	display: inline-block;
@@ -854,7 +855,11 @@ button.gm-ui-hover-effect {
 
 #external_launch_button {
 	width: 26px;
-	vertical-align: bottom;
+	display: inline-block;
+}
+
+#external_launch_button > img {
+	margin-bottom: -2px;
 }
 
 #infowindow_actions {
@@ -871,6 +876,7 @@ button.gm-ui-hover-effect {
 
 #infowindow_actions > :last-child {
 	margin-right: 0;
+	padding-left: 2px;
 }
 
 .different_city #infowindow_code_left_code > span {
@@ -1194,6 +1200,7 @@ h2.message_dialog_label {
 }
 
 #save_title_main, #save_title_segment, #save_address {
+	font-family: Abel;
 	background-color: white;
 	color: #999999;
 	outline: 0;
@@ -1389,7 +1396,7 @@ h2.message_dialog_label {
 	font-family: Roboto, Arial, sans-serif;
 	font-size: 0.9375em;
 	background-color: rgb(255, 255, 255);
-	padding: 8px 12px;
+	padding: 6px 28px;
 	border: none;
 	border-radius: 28px;	
 }
@@ -1481,36 +1488,6 @@ h2.message_dialog_label {
 #choose_city_by_periphery_message_list {
 	overflow: auto;
 	max-height: 500px;
-}
-#copy_wcode_message {
-	border: 1px solid transparent;
-}
-
-#copy_wcode_message_city_name {
-	text-align: center;
-	color: #585858;
-	padding-top: 8px;
-	font-family: 'Roboto Condensed', Abel, sans-serif
-}
-
-#copy_wcode_message_city_name_question {
-	color: #CCCCCC
-}
-
-#share_copy_button {
-	padding-top: 4px
-}
-
-#share_link_button {
-	padding-top: 6px
-}
-
-#share_qr_button {
-}
-
-#share_copy_button_qr {
-	margin-top: 8px;
-	width: 220px;
 }
 #decode_interface_overlay {
 	top: 0;
@@ -2007,6 +1984,15 @@ h2.message_dialog_label {
 	margin: auto;
 }
 
+#qr_title_main, #qr_title_segment {
+	border-bottom: 1px solid #999999;
+}
+
+#qr_title_main::placeholder, #qr_title_segment::placeholder {
+	color: #999999;
+	font-size: small;
+}
+
 #qr_title_main {
 	font-size: larger;
 }
@@ -2106,6 +2092,10 @@ h2.message_dialog_label {
 .qr_minimal #qr_wcode {
 	padding-top: unset;
 }
+
+#qr_preview.button_active > span > svg > path {
+	fill: white;
+}
 @media print {
 
 	html {
@@ -2144,6 +2134,12 @@ h2.message_dialog_label {
 	position: absolute;
 	top: 10px;
 	left: 12px;
+}
+
+#search_icon {
+	position: absolute;
+	left: 20px;
+	top: 46px;
 }
 
 #decode_button {
@@ -2224,6 +2220,11 @@ h2.message_dialog_label {
 }
 @media (max-width: 662px) {
 
+	#search_icon {
+		left: 12px;
+		top: 110px;
+	}
+	
 	#decode_button {
 		top: 100px !important;
 		left: auto !important;
@@ -2250,7 +2251,12 @@ h2.message_dialog_label {
 }
 
 @media (max-width: 316px) {
-
+	
+	#search_icon {
+		left: 12px;
+		top: 136px;
+	}
+	
 	#decode_button {
 		top: 126px !important;
 	}
@@ -2262,7 +2268,13 @@ h2.message_dialog_label {
 	<div id='wait_loader'></div>
 <div id='map'></div>
 <div id='map_input_suggestion_result' class='suggestion_result' data-input='pac-input' data-resize_input='false'></div>
-<input id='pac-input' data-suggest='map_input_suggestion_result' data-handler='decode_button' class='controls' type='text' placeholder='Search' tabindex='3' >
+<span id='search_icon' class='image'><svg xmlns='http://www.w3.org/2000/svg'
+	 width='24' height='24' viewBox="0 0 24 24">
+	<path fill='#D9D9D9' d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+	<path fill='none' d="M0 0h24v24H0z" />
+</svg>
+</span>
+<input id='pac-input' data-suggest='map_input_suggestion_result' data-handler='decode_button' class='controls' type='text' placeholder='' tabindex='3' >
 <div id='decode_button' class='control' tabindex='4'>
 	<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
 	 height="26" width="24"
@@ -2381,71 +2393,6 @@ h2.message_dialog_label {
 		<div class="center message_dialog_control">
 			<button id='no_city_submit_wait_continue' class='border' type='button'>Continue</button>
 			<button id='no_city_submit_wait_stop' class='border' type='button'>Stop</button>
-		</div>
-	</div>
-</div>
-<div id='copy_wcode_message' class="message_dialog hide">
-	<h2 class='message_dialog_label'>
-		Share
-	</h2>
-	<div id='share_wcode_message_close' class="message_dialog_close control">
-		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
-	 height='22' width='22'
-	 viewBox="0 0 24 24">
-	<path fill='#CECECE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-	<path fill='none' d="M0 0h24v24H0z" />
-</svg>
-</span>
-	</div>
-	<div class='message_dialog_body'>
-		<div class='message_dialog_section'>
-			<div class='message_dialog_subtitle'>
-				<span class='message_dialog_subtitle_icon'>
-					<img id='share_copy_button' alt='Copy Wolo Code text button' class='center' src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMCcgaGVpZ2h0PScxOCcgdmlld0JveD0iLTIwIC0yOCAxNjMuNjQgODEuODE4Ij4gPGcgdHJhbnNmb3JtPSJtYXRyaXgoMS4wMTMxIDAgMCAxLjAxMzEgMzYuMDM0IC0xNi40NzEpIj4gPHBhdGggZD0ibS0yMC44IDczLjktMzEuMi04OS44aDguNWwzMS4xIDg5Ljh6IiBmaWxsPSIjY2VjZWNlIi8+IDxnIHRyYW5zZm9ybT0ibWF0cml4KC45OTk4MiAwIDAgLjk5OTgyIC0uNTc3MjcgLjAxMDcwOSkiPiA8cGF0aCBkPSJtLTMuNiA2Ni4xLTI1LjItNzIuOGgxMy41bDI1LjEgNzIuOHoiIGZpbGw9IiNjZWNlY2UiLz4gPHBhdGggZD0ibTI2LjMgMTIuNi0xNS4yIDQ2LjktNS43LTE4LjYgMTUuMi00Ny42aDEyLjZsMTcuMSA1MSAxOC4xLTUxaDEzLjRsLTI1LjMgNzIuOGgtMTIuNnoiIGZpbGw9IiNjZWNlY2UiLz4gPC9nPiA8cGF0aCBkPSJtOTQuNC0xNS45aDguNWwtMzAuNyA4OS44aC04LjV6IiBmaWxsPSIjY2VjZWNlIi8+IDwvZz4gPC9zdmc+IA==" >
-				</span>
-				<span class='message_dialog_subtitle_label'>Text</span>
-			</div>
-			<div class='message_dialog_subtitle_text'>
-				<span>include</span> <span id='copy_wcode_message_city_name'></span> ?
-			</div>
-			<div class='message_dialog_control_container'>
-				<div class="center message_dialog_control">
-					<button id='share_copy_button_text_city' class="border dialog_message_primary button_highlight" type='button'>Yes</button>
-					<button id='share_copy_button_text_nocity' class="border dialog_message_secondary" type='button'>No</button>
-				</div>
-			</div>
-		</div>
-		<hr>
-		<div class='message_dialog_section'>
-			<div class='message_dialog_subtitle'>
-				<span class='message_dialog_subtitle_icon'>
-					<img id='share_link_button' alt='Copy Wolo code link button' class='center' src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSczMCcgaGVpZ2h0PScxNicgdmlld0JveD0iMCA0IDIyLjUgMTIiPiA8cGF0aCBkPSJtLTAuMDAzMTc3My0xLjVoMjR2MjRoLTI0eiIgZmlsbD0ibm9uZSIvPiA8cGF0aCBkPSJtMy4xNDMzIDEwYzAtMS41MjM4IDEuMzkxMi0yLjc2MjUgMy4xMDI2LTIuNzYyNWg0LjAwMzN2LTEuNjkzMWgtNC4wMDMzYy0yLjc2MjMgMC01LjAwNDEgMS45OTYxLTUuMDA0MSA0LjQ1NTYgMCAyLjQ1OTUgMi4yNDE5IDQuNDU1NiA1LjAwNDEgNC40NTU2aDQuMDAzM3YtMS42OTMxaC00LjAwMzNjLTEuNzExNCAwLTMuMTAyNi0xLjIzODctMy4xMDI2LTIuNzYyNXptNC4xMDM0IDAuODkxMTJoOC4wMDY2di0xLjc4MjJoLTguMDA2NnptOS4wMDc1LTUuMzQ2N2gtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMS43MTE0IDAgMy4xMDI2IDEuMjM4NyAzLjEwMjYgMi43NjI1IDAgMS41MjM4LTEuMzkxMiAyLjc2MjUtMy4xMDI2IDIuNzYyNWgtNC4wMDMzdjEuNjkzMWg0LjAwMzNjMi43NjIzIDAgNS4wMDQxLTEuOTk2MSA1LjAwNDEtNC40NTU2IDAtMi40NTk1LTIuMjQxOS00LjQ1NTYtNS4wMDQxLTQuNDU1NnoiIGZpbGw9IiNjZWNlY2UiIHN0cm9rZS13aWR0aD0iLjkiLz4gPC9zdmc+IA==" >
-				</span>
-				<span class='message_dialog_subtitle_label'>Link</span>
-			</div>
-			<div id='share_jumto_map' class='message_dialog_subtitle_text'>
-				jump directly to map ?
-			</div>
-			<div class='message_dialog_control_container'>
-				<div class="center message_dialog_control">
-					<button id='share_copy_button_link_jump' class="border dialog_message_primary button_highlight" type='button'>Yes</button>
-					<button id='share_copy_button_link_nojump' class="border dialog_message_secondary" type='button'>No</button>
-				</div>
-			</div>
-		</div>
-		<hr>
-		<div class='message_dialog_section'>
-			<div class='message_dialog_subtitle'>
-				<span class='message_dialog_subtitle_icon'>
-					<img id='share_qr_button' alt='Generate Wolo Code label' class='center' src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyOCcgaGVpZ2h0PScyOCcgdmlld0JveD0iMCAwIDI0IDI0Ij4gPHBhdGggZD0iTTAgMGgyNHYyNEgweiIgZmlsbD0nbm9uZScvPiA8cGF0aCBkPSJNMTcuNjMgNS44NEMxNy4yNyA1LjMzIDE2LjY3IDUgMTYgNUw1IDUuMDFDMy45IDUuMDEgMyA1LjkgMyA3djEwYzAgMS4xLjkgMS45OSAyIDEuOTlMMTYgMTljLjY3IDAgMS4yNy0uMzMgMS42My0uODRMMjIgMTJsLTQuMzctNi4xNnoiIHN0eWxlPSJmaWxsOm5vbmU7c3Ryb2tlOiNjZWNlY2U7c3Ryb2tlLXdpZHRoOjEiLz4gPC9zdmc+IA==" >
-				</span>
-				<span class='message_dialog_subtitle_label'>Label</span>
-			</div>
-			<div class='message_dialog_control_container'>
-				<div class="center message_dialog_control">
-					<button id='share_copy_button_qr' class="border dialog_message_primary button_highlight" type='button'>Go</button>
-				</div>
-			</div>
 		</div>
 	</div>
 </div>
@@ -2920,7 +2867,7 @@ h2.message_dialog_label {
 	</div>
 	<div id='updated'>Updated:
 		<span id='updated-timestamp'>
-		2023 Apr 02 20:20:04 UTC		</span>
+		2023 May 16 21:06:12 UTC		</span>
 		 ~ 
 		<span id='updated-timediff'></span> ago
 	</div>
@@ -2959,6 +2906,7 @@ h2.message_dialog_label {
 		</div>
 	</div>
 </div>
+
 <div id='qr_container' class='hide'>
 	<h2 class='message_dialog_label section-to-not-print'>
 		Label
@@ -3022,8 +2970,8 @@ h2.message_dialog_label {
 			</div>
 		</div>
 		<div id='qr_title_container' class='center'>
-			<input id='qr_title_main' type='text' placeholder="&nbsp;&nbsp;Title&nbsp; &nbsp;e.g. Taj Mahal">
-			<input id='qr_title_segment' type='text' placeholder="&nbsp;&nbsp;Segment&nbsp; &nbsp;e.g. West gate">
+			<input id='qr_title_main' type='text' placeholder="&nbsp;&nbsp;Title">
+			<input id='qr_title_segment' type='text' placeholder="&nbsp;&nbsp;Segment">
 		</div>
 		<div id='qr_wcode'>
 			<div id='qr_wcode_container' class='center'>
@@ -3038,16 +2986,26 @@ h2.message_dialog_label {
 			</div>
 		</div>
 		<div id='qr_address_container' class='center'>
-			<div id='qr_address' class='initial' contentEditable>&nbsp;&nbsp;Address&nbsp; &nbsp;(optional)</div>
+			<div id='qr_address' class='initial' contentEditable>&nbsp;&nbsp;Address</div>
 		</div>
 		<div id='qr_webapp_url' class='center'>
 			<div>www.wolo.codes</div>
 		</div>
 	</div>
 	<div id='qr_controls' class="center message_dialog_control section-to-not-print">
-		<button id='qr_preview' class='border' type='button'>Preview</button>
-		<button id='qr_download' class='border' type='button'>Download</button>
-		<button id='qr_print' class='border' type='button'>Print</button>
+		<button id='qr_preview' class='border' type='button'><span class='image'><svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 96 960 960" width="24">
+	<path d="M180 936q-24.75 0-42.375-17.625T120 876V276q0-24.75 17.625-42.375T180 216h600q24.75 0 42.375 17.625T840 276v600q0 24.75-17.625 42.375T780 936H180Zm0-60h600V356H180v520Zm300.041-105Q400 771 337 727.849q-63-43.152-92-112Q274 547 336.959 504t143-43Q560 461 623 504.151q63 43.152 92 112Q686 685 623.041 728t-143 43ZM480 721q57 0 104.949-27.825T660 616q-27.102-49.35-75.051-77.175Q537 511 480 511t-104.949 27.825Q327.102 566.65 300 616q27.102 49.35 75.051 77.175Q423 721 480 721Zm0-105Zm.118 50Q501 666 515.5 651.382q14.5-14.617 14.5-35.5Q530 595 515.382 580.5q-14.617-14.5-35.5-14.5Q459 566 444.5 580.618q-14.5 14.617-14.5 35.5Q430 637 444.618 651.5q14.617 14.5 35.5 14.5Z" fill="#69b7cf"/>
+</svg>
+</span></button>
+		<button id='qr_download' class='border' type='button'><span class='image'><svg xmlns='http://www.w3.org/2000/svg' width="24" height="24" x='0px' y='0px'
+	 viewBox="-245 368.9 88.099996 83.099998">
+	<path fill="#69b7cf" d="m -166.9,408.1 h -19.5 v -29.2 h -29.1 v 29.2 H -235 l 34,33.9 z" />
+</svg>
+</span></button>
+		<button id='qr_print' class='border' type='button'><span class='image'><svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 96 960 960" width="24">
+	<path d="M658 408V276H302v132h-60V216h476v192h-60Zm-518 60h680-680Zm599 95q12 0 21-9t9-21q0-12-9-21t-21-9q-12 0-21 9t-9 21q0 12 9 21t21 9Zm-81 313V684H302v192h356Zm60 60H242V760H80V514q0-45.05 30.5-75.525Q141 408 186 408h588q45.05 0 75.525 30.475Q880 468.95 880 514v246H718v176Zm102-236V513.785Q820 494 806.775 481 793.55 468 774 468H186q-19.55 0-32.775 13.225Q140 494.45 140 514v186h102v-76h476v76h102Z" fill="#69b7cf"/>
+</svg>
+</span></button>
 	</div>
 </div>
 <div id='firebaseui-auth-container' class="center hide">
@@ -3082,9 +3040,6 @@ h2.message_dialog_label {
 </span>
 		</div>
 		<div class='message_dialog_body'>
-			<h3 class='dialog-sub-label'>
-				Logged in as
-			</h3>
 			<div id='account_dialog_main'>
 				<div class='span-left'>
 					<div id='account_dialog_display_name'></div>
@@ -3098,15 +3053,15 @@ h2.message_dialog_label {
 			</div>
 			<div class='hr-separator'></div>
 			<h3 class='dialog-sub-label'>
-				Save current location
+				Current
 			</h3>
 			<div id='account_dialog_options'>
 				<div id='save_title_container' class='center'>
-					<input id='save_title_main' type='text' placeholder="&nbsp;&nbsp;Title&nbsp; &nbsp;e.g. Taj Mahal">
-					<input id='save_title_segment' type='text' placeholder="&nbsp;&nbsp;Segment&nbsp; &nbsp;e.g. West gate (optional)">
+					<input id='save_title_main' type='text' placeholder="&nbsp;&nbsp;Title">
+					<input id='save_title_segment' type='text' placeholder="&nbsp;&nbsp;Segment">
 				</div>
 				<div id='save_address_container'>
-					<div id='save_address' class='initial' contentEditable>&nbsp;&nbsp;Address (optional)</div>
+					<div id='save_address' class='initial' contentEditable>&nbsp;Address</div>
 				</div>
 				<div class='message_dialog_control_container'>
 					<div id='account_dialog_save' class="message_dialog_control center">
@@ -3117,7 +3072,7 @@ h2.message_dialog_label {
 			</div>
 			<div class='hr-separator'></div>
 			<h3 class='dialog-sub-label'>
-				Saved locations
+				Saved
 			</h3>
 			<div id='account_dialog_save_list_container'>
 				<div id='account_dialog_save_list_loader' class='center'>-loading-</div>
@@ -3224,9 +3179,9 @@ h2.message_dialog_label {
 		<span>accuracy</span> <span id='accuracy_meter'></span> <span id='accuracy_meter_unit'>m</span>
 		<span id='proceed_container'>
 			<span id='proceed_button' class='control'>
-				<span id='proceed_label_length'>Proceed</span>
+				<span id='proceed_label_length'><img id='proceed_label_icon' alt='Proceed' class='center' src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGhlaWdodD0iMTYiIHdpZHRoPSIyNCIgdmlld0JveD0iMCAwIDI0IDE0Ij4gPHBhdGggY2xhc3M9InByb2NlZWRfYnV0dG9uX3NoYXBlIiBkPSJtIDAuMDExMTM1OTYsMC45Nzc3MjgzMyB2IDEzLjk5OTk3NTY3IGwgMTEuMDAwMDEyMDQsLTYuOTk5OTc3NCB6IiBmaWxsPSIjNjliN2NmIiBpZD0icGF0aDMzNSIgLz4gPHBhdGggY2xhc3M9InByb2NlZWRfYnV0dG9uX3NoYXBlIiBkPSJtIDEyLjk4ODg1MiwwLjk3NzcyODMzIHYgMTMuOTk5OTc1NjcgbCAxMSwtNi45OTk5Nzc0IHoiIGZpbGw9IiM2OWI3Y2YiIGlkPSJwYXRoMzM3IiAvPiA8L3N2Zz4g" ></span>
 				<span id='proceed_progress'></span>
-				<span id='proceed_label'>Proceed</span>
+				<span id='proceed_label'><img id='proceed_label_icon' alt='Proceed' class='center' src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGhlaWdodD0iMTYiIHdpZHRoPSIyNCIgdmlld0JveD0iMCAwIDI0IDE0Ij4gPHBhdGggY2xhc3M9InByb2NlZWRfYnV0dG9uX3NoYXBlIiBkPSJtIDAuMDExMTM1OTYsMC45Nzc3MjgzMyB2IDEzLjk5OTk3NTY3IGwgMTEuMDAwMDEyMDQsLTYuOTk5OTc3NCB6IiBmaWxsPSIjNjliN2NmIiBpZD0icGF0aDMzNSIgLz4gPHBhdGggY2xhc3M9InByb2NlZWRfYnV0dG9uX3NoYXBlIiBkPSJtIDEyLjk4ODg1MiwwLjk3NzcyODMzIHYgMTMuOTk5OTc1NjcgbCAxMSwtNi45OTk5Nzc0IHoiIGZpbGw9IiM2OWI3Y2YiIGlkPSJwYXRoMzM3IiAvPiA8L3N2Zz4g" ></span>
 			</span>
 		</span>
 	</div>
@@ -3279,6 +3234,7 @@ h2.message_dialog_label {
 <script src='https://www.gstatic.com/firebasejs/7.14.2/firebase-auth.js'></script>
 <script src='https://www.gstatic.com/firebasejs/ui/4.5.0/firebase-ui-auth.js'></script>
 <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.5.0/firebase-ui-auth.css" />
+<script type="module" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyAeEV2fXhER2f4EP8OBn6ydDVjfkg9h8rE&libraries=places&callback=syncInitMap' async defer></script>
 	<script src='/geofire.min.js' async defer></script>
 	<script src='/html2canvas.min.js' async defer></script>
