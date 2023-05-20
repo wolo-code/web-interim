@@ -1130,6 +1130,7 @@ function setCodeWords(code, city, position) {
 }
 
 function decode_(city, code) {
+	code_city = city;
 	var data = [];
 	data[0] = wordList.indexOf(code[0]);
 	data[1] = wordList.indexOf(code[1]);
@@ -1803,12 +1804,12 @@ function setInfoWindowText(city_accent, city_name, code_string, latLng) {
 	var infoWindow_share_longpress_handle = google.maps.event.addListener(infoWindow, 'domready', function() {
 		google.maps.event.removeListener(infoWindow_share_longpress_handle);
 		if(document.getElementById('share_qr_button') != null)
+			addLongpressListener(document.getElementById('infowindow_code_right_code'), copyWcodeFull, copyWcodeCode);
+			addLongpressListener(document.getElementById('show_address_button'), toggleAddress, handleShareWCode);
+			addLongpressListener(document.getElementById('external_launch_button'), gotoCoordinate, copyWcodeJumpLink);
 			addLongpressListener(document.getElementById('share_qr_button'), showQR, downloadQR_minimal);
 	});
 	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'><span class='control' onclick='showChooseCity_by_periphery_Message();'>" + city_accent + "</span></span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code_string + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' src=" + svg_address + " ><div id='external_launch_button' class='control'><img src=" + svg_launch + " ></div><div id='share_qr_button' class='control'><div class='shield'></div><img src=" + svg_label + " ></div></div>");
-	addLongpressListener(document.getElementById('infowindow_code_right_code'), copyWcodeFull, copyWcodeCode);
-	addLongpressListener(document.getElementById('show_address_button'), toggleAddress, handleShareWCode);
-	addLongpressListener(document.getElementById('external_launch_button'), gotoCoordinate, copyWcodeJumpLink);
 	showInfoWindow();
 }
 
