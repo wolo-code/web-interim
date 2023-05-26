@@ -578,6 +578,7 @@ body > #pac-input {
 	border-top-left-radius: 5px;
 	border-bottom-left-radius: 5px;
 	text-transform: lowercase;
+	opacity: 0.5;
 }
 
 #pac-input:focus {
@@ -2096,6 +2097,13 @@ h2.message_dialog_label {
 #qr_preview.button_active > span > svg > path {
 	fill: white;
 }
+@media (max-width: 480px) {
+
+	#qr_controls.message_dialog_control button {
+		min-width: inherit;
+	}
+
+}
 @media print {
 
 	html {
@@ -2157,6 +2165,7 @@ h2.message_dialog_label {
 	border: none;
 	border-top-right-radius: 5px;
 	border-bottom-right-radius: 5px;
+	background-color: #ffffff22;
 }
 
 #info {
@@ -2866,7 +2875,7 @@ h2.message_dialog_label {
 	</div>
 	<div id='updated'>Updated:
 		<span id='updated-timestamp'>
-		2023 May 20 18:48:53 UTC		</span> ~<span id='updated-timediff'></span> ago
+		2023 May 26 14:06:34 UTC		</span> ~<span id='updated-timediff'></span> ago
 	</div>
 </div>
 
