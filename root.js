@@ -2658,7 +2658,7 @@ function downloadQR() {
 		document.getElementById('qr_close').classList.remove('hide');
 		document.getElementById('qr_controls').classList.remove('hide');
 		var qrImage = canvas.toDataURL("image/png");
-		downloadURI(qrImage, "Wolo codes - " + getCodeFull_text() + ".png");
+		downloadURI(qrImage, "Wolo Code - " + getCodeFull_text() + ".png");
 	} );
 }
 
@@ -2728,7 +2728,7 @@ function downloadQR_minimal() {
 		doc.setFontSize(sizeSlash);
 		doc.text('/', x, y);
 
-		doc.save("Wolo codes - " + getCodeFull_text() + ".pdf");
+		doc.save("Wolo Code - " + getCodeFull_text() + ".pdf");
 	} );
 	
 	hideCopyCodeMessage();
@@ -2785,7 +2785,7 @@ function shareWCode() {
 		share_address = address;
 	navigator.share( {
 		title: "Wolo",
-		text: "Wolo code for: " + ' ' + share_address + ' ' + '|',
+		text: "Wolo Code for: " + ' ' + share_address + ' ' + '|',
 		url: '/' + getCodeComplete().join('.').toLowerCase().replace(' ', '_') + '/'
 	} )
 	.catch((error) => console.log('Error sharing', error));
