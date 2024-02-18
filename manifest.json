@@ -1,45 +1,52 @@
 {
-	"name": "Simple precise addresses",
-	"short_name": "Wolo codes",
+	"name": "Wolo codes",
+	"short_name": "Wolo",
 	"icons": [
 		{
 			"src": "launcher-icon-0-75x.png",
 			"sizes": "36x36",
 			"type": "image/png",
+			"purpose": "any maskable",
 			"density": 0.75
 		},
 		{
 			"src": "launcher-icon-1x.png",
 			"sizes": "48x48",
 			"type": "image/png",
+			"purpose": "any maskable",
 			"density": 1.0
 		},
 		{
 			"src": "launcher-icon-1-5x.png",
 			"sizes": "72x72",
 			"type": "image/png",
+			"purpose": "any maskable",
 			"density": 1.5
 		},
 		{
 			"src": "launcher-icon-2x.png",
 			"sizes": "96x96",
 			"type": "image/png",
+			"purpose": "any maskable",
 			"density": 2.0
 		},
 		{
 			"src": "launcher-icon-3x.png",
 			"sizes": "144x144",
 			"type": "image/png",
+			"purpose": "any maskable",
 			"density": 3.0
 		},
 		{
 			"src": "launcher-icon-4x.png",
 			"sizes": "192x192",
 			"type": "image/png",
+			"purpose": "any maskable",
 			"density": 4.0
 		}
 	],
-	"start_url": "/",
+	"start_url": "./",
+	"scope": ".",
 	"display": "standalone",
 	"related_applications": [{
 		"platform": "web",
