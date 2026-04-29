@@ -6,8 +6,10 @@
 	<meta name='title' content="Wolo Code" >
 	<meta itemprop='name' content="Wolo Code" >
 	<meta name='author' content="Ujjwal Singh" >
-	<meta name='viewport' content="initial-scale=1.0, viewport-fit=cover" >
-	<meta name='theme-color' content='#ffffff' >
+	<meta name='viewport' content="width=device-width, initial-scale=1.0, viewport-fit=cover" >
+	<meta id='app_theme_color' name='theme-color' content='#efefef' >
+	<meta name='mobile-web-app-capable' content='yes' >
+	<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' >
 	<meta property="og:url" content="https://wolo.codes" />
 <meta property="og:title" content="" />
 <meta property="og:type" content="website" />
@@ -468,6 +470,7 @@ function processPosition(pos) {
 }
 
 function processPositionButtonDown() {
+	armPositionButtonReleaseHandlers();
 	firstFocus = true;
 	clearMap();
 	if(document.body.classList.contains('decode'))
@@ -485,6 +488,25 @@ function processPositionButtonUp() {
 	}
 	else
 		locate_button_pressed = false;
+	disarmPositionButtonReleaseHandlers();
+}
+
+function processPositionButtonCancel() {
+	locate_button_pressed = false;
+	disarmPositionButtonReleaseHandlers();
+}
+
+function armPositionButtonReleaseHandlers() {
+	disarmPositionButtonReleaseHandlers();
+	document.addEventListener('mouseup', processPositionButtonUp);
+	document.addEventListener('touchend', processPositionButtonUp);
+	document.addEventListener('touchcancel', processPositionButtonCancel);
+}
+
+function disarmPositionButtonReleaseHandlers() {
+	document.removeEventListener('mouseup', processPositionButtonUp);
+	document.removeEventListener('touchend', processPositionButtonUp);
+	document.removeEventListener('touchcancel', processPositionButtonCancel);
 }
 
 function processPositionButtonTouchStart(e) {
@@ -517,6 +539,7 @@ function clearLocating(hideAccuracyContainer) {
 	accuracy_indicator.classList.remove('blinking');
 	hideNotication();
 	clearTimeout(watch_location_notice_timer);
+	disarmPositionButtonReleaseHandlers();
 }
 
 function watch_location_notice() {
@@ -545,13 +568,40 @@ function getCityFromPositionViaGMap(position, callback_success, callback_failure
 	} );
 }
 
-function getCoarseLocation(callback_success, callback_failure) {
-	if(typeof navigator.geolocation !== 'undefined') {
-		var options = { timeout: 60000 };
-		navigator.geolocation.getCurrentPosition (callback_success, callback_failure, options);
-	} else {
-		alert("Sorry, browser does not support geolocation!");
-	}
+function isBadGeoPosition(pos) {
+	if (!pos || !pos.coords) return true;
+
+	const c = pos.coords;
+
+	return (
+		!Number.isFinite(c.latitude) ||
+		!Number.isFinite(c.longitude) ||
+		(c.latitude === 0 && c.longitude === 0) ||
+		c.accuracy === 0
+	);
+}
+
+function getCoarseLocation(success, failure) {
+	if (!navigator.geolocation) return failure?.("unsupported");
+
+	navigator.geolocation.getCurrentPosition(
+		(pos) => {
+			if (isBadGeoPosition(pos)) {
+				return failure?.({
+					code: "INVALID_POSITION",
+					message: "Browser returned 0,0 with zero accuracy"
+				});
+			}
+
+			success(pos);
+		},
+		failure,
+		{
+			enableHighAccuracy: false,
+			timeout: 10000,
+			maximumAge: 0
+		}
+	);
 }
 // var locateRight_callback;
 
@@ -657,56 +707,203 @@ function addLongpressListener(node, fnShort, fnLong) {
 var pendingInitMap;
 var clickHandler;
 var map;
+var pendingExceptionLogs = [];
 
 function syncInitMap() {
-	if (document.readyState === 'interactive' && typeof google === 'object' && typeof google.maps === 'object' && typeof initMap == 'function' && pendingInitMap) {
-		map = new google.maps.Map(document.getElementById('map'), {
-			center: DEFAULT_LATLNG,
-			zoom: DEFAULT_INIT_ZOOM,
-			mapTypeControl: false,
-			fullscreenControl: false,
-			streetViewControl: false,
-			zoomControl: false,
-			backgroundColor: 'none'
-		});
-		initMap();
-		
-		if(!locationAccessCheck()) {
-			getCityByIp();
-		}
-		else {
-			
-			var position;
-			initLocate(false, function() {
-				getCoarseLocation(function(position) {
-					getCityFromPositionViaGMap(position, function(city) {
-						document.getElementById('decode_input_city').innerText = city.name;
-						getCityCenterFromId(city, function() {
-							geoIP_city = city;
-						} );
-					}, handleLocationError) }, handleLocationError);
-				return;
+	try {
+		if (document.readyState !== 'loading' && typeof google === 'object' && typeof google.maps === 'object' && typeof google.maps.Map === 'function' && typeof initMap == 'function' && pendingInitMap) {
+			map = new google.maps.Map(document.getElementById('map'), {
+				center: DEFAULT_LATLNG,
+				zoom: DEFAULT_INIT_ZOOM,
+				mapTypeControl: false,
+				fullscreenControl: false,
+				streetViewControl: false,
+				zoomControl: false,
+				backgroundColor: 'none'
 			});
+			initMap();
+
+			if(!locationAccessCheck()) {
+				getCityByIp();
+			}
+			else {
 				
+				var position;
+				initLocate(false, function() {
+					function fallbackToCityByIp() {
+						getCityByIp();
+					}
+
+					getCoarseLocation(function(position) {
+						getCityFromPositionViaGMap(position, function(city) {
+							document.getElementById('decode_input_city').innerText = city.name;
+							getCityCenterFromId(city, function() {
+								geoIP_city = city;
+							} );
+						}, fallbackToCityByIp) }, fallbackToCityByIp);
+					return;
+				});
+
+			}
+
+			pendingInitMap = false;
 		}
-		
-		pendingInitMap = false;
+	}
+	catch(error) {
+		showErrorPrompt(error);
 	}
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-	if(typeof initLoad != 'undefined')
-		initLoad();
-	if( typeof CSS == 'undefined' || !CSS.supports("backdrop-filter: blur()") ) {
-		document.getElementById('logo').classList.add('plain_background');
-		document.getElementById('footer-content').classList.add('plain_background');
+	try {
+		if(typeof initLoad != 'undefined')
+			initLoad();
+		if( typeof CSS == 'undefined' || !CSS.supports("backdrop-filter: blur()") ) {
+			document.getElementById('logo').classList.add('plain_background');
+			document.getElementById('footer-content').classList.add('plain_background');
+		}
+		initExceptionMessageControls();
+		flushExceptionPrompt();
+	}
+	catch(error) {
+		showErrorPrompt(error);
 	}
 });
 
-window.onerror = function myErrorHandler(errorMsg, url, lineNumber) {
-	alert("Oops! Something went wrong. Make sure you are connected to the Internet and are using latest Google Chrome Browser - if this issue persists");
+function initExceptionMessageControls() {
+	var message = document.getElementById('exception_message');
+	var close = document.getElementById('exception_message_close');
+	var toggle = document.getElementById('exception_log_toggle');
+	var continueButton = document.getElementById('exception_message_continue');
+
+	if(!message || !close || !toggle || !continueButton || message.dataset.controlsReady)
+		return;
+
+	close.addEventListener('click', hideExceptionMessage);
+	toggle.addEventListener('click', toggleExceptionLog);
+	continueButton.addEventListener('click', hideExceptionMessage);
+	message.dataset.controlsReady = 'true';
+}
+
+function normalizeException(errorMsg, url, lineNumber, columnNumber, error) {
+	if(errorMsg instanceof Error) {
+		error = errorMsg;
+		errorMsg = error.message;
+	}
+
+	return {
+		msg: errorMsg && errorMsg.message ? errorMsg.message : String(errorMsg || 'Unhandled error'),
+		src: url || '',
+		line: lineNumber || '',
+		col: columnNumber || '',
+		stack: error && error.stack ? error.stack : ''
+	};
+}
+
+function formatExceptionLog(error) {
+	var log = ['Message: ' + error.msg];
+
+	if(error.src)
+		log.push('Source: ' + error.src);
+	if(error.line)
+		log.push('Line: ' + error.line);
+	if(error.col)
+		log.push('Column: ' + error.col);
+	if(error.stack)
+		log.push('', error.stack);
+
+	return log.join('\n');
+}
+
+function deferExceptionPrompt(callback) {
+	if(typeof queueMicrotask == 'function')
+		queueMicrotask(callback);
+	else
+		setTimeout(callback, 0);
+}
+
+function showErrorPrompt(errorMsg, url, lineNumber, columnNumber, error) {
+	var exception = normalizeException(errorMsg, url, lineNumber, columnNumber, error);
+	pendingExceptionLogs.push(exception);
+	reportExceptionPrompt(error || errorMsg || exception.msg, exception);
+	deferExceptionPrompt(flushExceptionPrompt);
+}
+
+function reportExceptionPrompt(error, exception) {
+	if(typeof Sentry == 'undefined' || typeof Sentry.captureException != 'function')
+		return;
+
+	if(error instanceof Error)
+		Sentry.captureException(error);
+	else
+		Sentry.captureException(new Error(exception.msg));
+}
+
+function flushExceptionPrompt() {
+	var message = document.getElementById('exception_message');
+
+	if(!message || !pendingExceptionLogs.length)
+		return;
+
+	showExceptionMessage(pendingExceptionLogs.map(formatExceptionLog).join('\n\n---\n\n'));
+}
+
+function showExceptionMessage(log) {
+	var message = document.getElementById('exception_message');
+	var logNode = document.getElementById('exception_log');
+	var toggle = document.getElementById('exception_log_toggle');
+	var controls = document.getElementById('exception_prompt_controls');
+
+	if(!message || !logNode || !toggle || !controls)
+		return;
+
+	initExceptionMessageControls();
+	logNode.textContent = log;
+	logNode.classList.add('hide');
+	controls.classList.remove('hide');
+	toggle.setAttribute('aria-expanded', 'false');
+	toggle.setAttribute('aria-label', 'Show technical log');
+
+	if(typeof showOverlay == 'function')
+		showOverlay(message);
+	else {
+		document.getElementById('overlay').classList.remove('hide');
+		message.classList.remove('hide');
+	}
+}
+
+function hideExceptionMessage() {
+	var message = document.getElementById('exception_message');
+
+	pendingExceptionLogs = [];
+	if(typeof hideOverlay == 'function')
+		hideOverlay(message);
+	else {
+		document.getElementById('overlay').classList.add('hide');
+		message.classList.add('hide');
+	}
+}
+
+function toggleExceptionLog() {
+	var log = document.getElementById('exception_log');
+	var toggle = document.getElementById('exception_log_toggle');
+	var controls = document.getElementById('exception_prompt_controls');
+	var isHidden = log.classList.toggle('hide');
+
+	controls.classList.toggle('hide', !isHidden);
+	toggle.setAttribute('aria-expanded', !isHidden);
+	toggle.setAttribute('aria-label', isHidden ? 'Show technical log' : 'Hide technical log');
+}
+
+window.onerror = function myErrorHandler(errorMsg, url, lineNumber, columnNumber, error) {
+	showErrorPrompt(errorMsg, url, lineNumber, columnNumber, error);
 	return false;
 }
+
+window.addEventListener('unhandledrejection', function myRejectionHandler(event) {
+	var reason = event.reason || 'Unhandled promise rejection';
+	showErrorPrompt(reason.message || reason, '', '', '', reason);
+});
 	</script>
 	<script>
 function trackOutboundLink(title, url) {
@@ -815,14 +1012,38 @@ function syncMarkEntry(lat_lng) {
 	margin-left: auto;
 	margin-right: auto;
 }
+:root {
+	--app-background-wcode: #efefef;
+	--app-background-map: #60d0e5;
+	--app-background-satellite: #1b2f62;
+	--app-background-current: var(--app-background-wcode);
+}
+
 html {
-	background: rgb(170, 218, 255);
+	background: var(--app-background-current);
 }
 
 html, body {
 	height: 100%;
 	margin: 0;
+	overflow-x: hidden;
 	padding: 0;
+}
+
+body {
+	background: var(--app-background-current);
+}
+
+body.decode {
+	--app-background-current: var(--app-background-wcode);
+}
+
+body.map {
+	--app-background-current: var(--app-background-map);
+}
+
+body.satellite {
+	--app-background-current: var(--app-background-satellite);
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -851,6 +1072,16 @@ button.border {
 
 #map {
 	height: 100%;
+	background: var(--app-background-current);
+}
+
+body.map #map,
+body.satellite #map {
+	background-color: var(--app-background-current);
+	background-image:
+		linear-gradient(rgba(80,90,80,.10) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(80,90,80,.10) 1px, transparent 1px);
+	background-size: 48px 48px;
 }
 
 #description {
@@ -893,13 +1124,17 @@ button.border {
 	width: 160px;
 }
 
-#logo a {
-	display: inline-block;
+#logo_surface {
 	border-radius: 6px;
-	border-width: thin;
-	border-color: #e5e5e5;
-	border-style: solid;
+	display: inline-flex;
+	flex-direction: column;
+	overflow: hidden;
 	padding: 2px;
+}
+
+#logo a {
+	display: block;
+	line-height: 0;
 }
 
 #logo_wolo > .image > svg {
@@ -907,6 +1142,7 @@ button.border {
 }
 
 #logo_codes {
+	padding-bottom: 2px;
 	text-decoration: none;
 }
 
@@ -1062,6 +1298,14 @@ body > #pac-input {
 	background: rgba(241, 241, 241, 0.75)
 }
 
+#logo.plain_background {
+	background: transparent;
+}
+
+#logo.plain_background #logo_surface {
+	background: rgba(241, 241, 241, 0.75);
+}
+
 .front_arrow_white > svg > g > g > path {
 	fill: white !important;
 }
@@ -1071,19 +1315,73 @@ body > #pac-input {
 	height: 100%;
 	width: 100%;
 }
+
+#map gmp-internal-camera-control {
+	opacity: 0.5;
+}
+@media (max-width: 734px) and (min-width: 662px) {
+		.satellite #account, .map #account {
+				right: unset !important;
+				left: 10px !important;
+				top: 84px !important;
+		}
+}
+
 @media (max-width: 662px) {
+
+		body.map #map,
+		body.satellite #map {
+			background-image:
+				linear-gradient(rgba(80,90,80,.12) 1px, transparent 1px),
+				linear-gradient(90deg, rgba(80,90,80,.12) 1px, transparent 1px);
+			background-size: 24px 24px;
+		}
 	
 		#pac-input {
+			box-sizing: border-box;
 			top: 100px !important;
-			left: -4px !important;
-			width: 88% !important
+			left: 8px !important;
+			height: 42px !important;
+			margin-left: 0;
+			width: calc(100vw - 66px) !important
+		}
+
+		#decode_button {
+			box-sizing: border-box;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			top: 100px !important;
+			left: auto !important;
+			right: 8px !important;
+			width: 48px !important;
+			height: 42px !important;
+			padding: 8px;
+		}
+
+		#search_icon {
+			top: 110px !important;
+			left: 20px !important;
 		}
 	
 		#logo {
 			width: auto !important;
-			left: 0;
-			right: 0;
-			text-align: center;
+			left: 50%;
+			max-width: calc(100vw - 16px);
+			right: auto;
+			text-align: left;
+			transform: translateX(-50%);
+		}
+
+		#logo_surface {
+			align-items: flex-end;
+			flex-direction: row;
+			max-width: 100%;
+			vertical-align: top;
+		}
+
+		#logo_codes {
+			padding-bottom: 4px;
 		}
 		
 		#notification_top {
@@ -1098,17 +1396,36 @@ body > #pac-input {
 		#account {
 			right: 10px !important;
 			left: unset !important;
+			top: 10px !important;
 		}
 		
 }
 
 @media (max-width: 316px) {
+	#logo_surface {
+		align-items: center;
+		flex-direction: column;
+	}
+
+	#logo_codes {
+		padding-bottom: 2px;
+	}
+
 	#pac-input {
 		top: 126px !important;
 	}
+
+	#decode_button {
+		top: 126px !important;
+	}
+
+	#search_icon {
+		top: 136px !important;
+	}
 	
 	#account {
-		top: 180px !important;
+		left: 4px !important;
+		top: 84px !important;
 	}
 }
 
@@ -1370,6 +1687,53 @@ h2.message_dialog_label {
 
 .message_dialog_subtitle_text {
 	padding: 10px 0 10px 14px;
+}
+
+.exception_summary {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+}
+
+.message_dialog_body > .exception_summary > span:first-child {
+	flex: 1;
+	min-width: 0;
+	color: inherit;
+}
+
+.exception_log_toggle {
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	margin: 0;
+	border: 1px solid #dcdcdc;
+	border-radius: 50%;
+	background: white;
+	color: #69B7CF;
+	font-family: 'Roboto Condensed', Abel, sans-serif;
+	font-size: 1.1em;
+	font-weight: bold;
+	line-height: 1;
+	box-shadow: rgba(0, 0, 0, 0.285) 0px 1px 4px -1px;
+}
+
+.exception_log {
+	box-sizing: border-box;
+	max-height: 180px;
+	margin: 0;
+	padding: 10px;
+	overflow: auto;
+	border: 1px solid #e0e0e0;
+	background: #f8f8f8;
+	color: #777;
+	font-family: Consolas, 'Courier New', monospace;
+	font-size: 0.78em;
+	line-height: 1.35;
+	white-space: pre-wrap;
+	word-break: break-word;
 }
 @media (max-width: 512px) {
 
@@ -1797,7 +2161,7 @@ input:valid {
 		<div id='notification_bottom' class="notification_bar hide"></div>
 		<div id='footer-content-container' class='center'>
 			<div id='footer-content' class='blur_background'>
-				<a class='link-gray' href='/license'>&copy; 2024</a>
+				<a class='link-gray' href='/license'>&copy; 2026</a>
 				<a class='link' href='/about_me' rel='author'>Ujjwal Singh</a>
 			</div>
 		</div>
@@ -1812,7 +2176,7 @@ input:valid {
 <script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-analytics.js"></script>
 <script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-performance.js"></script>
 <script src='https://www.gstatic.com/firebasejs/7.14.2/firebase-auth.js'></script>
-	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyAeEV2fXhER2f4EP8OBn6ydDVjfkg9h8rE&libraries=places&callback=syncInitMap' async defer></script>
+	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyAeEV2fXhER2f4EP8OBn6ydDVjfkg9h8rE&libraries=places&callback=syncInitMap&loading=async' async defer></script>
 	<script src='/geofire.min.js' async defer></script>
 	<script src='/html2canvas.min.js' async defer></script>
 </body>

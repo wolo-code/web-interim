@@ -30,18 +30,15 @@
 	<link rel='manifest' href='/manifest.json' >
 	<link href="https://wolo.codes/about" rel='canonical' >
 	<title>Word based location codes - Wolo codes</title>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-882VJ942XZ"></script>
 <script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-  ga('create', 'UA-157078524-1', 'auto');
-	ga('require', 'linkid');
-  ga('send', 'pageview');
-
-</script>
-<script>
+  gtag('config', 'G-882VJ942XZ');
+</script><script>
 /**
 * Function that tracks a click on an outbound link in Analytics.
 * This function takes a valid URL string as an argument, and uses that URL string
@@ -61,9 +58,28 @@ var trackOutboundLink = function(title, url) {
 }
 
 </script>
-		<script src='https://browser.sentry-cdn.com/6.4.1/bundle.min.js' crossorigin='anonymous'
+		<script src='https://browser.sentry-cdn.com/8.8.0/bundle.tracing.min.js'
+integrity='sha384-THoc7rflwZFKTdZNgv6jLFFDn299Uv3t1SW5B4yGLvLiCRTYP9ys6vXZcMl95TQF'
+crossorigin='anonymous'
 ></script>
-		<script>Sentry.init({ dsn: 'https://badf8db6081d40d48af771b728440050@sentry.io/2045587' });
+		<script>Sentry.init({
+    dsn: 'https://badf8db6081d40d48af771b728440050@o85995.ingest.us.sentry.io/2045587',
+    release: "wolo.codes@1.1.1",
+      integrations: [
+        Sentry.browserTracingIntegration(),
+        Sentry.replayIntegration(),
+      ],
+
+      // Set tracesSampleRate to 1.0 to capture 100%
+      // of transactions for performance monitoring.
+      // We recommend adjusting this value in production
+      tracesSampleRate: 1.0,
+
+      // Capture Replay for 10% of all sessions,
+      // plus for 100% of sessions with an error
+      replaysSessionSampleRate: 1.0,
+      replaysOnErrorSampleRate: 1.0,
+});
 </script>
 		<script src='//apis.google.com/js/platform.js' async defer></script>
 		<script src='//platform.twitter.com/widgets.js' async></script>
@@ -1630,10 +1646,10 @@ ul li span {
 						<div id='google_translate_element'></div>
 						<div id='search_box'><div class="gcse-search"></div></div>
 						<div id='canvas-wrapper'>
-							<div id='path-container' class=""><div id=path>	<a class='content-link' href='/'>&#8962; </a>
+							<div id='path-container' class=""><div id=path>	<a class='XURL content-link' href='/' data-target='root' data-title=''>&#8962; </a>
 	<span class='path-separator'>\</span>
 </div></div>
-							<div id='title-container' class=""><h1 id='title'></h1></div>
+							<div id='title-container' class=""><h1 id='title'>About</h1></div>
 							<div id='canvas-wrapper-inner-container'>
 								<div id='nav-menu'>
 	<div id='nav-menu_container'>
@@ -1682,6 +1698,10 @@ ul li span {
 
 		<div id='location_solution_description' class='pagebreak'>
 			<h2><span class='bullet'>•</span><span>Intro</span></h2>
+			<p class='indent-b'>
+				<strong>Wolo Code</strong> is a location app by <em>Wolo</em> that converts map locations into short, word based address codes and converts those codes back into map locations.<br>
+				The app helps users search for a place, select a point on a map, generate a <em>Wolo Code</em> for that point, decode an existing <em>Wolo Code</em>, and share or save useful addresses
+			</p>
 			<div class='content-image-container' >
 	<div class="content-image center" style="padding-bottom: 56.25%">
 				<img src='/about/location_solution_description.svg' loading='lazy' alt="">
@@ -1760,6 +1780,27 @@ ul li span {
 			</div>
 		</div>
 
+		<div id='app_homepage_summary' class='pagebreak'>
+			<h2><span class='bullet'>•</span><span>Data use</span></h2>
+			<p class='indent-b'>
+				You can use the public location tools without signing in.
+				Signing in with <em>Google</em> or <em>Facebook</em> is optional and is used only when you choose account features, such as viewing your account profile in the app or saving and opening your saved Wolo Code addresses.
+			</p>
+			<p class='indent-b'>
+				When you sign in with Google or Facebook, Wolo Code requests basic profile information such as your name and email address so the app can identify your account, show your signed-in profile, and associate saved addresses with you.
+				Wolo Code does <strong>not</strong> request account access to read your <em>Gmail</em>, <em>contacts</em>, <em>calendar</em>, <em>Drive</em> files, Facebook posts, friends list, messages, or other unrelated Google or Facebook data.
+			</p>
+			<p class='indent-b'>
+				For details on how user information is collected, used, and protected, read the
+				<a href='/policy' data-target='policy' class='content-link XURL'>Wolo Code Privacy Policy</a>.<br>
+				For details on the terms of use of the app, read the
+				<a href='/terms' data-target='terms' class='content-link XURL'>Wolo Code Terms of Use</a>.
+			</p>
+			<p class='indent-b'>
+				<small>Google and Facebook are trademarks of their respective owners. Wolo Code is not affiliated with, endorsed by, or sponsored by Google or Facebook and their parent organizations: Alphabet and Meta</small>
+			</p>
+		</div>
+
 		<div id='locaiton_appendix' class='pagebreak'>
 			<h2><span class='bullet'></span><span class='key'>Appendix</span></h2>
 			<ol id='locaiton_appendix_list'>
@@ -1779,10 +1820,9 @@ ul li span {
 		</a><a id='nav-menu-next'
 			class='XURL item_block_container' href='/faq' data-target='faq' data-title='FAQ' >
 		<img class='item_block_image item_block_image_visible' src='/resource/placeholder.svg' loading='lazy' alt='Navigation - next page tile'><div class='item_block_text'><div>FAQ</div><div class='arrow'>&#x25BA;</div></div>
-		</a><a id='nav-menu-up' class='content-link item_block_container center-arrow' href='/'>
-		<img class="item_block_image item_block_image_hidden" loading='lazy' src='/root.svg ' alt='Navigation - up level tile'><div class='item_block_text'><div class='arrow'>&#x25B2;</div></div>
-	</a>
-	</div>
+		</a><a id='nav-menu-up' class='XURL item_block_container center-arrow' href='/' data-target='root' data-title='Wolo'>
+		<img class='item_block_image item_block_image_hidden' loading='lazy' src='/root.svg ' alt='Navigation - up level tile'><div class='item_block_text'><div></div><div class='arrow'>&#x25B2;</div></div>
+	</a> </div>
 									</div>
 								</div>
 							</div>
@@ -1797,7 +1837,7 @@ ul li span {
 		<div id='updated'>
 			Updated:
 			<span id='date'>
-				2023 Dec 21			</span>
+				2026 Apr 28			</span>
 		</div>
 	</div>
 	<div class='shadow-scroll-bottom'></div>
@@ -2035,8 +2075,8 @@ ul li span {
 		</div>
 		
 		<div class='footer-content'>
-			<a class="content-link-gray XURL" href='/license' data-target='license' data-title='License'>&copy; 2024</a>
-			<a class="content-link XURL" href='/about' data-target='about' data-title='About'>Wolo Code</a><a class='content-link' target='_blank' href='/about'></a>
+			<a class="content-link-gray XURL" href='/license' data-target='license' data-title='License'>&copy; 2026</a>
+			<a class="content-link XURL" href='/about' data-target='about' data-title='About'>Wolo</a><a class='content-link' target='_blank' href='/about'></a>
 		</div>
 		
 	</div>

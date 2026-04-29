@@ -6,8 +6,10 @@
 	<meta name='title' content="Wolo Code" >
 	<meta itemprop='name' content="Wolo Code" >
 	<meta name='author' content="Ujjwal Singh" >
-	<meta name='viewport' content="initial-scale=1.0, viewport-fit=cover" >
-	<meta name='theme-color' content='#ffffff' >
+	<meta name='viewport' content="width=device-width, initial-scale=1.0, viewport-fit=cover" >
+	<meta id='app_theme_color' name='theme-color' content='#efefef' >
+	<meta name='mobile-web-app-capable' content='yes' >
+	<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' >
 	<meta property="og:url" content="https://wolo.codes" />
 <meta property="og:title" content="" />
 <meta property="og:type" content="website" />
@@ -468,6 +470,7 @@ function processPosition(pos) {
 }
 
 function processPositionButtonDown() {
+	armPositionButtonReleaseHandlers();
 	firstFocus = true;
 	clearMap();
 	if(document.body.classList.contains('decode'))
@@ -485,6 +488,25 @@ function processPositionButtonUp() {
 	}
 	else
 		locate_button_pressed = false;
+	disarmPositionButtonReleaseHandlers();
+}
+
+function processPositionButtonCancel() {
+	locate_button_pressed = false;
+	disarmPositionButtonReleaseHandlers();
+}
+
+function armPositionButtonReleaseHandlers() {
+	disarmPositionButtonReleaseHandlers();
+	document.addEventListener('mouseup', processPositionButtonUp);
+	document.addEventListener('touchend', processPositionButtonUp);
+	document.addEventListener('touchcancel', processPositionButtonCancel);
+}
+
+function disarmPositionButtonReleaseHandlers() {
+	document.removeEventListener('mouseup', processPositionButtonUp);
+	document.removeEventListener('touchend', processPositionButtonUp);
+	document.removeEventListener('touchcancel', processPositionButtonCancel);
 }
 
 function processPositionButtonTouchStart(e) {
@@ -517,6 +539,7 @@ function clearLocating(hideAccuracyContainer) {
 	accuracy_indicator.classList.remove('blinking');
 	hideNotication();
 	clearTimeout(watch_location_notice_timer);
+	disarmPositionButtonReleaseHandlers();
 }
 
 function watch_location_notice() {
@@ -545,13 +568,40 @@ function getCityFromPositionViaGMap(position, callback_success, callback_failure
 	} );
 }
 
-function getCoarseLocation(callback_success, callback_failure) {
-	if(typeof navigator.geolocation !== 'undefined') {
-		var options = { timeout: 60000 };
-		navigator.geolocation.getCurrentPosition (callback_success, callback_failure, options);
-	} else {
-		alert("Sorry, browser does not support geolocation!");
-	}
+function isBadGeoPosition(pos) {
+	if (!pos || !pos.coords) return true;
+
+	const c = pos.coords;
+
+	return (
+		!Number.isFinite(c.latitude) ||
+		!Number.isFinite(c.longitude) ||
+		(c.latitude === 0 && c.longitude === 0) ||
+		c.accuracy === 0
+	);
+}
+
+function getCoarseLocation(success, failure) {
+	if (!navigator.geolocation) return failure?.("unsupported");
+
+	navigator.geolocation.getCurrentPosition(
+		(pos) => {
+			if (isBadGeoPosition(pos)) {
+				return failure?.({
+					code: "INVALID_POSITION",
+					message: "Browser returned 0,0 with zero accuracy"
+				});
+			}
+
+			success(pos);
+		},
+		failure,
+		{
+			enableHighAccuracy: false,
+			timeout: 10000,
+			maximumAge: 0
+		}
+	);
 }
 // var locateRight_callback;
 
@@ -657,56 +707,203 @@ function addLongpressListener(node, fnShort, fnLong) {
 var pendingInitMap;
 var clickHandler;
 var map;
+var pendingExceptionLogs = [];
 
 function syncInitMap() {
-	if (document.readyState === 'interactive' && typeof google === 'object' && typeof google.maps === 'object' && typeof initMap == 'function' && pendingInitMap) {
-		map = new google.maps.Map(document.getElementById('map'), {
-			center: DEFAULT_LATLNG,
-			zoom: DEFAULT_INIT_ZOOM,
-			mapTypeControl: false,
-			fullscreenControl: false,
-			streetViewControl: false,
-			zoomControl: false,
-			backgroundColor: 'none'
-		});
-		initMap();
-		
-		if(!locationAccessCheck()) {
-			getCityByIp();
-		}
-		else {
-			
-			var position;
-			initLocate(false, function() {
-				getCoarseLocation(function(position) {
-					getCityFromPositionViaGMap(position, function(city) {
-						document.getElementById('decode_input_city').innerText = city.name;
-						getCityCenterFromId(city, function() {
-							geoIP_city = city;
-						} );
-					}, handleLocationError) }, handleLocationError);
-				return;
+	try {
+		if (document.readyState !== 'loading' && typeof google === 'object' && typeof google.maps === 'object' && typeof google.maps.Map === 'function' && typeof initMap == 'function' && pendingInitMap) {
+			map = new google.maps.Map(document.getElementById('map'), {
+				center: DEFAULT_LATLNG,
+				zoom: DEFAULT_INIT_ZOOM,
+				mapTypeControl: false,
+				fullscreenControl: false,
+				streetViewControl: false,
+				zoomControl: false,
+				backgroundColor: 'none'
 			});
+			initMap();
+
+			if(!locationAccessCheck()) {
+				getCityByIp();
+			}
+			else {
 				
+				var position;
+				initLocate(false, function() {
+					function fallbackToCityByIp() {
+						getCityByIp();
+					}
+
+					getCoarseLocation(function(position) {
+						getCityFromPositionViaGMap(position, function(city) {
+							document.getElementById('decode_input_city').innerText = city.name;
+							getCityCenterFromId(city, function() {
+								geoIP_city = city;
+							} );
+						}, fallbackToCityByIp) }, fallbackToCityByIp);
+					return;
+				});
+
+			}
+
+			pendingInitMap = false;
 		}
-		
-		pendingInitMap = false;
+	}
+	catch(error) {
+		showErrorPrompt(error);
 	}
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-	if(typeof initLoad != 'undefined')
-		initLoad();
-	if( typeof CSS == 'undefined' || !CSS.supports("backdrop-filter: blur()") ) {
-		document.getElementById('logo').classList.add('plain_background');
-		document.getElementById('footer-content').classList.add('plain_background');
+	try {
+		if(typeof initLoad != 'undefined')
+			initLoad();
+		if( typeof CSS == 'undefined' || !CSS.supports("backdrop-filter: blur()") ) {
+			document.getElementById('logo').classList.add('plain_background');
+			document.getElementById('footer-content').classList.add('plain_background');
+		}
+		initExceptionMessageControls();
+		flushExceptionPrompt();
+	}
+	catch(error) {
+		showErrorPrompt(error);
 	}
 });
 
-window.onerror = function myErrorHandler(errorMsg, url, lineNumber) {
-	alert("Oops! Something went wrong. Make sure you are connected to the Internet and are using latest Google Chrome Browser - if this issue persists");
+function initExceptionMessageControls() {
+	var message = document.getElementById('exception_message');
+	var close = document.getElementById('exception_message_close');
+	var toggle = document.getElementById('exception_log_toggle');
+	var continueButton = document.getElementById('exception_message_continue');
+
+	if(!message || !close || !toggle || !continueButton || message.dataset.controlsReady)
+		return;
+
+	close.addEventListener('click', hideExceptionMessage);
+	toggle.addEventListener('click', toggleExceptionLog);
+	continueButton.addEventListener('click', hideExceptionMessage);
+	message.dataset.controlsReady = 'true';
+}
+
+function normalizeException(errorMsg, url, lineNumber, columnNumber, error) {
+	if(errorMsg instanceof Error) {
+		error = errorMsg;
+		errorMsg = error.message;
+	}
+
+	return {
+		msg: errorMsg && errorMsg.message ? errorMsg.message : String(errorMsg || 'Unhandled error'),
+		src: url || '',
+		line: lineNumber || '',
+		col: columnNumber || '',
+		stack: error && error.stack ? error.stack : ''
+	};
+}
+
+function formatExceptionLog(error) {
+	var log = ['Message: ' + error.msg];
+
+	if(error.src)
+		log.push('Source: ' + error.src);
+	if(error.line)
+		log.push('Line: ' + error.line);
+	if(error.col)
+		log.push('Column: ' + error.col);
+	if(error.stack)
+		log.push('', error.stack);
+
+	return log.join('\n');
+}
+
+function deferExceptionPrompt(callback) {
+	if(typeof queueMicrotask == 'function')
+		queueMicrotask(callback);
+	else
+		setTimeout(callback, 0);
+}
+
+function showErrorPrompt(errorMsg, url, lineNumber, columnNumber, error) {
+	var exception = normalizeException(errorMsg, url, lineNumber, columnNumber, error);
+	pendingExceptionLogs.push(exception);
+	reportExceptionPrompt(error || errorMsg || exception.msg, exception);
+	deferExceptionPrompt(flushExceptionPrompt);
+}
+
+function reportExceptionPrompt(error, exception) {
+	if(typeof Sentry == 'undefined' || typeof Sentry.captureException != 'function')
+		return;
+
+	if(error instanceof Error)
+		Sentry.captureException(error);
+	else
+		Sentry.captureException(new Error(exception.msg));
+}
+
+function flushExceptionPrompt() {
+	var message = document.getElementById('exception_message');
+
+	if(!message || !pendingExceptionLogs.length)
+		return;
+
+	showExceptionMessage(pendingExceptionLogs.map(formatExceptionLog).join('\n\n---\n\n'));
+}
+
+function showExceptionMessage(log) {
+	var message = document.getElementById('exception_message');
+	var logNode = document.getElementById('exception_log');
+	var toggle = document.getElementById('exception_log_toggle');
+	var controls = document.getElementById('exception_prompt_controls');
+
+	if(!message || !logNode || !toggle || !controls)
+		return;
+
+	initExceptionMessageControls();
+	logNode.textContent = log;
+	logNode.classList.add('hide');
+	controls.classList.remove('hide');
+	toggle.setAttribute('aria-expanded', 'false');
+	toggle.setAttribute('aria-label', 'Show technical log');
+
+	if(typeof showOverlay == 'function')
+		showOverlay(message);
+	else {
+		document.getElementById('overlay').classList.remove('hide');
+		message.classList.remove('hide');
+	}
+}
+
+function hideExceptionMessage() {
+	var message = document.getElementById('exception_message');
+
+	pendingExceptionLogs = [];
+	if(typeof hideOverlay == 'function')
+		hideOverlay(message);
+	else {
+		document.getElementById('overlay').classList.add('hide');
+		message.classList.add('hide');
+	}
+}
+
+function toggleExceptionLog() {
+	var log = document.getElementById('exception_log');
+	var toggle = document.getElementById('exception_log_toggle');
+	var controls = document.getElementById('exception_prompt_controls');
+	var isHidden = log.classList.toggle('hide');
+
+	controls.classList.toggle('hide', !isHidden);
+	toggle.setAttribute('aria-expanded', !isHidden);
+	toggle.setAttribute('aria-label', isHidden ? 'Show technical log' : 'Hide technical log');
+}
+
+window.onerror = function myErrorHandler(errorMsg, url, lineNumber, columnNumber, error) {
+	showErrorPrompt(errorMsg, url, lineNumber, columnNumber, error);
 	return false;
 }
+
+window.addEventListener('unhandledrejection', function myRejectionHandler(event) {
+	var reason = event.reason || 'Unhandled promise rejection';
+	showErrorPrompt(reason.message || reason, '', '', '', reason);
+});
 	</script>
 	<script>
 function trackOutboundLink(title, url) {
@@ -900,14 +1097,38 @@ function syncCheckIncompatibleBrowserMessage() {
 	margin-left: auto;
 	margin-right: auto;
 }
+:root {
+	--app-background-wcode: #efefef;
+	--app-background-map: #60d0e5;
+	--app-background-satellite: #1b2f62;
+	--app-background-current: var(--app-background-wcode);
+}
+
 html {
-	background: rgb(170, 218, 255);
+	background: var(--app-background-current);
 }
 
 html, body {
 	height: 100%;
 	margin: 0;
+	overflow-x: hidden;
 	padding: 0;
+}
+
+body {
+	background: var(--app-background-current);
+}
+
+body.decode {
+	--app-background-current: var(--app-background-wcode);
+}
+
+body.map {
+	--app-background-current: var(--app-background-map);
+}
+
+body.satellite {
+	--app-background-current: var(--app-background-satellite);
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -936,6 +1157,16 @@ button.border {
 
 #map {
 	height: 100%;
+	background: var(--app-background-current);
+}
+
+body.map #map,
+body.satellite #map {
+	background-color: var(--app-background-current);
+	background-image:
+		linear-gradient(rgba(80,90,80,.10) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(80,90,80,.10) 1px, transparent 1px);
+	background-size: 48px 48px;
 }
 
 #description {
@@ -978,13 +1209,17 @@ button.border {
 	width: 160px;
 }
 
-#logo a {
-	display: inline-block;
+#logo_surface {
 	border-radius: 6px;
-	border-width: thin;
-	border-color: #e5e5e5;
-	border-style: solid;
+	display: inline-flex;
+	flex-direction: column;
+	overflow: hidden;
 	padding: 2px;
+}
+
+#logo a {
+	display: block;
+	line-height: 0;
 }
 
 #logo_wolo > .image > svg {
@@ -992,6 +1227,7 @@ button.border {
 }
 
 #logo_codes {
+	padding-bottom: 2px;
 	text-decoration: none;
 }
 
@@ -1147,6 +1383,14 @@ body > #pac-input {
 	background: rgba(241, 241, 241, 0.75)
 }
 
+#logo.plain_background {
+	background: transparent;
+}
+
+#logo.plain_background #logo_surface {
+	background: rgba(241, 241, 241, 0.75);
+}
+
 .front_arrow_white > svg > g > g > path {
 	fill: white !important;
 }
@@ -1156,19 +1400,73 @@ body > #pac-input {
 	height: 100%;
 	width: 100%;
 }
+
+#map gmp-internal-camera-control {
+	opacity: 0.5;
+}
+@media (max-width: 734px) and (min-width: 662px) {
+		.satellite #account, .map #account {
+				right: unset !important;
+				left: 10px !important;
+				top: 84px !important;
+		}
+}
+
 @media (max-width: 662px) {
+
+		body.map #map,
+		body.satellite #map {
+			background-image:
+				linear-gradient(rgba(80,90,80,.12) 1px, transparent 1px),
+				linear-gradient(90deg, rgba(80,90,80,.12) 1px, transparent 1px);
+			background-size: 24px 24px;
+		}
 	
 		#pac-input {
+			box-sizing: border-box;
 			top: 100px !important;
-			left: -4px !important;
-			width: 88% !important
+			left: 8px !important;
+			height: 42px !important;
+			margin-left: 0;
+			width: calc(100vw - 66px) !important
+		}
+
+		#decode_button {
+			box-sizing: border-box;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			top: 100px !important;
+			left: auto !important;
+			right: 8px !important;
+			width: 48px !important;
+			height: 42px !important;
+			padding: 8px;
+		}
+
+		#search_icon {
+			top: 110px !important;
+			left: 20px !important;
 		}
 	
 		#logo {
 			width: auto !important;
-			left: 0;
-			right: 0;
-			text-align: center;
+			left: 50%;
+			max-width: calc(100vw - 16px);
+			right: auto;
+			text-align: left;
+			transform: translateX(-50%);
+		}
+
+		#logo_surface {
+			align-items: flex-end;
+			flex-direction: row;
+			max-width: 100%;
+			vertical-align: top;
+		}
+
+		#logo_codes {
+			padding-bottom: 4px;
 		}
 		
 		#notification_top {
@@ -1183,17 +1481,36 @@ body > #pac-input {
 		#account {
 			right: 10px !important;
 			left: unset !important;
+			top: 10px !important;
 		}
 		
 }
 
 @media (max-width: 316px) {
+	#logo_surface {
+		align-items: center;
+		flex-direction: column;
+	}
+
+	#logo_codes {
+		padding-bottom: 2px;
+	}
+
 	#pac-input {
 		top: 126px !important;
 	}
+
+	#decode_button {
+		top: 126px !important;
+	}
+
+	#search_icon {
+		top: 136px !important;
+	}
 	
 	#account {
-		top: 180px !important;
+		left: 4px !important;
+		top: 84px !important;
 	}
 }
 
@@ -1456,6 +1773,53 @@ h2.message_dialog_label {
 .message_dialog_subtitle_text {
 	padding: 10px 0 10px 14px;
 }
+
+.exception_summary {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+}
+
+.message_dialog_body > .exception_summary > span:first-child {
+	flex: 1;
+	min-width: 0;
+	color: inherit;
+}
+
+.exception_log_toggle {
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	margin: 0;
+	border: 1px solid #dcdcdc;
+	border-radius: 50%;
+	background: white;
+	color: #69B7CF;
+	font-family: 'Roboto Condensed', Abel, sans-serif;
+	font-size: 1.1em;
+	font-weight: bold;
+	line-height: 1;
+	box-shadow: rgba(0, 0, 0, 0.285) 0px 1px 4px -1px;
+}
+
+.exception_log {
+	box-sizing: border-box;
+	max-height: 180px;
+	margin: 0;
+	padding: 10px;
+	overflow: auto;
+	border: 1px solid #e0e0e0;
+	background: #f8f8f8;
+	color: #777;
+	font-family: Consolas, 'Courier New', monospace;
+	font-size: 0.78em;
+	line-height: 1.35;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
 @media (max-width: 512px) {
 
 	.dialog_message_primary {
@@ -1608,7 +1972,7 @@ h2.message_dialog_label {
 	right: 188px;
 	top: 18px;
 	padding: 8px;
-	margin: -8px;
+	margin: 0px;
 }
 
 #account_default_image.inactive > svg > path:first-child {
@@ -1951,18 +2315,15 @@ h2.message_dialog_label {
 }
 
 .decode #decode_interface_overlay {
-	background-color: #efefef;
+	background-color: var(--app-background-current);
 	display: block;
 }
 
 .decode #decode_input_container {
 	margin: auto;
 	text-align: center;
+	/* padding-top: 20px !important; */
 }
-
-.decode #map_type_button {
-	color: rgba(0,0,0,.14);
-} 
 
 .decode #account {
 	left: 12px;
@@ -1983,6 +2344,7 @@ h2.message_dialog_label {
 	font-size: 1.38em;
 	font-weight: 300;
 	border: none;
+	line-height: 1.18;
 	min-width: 262px;
 	margin-left: 12px;
 	margin-right: 12px;
@@ -1993,10 +2355,15 @@ h2.message_dialog_label {
 .decode #decode_input {
 	padding: 8px;
 	display: inline-block;
-	height: 26px;
+	box-sizing: content-box;
+	min-height: 26px;
+	max-height: 112px;
 	background-color: transparent;
-	text-overflow: ellipsis;
 	border-bottom: 1px solid #8e8e8e;
+	overflow: hidden;
+	resize: none;
+	vertical-align: bottom;
+	margin-bottom: 10px;
 }
 
 #decode_input_shadow {
@@ -2005,6 +2372,7 @@ h2.message_dialog_label {
 	bottom: 36px;
 	max-width: 92%;
 	overflow: hidden;
+	white-space: pre;
 }
 
 #decode_input {
@@ -2021,8 +2389,9 @@ h2.message_dialog_label {
 	border: none;
 	vertical-align: middle;
 	margin: -8px;
-	padding: 8px;
+	padding: 25px;
 	margin-left: -18px;
+	vertical-align: bottom;
 }
 
 #decode_input_button > svg {
@@ -2033,7 +2402,11 @@ h2.message_dialog_label {
 	display: none;
 }
 
-.decode #info svg {
+.decode #decode_map_view_button {
+	display: block;
+}
+
+.decode #action_menu svg {
 	box-shadow: rgb(0 0 0 / 6%) 0px 1px 4px -1px;
 }
 
@@ -2041,23 +2414,8 @@ h2.message_dialog_label {
 	box-shadow: rgb(0 0 0 / 6%) 0px 1px 4px -1px;
 }
 
-.decode #map_type_button svg {
-	box-shadow: rgb(0 0 0 / 6%) 0px 1px 4px -1px;
-}
-
-.decode #logo_wolo, .decode #logo_codes {
+.decode #logo_surface {
 	border-radius: 6px;
-	border-width: thin;
-	border-color: #cecece;
-	border-style: solid;
-}
-
-.decode #map_type_button > span > svg > g:first-of-type > path:first-of-type {
-	fill: #adadad;
-}
-
-.decode #map_type_button > span > svg > g:last-of-type {
-	display: none
 }
 
 #decode_input_button .proceed_button_shape {
@@ -2068,16 +2426,72 @@ h2.message_dialog_label {
 	display: none;
 }
 
-.map #map_type_button > span > svg > g:last-of-type {
-	display: none
+.map_type_icon,
+.view_toggle_icon {
+	display: block;
+	height: 39px;
+	position: relative;
+	width: 39px;
 }
 
-.satellite #map_type_button > span > svg > g:first-of-type {
-	display: none
+.map_type_icon > span,
+.view_toggle_icon > span {
+	display: none;
+	inset: 0;
+	position: absolute;
+}
+
+body:not(.satellite) .map_type_icon_terrain,
+.satellite .map_type_icon_satellite,
+body:not(.decode) .view_toggle_icon_code,
+.decode .view_toggle_icon_map {
+	display: block;
+}
+
+.decode #action_menu_map .map_type_icon_terrain {
+	display: none;
+}
+
+.decode #action_menu_map .map_type_icon_satellite {
+	display: block;
 }
 
 #decode_input_city {
 	color: #7f7f7f;
+}
+
+#decode_map_view_button {
+	background: transparent;
+	border: none;
+	bottom: 26px;
+	cursor: pointer;
+	display: none;
+	margin: -8px;
+	padding: 8px;
+	position: absolute;
+	right: 11px;
+	z-index: 1;
+}
+
+#decode_map_view_button svg {
+	background-color: rgb(255 255 255 / 50%);
+	border-radius: 25px;
+	box-shadow: rgb(0 0 0 / 6%) 0px 1px 4px -1px;
+	box-sizing: border-box;
+	display: block;
+	height: 39px;
+	padding: 5px;
+	width: 39px;
+}
+
+@media (max-width: 316px) {
+	.decode #decode_input,
+	#decode_input_shadow {
+		box-sizing: border-box;
+		max-width: calc(100vw - 24px);
+		min-width: 0;
+		width: calc(100vw - 24px) !important;
+	}
 }
 @media (max-width: 662px) {
 
@@ -2617,19 +3031,91 @@ h2.message_dialog_label {
 	background-color: #ffffff22;
 }
 
-#info {
+#action_menu {
 	z-index: 1;
 	position: absolute;
 	bottom: 26px;
 	left: 11px;
+	width: 39px;
+	height: 39px;
 	padding: 8px;
 	margin: -8px;
 }
 
-#info svg {
+#action_menu button {
+	-webkit-tap-highlight-color: transparent;
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	display: block;
+	padding: 0;
+}
+
+#action_menu a {
+	display: block;
+}
+
+#action_menu svg {
+	box-sizing: border-box;
 	box-shadow: rgb(0 0 0 / 30%) 0px 1px 4px -1px;
 	background-color: rgb(255 255 255 / 50%);
 	border-radius: 25px;
+	display: block;
+	height: 39px;
+	width: 39px;
+}
+
+#action_menu_map svg {
+	padding: 5px;
+}
+
+#action_menu_decode svg {
+	padding: 5px;
+}
+
+#action_menu_toggle svg {
+	transform-origin: center;
+	transition: transform 180ms ease;
+}
+
+#action_menu.open #action_menu_toggle svg {
+	transform: rotate(45deg);
+}
+
+#action_menu_items {
+	bottom: 8px;
+	left: 8px;
+	position: absolute;
+	pointer-events: none;
+}
+
+.action_menu_item {
+	bottom: 0;
+	left: 0;
+	margin: 0;
+	position: absolute;
+	opacity: 0;
+	transform: translate(0, 0) scale(.86);
+	transition: opacity 160ms ease, transform 160ms ease;
+}
+
+#action_menu.open #action_menu_items {
+	pointer-events: auto;
+}
+
+#action_menu.open .action_menu_item {
+	opacity: 1;
+	transform: translate(0, -56px) scale(1);
+}
+
+#action_menu.open .action_menu_item:nth-child(2) {
+	transform: translate(40px, -40px) scale(1);
+	transition-delay: 35ms;
+}
+
+#action_menu.open .action_menu_item:nth-child(3) {
+	transform: translate(56px, 0) scale(1);
+	transition-delay: 70ms;
 }
 
 #map_type_button {
@@ -2651,12 +3137,15 @@ h2.message_dialog_label {
 #location_button {
 	z-index: 1;
 	position: absolute;
-	right: 0px;
+	left: 0;
+	right: 0;
 	bottom: 30px;
 	height: 24px;
-	margin: 8px 4px 8px 8px;
+	margin: 8px auto;
 	padding: 8px;
 	border: none;
+	text-align: center;
+	width: 48px;
 }
 
 #location_button svg {
@@ -2665,10 +3154,6 @@ h2.message_dialog_label {
 	border-radius: 25px;
 }
 
-.satellite #logo_wolo, .satellite #logo_codes {
-	border-color: #a09f9fc7;
-	border-style: solid;
-}
 
 #map_type_button svg {
 	background-color: rgb(255 255 255 / 50%);
@@ -2709,6 +3194,10 @@ h2.message_dialog_label {
 }
 
 @media (max-width: 316px) {
+	#account {
+		padding-top: 0px;
+		padding-left: 8px;
+	}
 	
 	#search_icon {
 		left: 12px;
@@ -2745,7 +3234,7 @@ h2.message_dialog_label {
 	<div id='decode_input_container'>
 		<div id='decode_input_city'>&nbsp;</div>
 		<div id='decode_input_suggestion_result' class='suggestion_result' data-input='decode_input' data-resize_input='true'></div>
-		<input id='decode_input' data-suggest='decode_input_suggestion_result' data-handler='decode_input_button' type='text' placeholder="\ Wolo Code /" autocomplete='off'>
+		<textarea id='decode_input' data-suggest='decode_input_suggestion_result' data-handler='decode_input_button' rows='1' placeholder="\ Wolo Code /" autocomplete='off'></textarea>
 		<div id='decode_input_button' class='control' tabindex='4'>
 			<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
 	 height="26" width="24"
@@ -2757,6 +3246,15 @@ h2.message_dialog_label {
 	</div>
 	<span id='decode_input_shadow'></span>
 </div>
+<button id='decode_map_view_button' class='control' type='button' aria-label='Terrain map view' tabindex='6'>
+	<span class='image'><svg width="24" height="24" version="1.1" viewBox="0 0 28.8 28.8" xmlns="http://www.w3.org/2000/svg">
+	<g transform="matrix(1.0952 0 0 1.0952 1.2453 -.6941)">
+		<path d="m20.5 4.8812-0.16 0.03-5.34 2.07-6-2.1-5.64 1.9c-0.21 0.07-0.36 0.25-0.36 0.48v15.12c0 0.28 0.22 0.5 0.5 0.5l0.16-0.03 5.34-2.07 6 2.1 5.64-1.9c0.21-0.07 0.36-0.25 0.36-0.48v-15.12c0-0.28-0.22-0.5-0.5-0.5zm-5.5 16-6-2.11v-11.89l6 2.11z" fill="#69b7cf"/>
+		<path d="m0 0h24v24h-24z" fill="none"/>
+	</g>
+</svg>
+</span>
+</button>
 <div id='overlay' class="overlay hide">
 	<div>
 	<div id='redirecting_message' class="message_dialog hide">
@@ -3085,6 +3583,10 @@ h2.message_dialog_label {
 		<td>contact:</td>
 		<td><a class='link' href="mailto:ujjwal@wolo.codes?subject=Wolo">ujjwal@wolo.codes</a></td>
 	</tr>
+	<tr>
+		<td>source code:</td>
+		<td><a class='link' href="https://github.com/wolo-code" onclick="trackOutboundLink('wolo-github', 'https://github.com/wolo-code')">github.com/wolo-code</a></td>
+	</tr>
 </table>
 
 <div id='social-links' class='center'>
@@ -3324,13 +3826,37 @@ h2.message_dialog_label {
 	</div>
 	<div id='updated'>Updated:
 		<span id='updated-timestamp'>
-		2024 Feb 22 22:48:25 UTC		</span> ~<span id='updated-timediff'></span> ago
+		2026 Apr 29 23:07:56 UTC		</span> ~<span id='updated-timediff'></span> ago
 	</div>
 </div>
 
 </div>
 	<div id='info_agency'>
 		by <a class='link' href='https://wcodes.org/about_me'>Ujjwal Singh</a>
+	</div>
+</div>
+<div id='exception_message' class="message_dialog hide">
+	<h2 class='message_dialog_label'>
+		Unexpected Error
+	</h2>
+	<div id='exception_message_close' class="message_dialog_close control">
+		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+	 height='22' width='22'
+	 viewBox="0 0 24 24">
+	<path fill='#CECECE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+	<path fill='none' d="M0 0h24v24H0z" />
+</svg>
+</span>
+	</div>
+	<div class='message_dialog_body'>
+		<p class='exception_summary'>
+			<span>Error occurred. View details?</span>
+			<button id='exception_log_toggle' class='exception_log_toggle control' type='button' aria-expanded='false' aria-controls='exception_log' aria-label='Show technical log'>i</button>
+		</p>
+		<div id='exception_prompt_controls' class="center message_dialog_control">
+			<button id='exception_message_continue' class="border dialog_message_secondary" type='button'>Continue</button>
+		</div>
+		<pre id='exception_log' class='exception_log hide'></pre>
 	</div>
 </div>
 <div id='incompatible_browser_message' class="message_dialog hide">
@@ -3539,8 +4065,9 @@ h2.message_dialog_label {
 	</div>
 </div>
 <div id='logo' tabindex='1'>
-	<a id=logo_wolo class='blur_background' href='//wolo.codes'>
-		<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
+	<div id='logo_surface' class='blur_background'>
+		<a id=logo_wolo href='//wolo.codes'>
+			<span class='image'><svg xmlns="http://www.w3.org/2000/svg"
 	 height="50px"
 	 viewBox="-55 -18 306 100">
 	<g transform="matrix(1.2483 0 0 1.2483 13.164 -55.438)">
@@ -3568,9 +4095,9 @@ h2.message_dialog_label {
 	</g>
 </svg>
 </span>
-	</a>
-	<a id=logo_codes class='blur_background' href='//wolo.codes'>
-		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+		</a>
+		<a id=logo_codes href='//wolo.codes'>
+			<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
 	 width='152px' height='14px'
 	 viewBox="0 0 152 10">
 	<g transform="translate(4.4482)" fill="#69b7cf" stroke-width=".47133" aria-label="CODE">
@@ -3581,7 +4108,8 @@ h2.message_dialog_label {
 	</g>
 </svg>
 </span>
-	</a>
+		</a>
+	</div>
 </div>
 <div id='account' class="control">
 	<span class='image'>
@@ -3600,27 +4128,90 @@ h2.message_dialog_label {
 </svg>
 </span>
 </div>
-<div id='map_type_button' class='control' tabindex='6'>
-	<span class='image'><svg width="24" height="24" version="1.1" viewBox="0 0 28.8 28.8" xmlns="http://www.w3.org/2000/svg">
+<div id='map_type_button' class='control hide' tabindex='6'>
+	<span class='image map_type_icon'>
+		<span class='map_type_icon_terrain'><svg width="24" height="24" version="1.1" viewBox="0 0 28.8 28.8" xmlns="http://www.w3.org/2000/svg">
 	<g transform="matrix(1.0952 0 0 1.0952 1.2453 -.6941)">
 		<path d="m20.5 4.8812-0.16 0.03-5.34 2.07-6-2.1-5.64 1.9c-0.21 0.07-0.36 0.25-0.36 0.48v15.12c0 0.28 0.22 0.5 0.5 0.5l0.16-0.03 5.34-2.07 6 2.1 5.64-1.9c0.21-0.07 0.36-0.25 0.36-0.48v-15.12c0-0.28-0.22-0.5-0.5-0.5zm-5.5 16-6-2.11v-11.89l6 2.11z" fill="#69b7cf"/>
 		<path d="m0 0h24v24h-24z" fill="none"/>
 	</g>
+</svg>
+</span>
+		<span class='map_type_icon_satellite'><svg width="24" height="24" version="1.1" viewBox="0 0 28.8 28.8" xmlns="http://www.w3.org/2000/svg">
 	<g transform="matrix(1.1576 0 0 1.1576 .50865 .32319)">
 		<path d="m0 0h24v24h-24z" fill="none"/>
 		<path d="m19 3h-14c-1.1 0-2 0.9-2 2v14c0 1.1 0.9 2 2 2h14c1.1 0 2-0.9 2-2v-14c0-1.1-0.9-2-2-2zm0 16h-14v-14h14zm-10.43-13h-2.57v2.58c1.42 0 2.57-1.16 2.57-2.58zm3.43 0h-1.71c0 2.36-1.92 4.29-4.29 4.29v1.71c3.32 0 6-2.69 6-6zm2.14 5.86-3 3.87-2.14-2.58-3 3.85h12z" fill="#69b7cf"/>
 	</g>
 </svg>
 </span>
+	</span>
 </div>
-<div id='info' class='control' tabindex='7'>
-	<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+<div id='action_menu' class='control' tabindex='7'>
+	<div id='action_menu_items'>
+		<button id='action_menu_info' class='action_menu_item' type='button' tabindex='-1' aria-label='Info'>
+			<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
 	 width='39' height='39'
 	 viewBox="0 0 24 24">
 	<path d="M0 0h24v24H0z" fill="none"/>
 	<path d="m10.8667 17.6667h2.26667v-6.8h-2.26667zm0-9.06667h2.26667v-2.26667h-2.26667z" style="fill:#69b7cf;stroke-width:1.13333"/>
 </svg>
 </span>
+		</button>
+		<button id='action_menu_decode' class='action_menu_item' type='button' tabindex='-1' aria-label='Wolo Code input'>
+			<span class='image view_toggle_icon'>
+				<span class='view_toggle_icon_map'><svg width="24" height="24" version="1.1" viewBox="0 0 28.8 28.8" xmlns="http://www.w3.org/2000/svg">
+	<g transform="matrix(1.0952 0 0 1.0952 1.2453 -.6941)">
+		<path d="m20.5 4.8812-0.16 0.03-5.34 2.07-6-2.1-5.64 1.9c-0.21 0.07-0.36 0.25-0.36 0.48v15.12c0 0.28 0.22 0.5 0.5 0.5l0.16-0.03 5.34-2.07 6 2.1 5.64-1.9c0.21-0.07 0.36-0.25 0.36-0.48v-15.12c0-0.28-0.22-0.5-0.5-0.5zm-5.5 16-6-2.11v-11.89l6 2.11z" fill="#69b7cf"/>
+		<path d="m0 0h24v24h-24z" fill="none"/>
+	</g>
+</svg>
+</span>
+				<span class='view_toggle_icon_code'><?xml version="1.0" encoding="UTF-8"?>
+<svg width="24" height="24" version="1.1" viewBox="0 0 28.8 28.8" xmlns="http://www.w3.org/2000/svg">
+	<g transform="scale(1.2)" fill="none" stroke="#69b7cf" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7">
+		<g transform="matrix(.29585 0 0 .29585 19.306 7.9699)">
+			<path d="m-48.621 33.244-15.379-39.244h4.1897l15.329 39.244z" fill="#d9d9d9" stroke-width=".789"/>
+			<g transform="matrix(.49282 0 0 .43694 -37.688 .95326)" fill="#69b7cf">
+				<path d="m-3.6 66.1-25.2-72.8h13.5l25.1 72.8z"/>
+				<path d="m26.3 12.6-15.2 46.9-5.7-18.6 15.2-47.6h12.6l17.1 51 18.1-51h13.4l-25.3 72.8h-12.6z"/>
+			</g>
+			<g transform="matrix(.4929 0 0 .43702 -36.136 .94858)">
+				<path d="m94.4-15.9h8.5l-30.7 89.8h-8.5z" fill="#d9d9d9"/>
+			</g>
+		</g>
+	</g>
+</svg>
+</span>
+			</span>
+		</button>
+		<button id='action_menu_map' class='action_menu_item' type='button' tabindex='-1' aria-label='Map view'>
+			<span class='image map_type_icon'>
+				<span class='map_type_icon_terrain'><svg width="24" height="24" version="1.1" viewBox="0 0 28.8 28.8" xmlns="http://www.w3.org/2000/svg">
+	<g transform="matrix(1.0952 0 0 1.0952 1.2453 -.6941)">
+		<path d="m20.5 4.8812-0.16 0.03-5.34 2.07-6-2.1-5.64 1.9c-0.21 0.07-0.36 0.25-0.36 0.48v15.12c0 0.28 0.22 0.5 0.5 0.5l0.16-0.03 5.34-2.07 6 2.1 5.64-1.9c0.21-0.07 0.36-0.25 0.36-0.48v-15.12c0-0.28-0.22-0.5-0.5-0.5zm-5.5 16-6-2.11v-11.89l6 2.11z" fill="#69b7cf"/>
+		<path d="m0 0h24v24h-24z" fill="none"/>
+	</g>
+</svg>
+</span>
+				<span class='map_type_icon_satellite'><svg width="24" height="24" version="1.1" viewBox="0 0 28.8 28.8" xmlns="http://www.w3.org/2000/svg">
+	<g transform="matrix(1.1576 0 0 1.1576 .50865 .32319)">
+		<path d="m0 0h24v24h-24z" fill="none"/>
+		<path d="m19 3h-14c-1.1 0-2 0.9-2 2v14c0 1.1 0.9 2 2 2h14c1.1 0 2-0.9 2-2v-14c0-1.1-0.9-2-2-2zm0 16h-14v-14h14zm-10.43-13h-2.57v2.58c1.42 0 2.57-1.16 2.57-2.58zm3.43 0h-1.71c0 2.36-1.92 4.29-4.29 4.29v1.71c3.32 0 6-2.69 6-6zm2.14 5.86-3 3.87-2.14-2.58-3 3.85h12z" fill="#69b7cf"/>
+	</g>
+</svg>
+</span>
+			</span>
+		</button>
+	</div>
+	<button id='action_menu_toggle' type='button' aria-label='Actions' aria-expanded='false'>
+		<span class='image'><svg xmlns="http://www.w3.org/2000/svg" width="39" height="39" viewBox="0 0 39 39">
+	<path d="m0 0h39v39h-39z" fill="none"/>
+	<circle cx="13" cy="19.5" r="1.95" fill="#69b7cf"/>
+	<circle cx="19.5" cy="19.5" r="1.95" fill="#69b7cf"/>
+	<circle cx="26" cy="19.5" r="1.95" fill="#69b7cf"/>
+</svg>
+</span>
+	</button>
 </div>
 <div id='notification_top' class="notification_bar hide">Try: Bengaluru, India</div>
 <div id='accuracy_container' class="center-container-abs hide">
@@ -3639,8 +4230,8 @@ h2.message_dialog_label {
 <div id='notification_bottom' class="notification_bar hide"></div>
 <div id='footer-content-container' class='center'>
 	<div id='footer-content' class='blur_background'>
-		<a class='link-gray' href='/license'>&copy; 2024 </a>
-		<span id='footer_author' class='link'>Wolo Code</span>
+		<a class='link-gray' href='/license'>&copy; 2026 </a>
+		<span id='footer_author' class='link'>Wolo</span>
 	</div>
 </div>
 <div id='address_text' class='hide'>
@@ -3685,7 +4276,7 @@ h2.message_dialog_label {
 <script src='https://www.gstatic.com/firebasejs/ui/4.5.0/firebase-ui-auth.js'></script>
 <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.5.0/firebase-ui-auth.css" />
 <script type="module" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyAeEV2fXhER2f4EP8OBn6ydDVjfkg9h8rE&libraries=places&callback=syncInitMap' async defer></script>
+	<script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyAeEV2fXhER2f4EP8OBn6ydDVjfkg9h8rE&libraries=places&callback=syncInitMap&loading=async' async defer></script>
 	<script src='/geofire.min.js' async defer></script>
 	<script src='/html2canvas.min.js' async defer></script>
 </body>

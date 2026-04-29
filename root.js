@@ -746,15 +746,34 @@ function getCityFromId(id, callback) {
 }
 
 function getCityFromName(group, name, callback) {
+	var city_name_part = group.concat([name]);
+	var query_list = [];
+	for(var i = 0; i < city_name_part.length; i++) {
+		query_list.push({
+			group: city_name_part.slice(0, i),
+			name: city_name_part.slice(i).join(' ')
+		});
+	}
+
+	getCityFromNameQuery(query_list, 0, callback);
+}
+
+function getCityFromNameQuery(query_list, index, callback) {
+	if(index >= query_list.length) {
+		decode_continue();
+		return;
+	}
+
+	var query = query_list[index];
 	var ref = database.ref('CityDetail');
 	pushLoader();
-	ref.orderByChild('name_id').equalTo(name).once('value', function(snapshot) {
+	ref.orderByChild('name_id').equalTo(query.name).once('value', function(snapshot) {
 		popLoader();
 		var list = snapshot.val();
 		let matchList;
-		matchList = matchCityByGroup(list, group, name);
+		matchList = matchCityByGroup(list, query.group, query.name);
 		if(matchList.length == 0)
-			decode_continue();
+			getCityFromNameQuery(query_list, index+1, callback);
 		else {
 			if(matchList.length == 1) {
 				let i = matchList[0];
@@ -820,6 +839,25 @@ function getCityIdFromNameId(name_id, callback) {
 }
 
 function getCityFromCityGp_id(city_gp_id, encode_session_id, callback_success, callback_failure) {
+	if(typeof encode_session_id == 'function') {
+		callback_failure = callback_success;
+		callback_success = encode_session_id;
+		encode_session_id = null;
+	}
+
+	function forwardCityCallback(callback, ar_param) {
+		if(typeof callback == 'undefined')
+			return;
+		if(encode_session_id == null) {
+			if(typeof ar_param === "undefined")
+				callback();
+			else
+				callback(...ar_param);
+		}
+		else
+			sessionForwarder(encode_session_id, callback, ar_param);
+	}
+
 	var ref = database.ref('CityDetail');
 	pushLoader();
 	ref.orderByChild('gp_id').equalTo(city_gp_id).once('value', function(snapshot) {
@@ -827,10 +865,10 @@ function getCityFromCityGp_id(city_gp_id, encode_session_id, callback_success, c
 		if (snapshot.exists()) {
 			var city = Object.values(snapshot.val())[0];
 			city.id = Object.keys(snapshot.val())[0];
-			sessionForwarder(encode_session_id, callback_success, [city]);
+			forwardCityCallback(callback_success, [city]);
 		}
 		else {
-			sessionForwarder(encode_session_id, callback_failure);
+			forwardCityCallback(callback_failure);
 		}
 	});	
 }
@@ -838,13 +876,13 @@ function getCityFromCityGp_id(city_gp_id, encode_session_id, callback_success, c
 function noCity(position) {
 	showNoCityMessage();
 	showAddress();
-	infoWindow.setContent("City not in database");
+	infoWindow_setContent("City not in database");
 }
 
 function notInRange(position) {
 	showNotification("Error: place out of range of selected city");
 	showAddress();
-	infoWindow.setContent("<div class='control' onclick='showChooseCity_by_periphery_Message();'>Not in <span class='blue'>selected<span> city's range</div>");
+	infoWindow_setContent("<div class='control' onclick='showChooseCity_by_periphery_Message();'>Not in <span class='blue'>selected<span> city's range</div>");
 	showChooseCity_by_periphery_Message();
 }
 
@@ -1121,7 +1159,7 @@ function setCurrentCity_status(status) {
 }
 
 function encode_continue(city, position) {
-	encode_session_id = Date.now
+	encode_session_id = Date.now();
 	var session_id = encode_session_id;
 	if(city == null) {
 		if(!pendingCity) {
@@ -1685,11 +1723,12 @@ function setInfoWindowText(city_accent, city_name, code_string, latLng) {
 	initInfoWindow();
 	var infoWindow_share_longpress_handle = google.maps.event.addListener(infoWindow, 'domready', function() {
 		google.maps.event.removeListener(infoWindow_share_longpress_handle);
-		if(document.getElementById('share_qr_button') != null)
+		if(document.getElementById('share_qr_button') != null) {
 			addLongpressListener(document.getElementById('infowindow_code_right_code'), copyWcodeFull, copyWcodeCode);
 			addLongpressListener(document.getElementById('show_address_button'), toggleAddress, handleShareWCode);
 			addLongpressListener(document.getElementById('external_launch_button'), gotoCoordinate, copyWcodeJumpLink);
 			addLongpressListener(document.getElementById('share_qr_button'), showQR, downloadQR_minimal);
+		}
 	});
 	infoWindow_setContent("<div id='infowindow_code'><div id='infowindow_code_left'><span class='slash'>\\</span> <span class='infowindow_code' id='infowindow_code_left_code'><span class='control' onclick='showChooseCity_by_periphery_Message();'>" + city_accent + "</span></span></div><div id='infowindow_code_right'>" + "<span class='infowindow_code' id='infowindow_code_right_code'>" + code_string + "</span> <span class='slash'>/</span></div></div><div id='infowindow_actions' class='center'><img id='show_address_button' class='control' src=" + svg_address + " ><div id='external_launch_button' class='control'><img src=" + svg_launch + " ></div><div id='share_qr_button' class='control'><div class='shield'></div><img src=" + svg_label + " ></div></div>");
 	showInfoWindow();
@@ -1750,10 +1789,44 @@ var infoWindow;
 var accuCircle;
 var myLocDot;
 var poiPlace;
+var APP_MODE_BACKGROUND = {
+	wcode: '#efefef',
+	map: '#60d0e5',
+	satellite: '#1b2f62'
+};
+var APP_MODE_BACKGROUND_DEFAULT = '#efefef';
 
 // const INCORRECT_WCODE;
 // const MESSAGE_LOADING;
 // const LOCATION_PERMISSION_DENIED;
+
+function getAppMode() {
+	if(document.body.classList.contains('satellite'))
+		return 'satellite';
+	else if(document.body.classList.contains('map'))
+		return 'map';
+	else
+		return 'wcode';
+}
+
+function getAppModeBackground(mode) {
+	if(typeof APP_MODE_BACKGROUND != 'object' || !APP_MODE_BACKGROUND || !APP_MODE_BACKGROUND[mode])
+		return APP_MODE_BACKGROUND_DEFAULT || '#efefef';
+	return APP_MODE_BACKGROUND[mode];
+}
+
+function syncAppModeBackground() {
+	var mode = getAppMode();
+	var background = getAppModeBackground(mode);
+	var themeColor = document.querySelector('meta[name="theme-color"]');
+	document.body.dataset.appMode = mode;
+	if(themeColor)
+		themeColor.setAttribute('content', background);
+	document.documentElement.style.backgroundColor = background;
+	document.body.style.backgroundColor = background;
+	if(typeof map == 'object' && map)
+		map.setOptions({backgroundColor: background});
+}
 
 function initMap() {
 
@@ -1847,7 +1920,7 @@ function initMap() {
 	addLongpressListener(document.getElementById('decode_input_button'), decode_input_from_form_external, decode_input_from_form);
 
 	map_type_button.addEventListener('click', function() {
-		toggleMapType();
+		toggleMapViewType();
 	});
 
 	location_button.addEventListener('mousedown', processPositionButtonDown);
@@ -1862,6 +1935,8 @@ function initMap() {
 
 	if(init_map_mode == 'satellite')
 		toggleMapType();
+	else
+		syncAppModeBackground();
 
 	postMap();
 
@@ -1987,7 +2062,17 @@ function activateMapType() {
 	if(document.body.classList.contains('decode')) {
 		document.body.classList.remove('decode');
 		document.body.classList.add('map');
+		map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
 	}
+	syncAppModeBackground();
+}
+
+function activateSatelliteMapType() {
+	document.body.classList.remove('decode');
+	document.body.classList.remove('map');
+	document.body.classList.add('satellite');
+	map.setMapTypeId(google.maps.MapTypeId.SATELLITE);
+	syncAppModeBackground();
 }
 
 function toggleMapType() {
@@ -2008,6 +2093,37 @@ function toggleMapType() {
 		document.body.classList.remove('map');
 		document.body.classList.add('satellite');
 	}
+	syncAppModeBackground();
+}
+
+function toggleMapViewType() {
+	if(document.body.classList.contains('decode')) {
+		activateSatelliteMapType();
+	}
+	else if(map.getMapTypeId() == google.maps.MapTypeId.SATELLITE.toLowerCase()) {
+		document.body.classList.remove('satellite');
+		document.body.classList.add('map');
+		map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
+	}
+	else if(map.getMapTypeId() == google.maps.MapTypeId.ROADMAP.toLowerCase()) {
+		document.body.classList.remove('map');
+		document.body.classList.add('satellite');
+		map.setMapTypeId(google.maps.MapTypeId.SATELLITE);
+	}
+	syncAppModeBackground();
+}
+
+function toggleDecodeView() {
+	if(document.body.classList.contains('decode')) {
+		activateMapType();
+	}
+	else {
+		document.body.classList.remove('map');
+		document.body.classList.remove('satellite');
+		document.body.classList.add('decode');
+		map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
+	}
+	syncAppModeBackground();
 }
 function showNoCityMessage() {
 	showOverlay(document.getElementById('no_city_message'));
@@ -2592,6 +2708,8 @@ function sessionForwarder(session_id, fwd_function, ar_param) {
 }
 
 function enterHandler(event) {
+	if (event.target.id === 'decode_input' && !event.ctrlKey && !event.metaKey)
+		return;
 	if (event.keyCode === 13) {
 		event.preventDefault();
 		document.getElementById(event.target.getAttribute('data-handler')).click();
@@ -2699,7 +2817,11 @@ function setupControls() {
 	document.getElementById('info_message_close').addEventListener('click', closeInfo);
 	document.getElementById('info_intro_close_button').addEventListener('click', closeInfo);
 	document.getElementById('info_full_close_button').addEventListener('click', closeInfo);
-	document.getElementById('info').addEventListener('click', showInfo);
+	document.getElementById('action_menu_toggle').addEventListener('click', toggleActionMenu);
+	document.getElementById('action_menu_info').addEventListener('click', showInfoFromActionMenu);
+	document.getElementById('action_menu_map').addEventListener('click', toggleMapViewTypeFromActionMenu);
+	document.getElementById('action_menu_decode').addEventListener('click', toggleDecodeViewFromActionMenu);
+	document.getElementById('decode_map_view_button').addEventListener('click', toggleDecodeView);
 	document.getElementById('footer_author').addEventListener('click', showInfoLinks);
 	document.getElementById('no_city_message_close').addEventListener('click', hideNoCityMessage);
 	document.getElementById('locate_right_message_close').addEventListener('click', hideLocateRightMessage);
@@ -2727,9 +2849,47 @@ function setupControls() {
 	addLongpressListener(document.getElementById('qr_download'), downloadQR, onQRDialogSave);
 }
 
+function toggleActionMenu() {
+	var action_menu = document.getElementById('action_menu');
+	var is_open = action_menu.classList.toggle('open');
+	document.getElementById('action_menu_toggle').setAttribute('aria-expanded', is_open);
+	document.getElementById('action_menu_info').tabIndex = is_open ? 0 : -1;
+	document.getElementById('action_menu_map').tabIndex = is_open ? 0 : -1;
+	document.getElementById('action_menu_decode').tabIndex = is_open ? 0 : -1;
+}
+
+function closeActionMenu() {
+	document.getElementById('action_menu').classList.remove('open');
+	document.getElementById('action_menu_toggle').setAttribute('aria-expanded', false);
+	document.getElementById('action_menu_info').tabIndex = -1;
+	document.getElementById('action_menu_map').tabIndex = -1;
+	document.getElementById('action_menu_decode').tabIndex = -1;
+}
+
+function showInfoFromActionMenu() {
+	closeActionMenu();
+	showInfo();
+}
+
+function toggleMapViewTypeFromActionMenu() {
+	closeActionMenu();
+	toggleMapViewType();
+}
+
+function toggleDecodeViewFromActionMenu() {
+	closeActionMenu();
+	toggleDecodeView();
+}
+
 function resizeInput() {
-	document.getElementById('decode_input_shadow').innerText = this.value;
-	this.style.width = document.getElementById('decode_input_shadow').offsetWidth+'px';
+	var shadow = document.getElementById('decode_input_shadow');
+	var longest_line = this.value.split(/\r?\n/).reduce(function(longest, line) {
+		return line.length > longest.length ? line : longest;
+	}, '');
+	shadow.innerText = longest_line || this.getAttribute('placeholder');
+	this.style.width = shadow.offsetWidth+'px';
+	this.style.height = '26px';
+	this.style.height = Math.min(this.scrollHeight - 16, 112)+'px';
 }
 
 function showAndCopy(message) {
