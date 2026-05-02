@@ -924,6 +924,7 @@ var cityNameList;
 
 var WCODE_CODE_COPIED_MESSAGE = "Wolo Code copied to clipboard";
 var WCODE_LINK_COPIED_MESSAGE = "Wolo Code link copied to clipboard";
+var ADDRESS_COPIED_MESSAGE = "Address copied to clipboard";
 
 // Code\Core
 var PURE_WCODE_CITY_PICKED = "Since your city is not set - city was chosen from the last location";
@@ -1044,8 +1045,8 @@ function syncCheckIncompatibleBrowserMessage() {
 
 #address_text_main {
 	display: inline-block;
-	float: left;
-	min-width: 89%;
+	/* float: left; */
+	/* min-width: 89%; */
 }
 
 #address_text_label {
@@ -1067,7 +1068,7 @@ function syncCheckIncompatibleBrowserMessage() {
 	min-height: 48px;
 	max-width: 306px;
 	text-align: left;
-	padding: 6px 0 6px 6px;
+	padding: 6px 4px;
 	color: #888888;
 }
 
@@ -2049,6 +2050,12 @@ h2.message_dialog_label {
 	cursor: pointer;
 }
 
+#account_dialog_save_list_container {
+	max-height: 40vh;
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+
 .hr-separator {
 	border-bottom: 1px solid #AAAAAA;
 }
@@ -2067,8 +2074,17 @@ h2.message_dialog_label {
 	left: auto;
 }
 
-#account_dialog_save_list_placeholder, #account_dialog_save_list_loader {
-	padding-right: 42px;
+#account_dialog_save button, #account_dialog_logout button {
+	background: transparent;
+	border: none;
+	box-shadow: none;
+	left: auto;
+	margin-right: 0;
+}
+
+.account_dialog_save_list_indicator {
+	font-family: 'Roboto Condensed', Abel, sans-serif;
+	margin: 6px 0;
 	text-align: right;
 }
 
@@ -3826,7 +3842,7 @@ body:not(.decode) .view_toggle_icon_code,
 	</div>
 	<div id='updated'>Updated:
 		<span id='updated-timestamp'>
-		2026 Apr 29 23:07:56 UTC		</span> ~<span id='updated-timediff'></span> ago
+		2026 May 02 17:18:44 UTC		</span> ~<span id='updated-timediff'></span> ago
 	</div>
 </div>
 
@@ -4027,7 +4043,7 @@ body:not(.decode) .view_toggle_icon_code,
 				</div>
 				<div class='message_dialog_control_container'>
 					<div id='account_dialog_logout' class='message_dialog_control'>
-						<button id='account_dialog_logout_button' class="border control" type='button'>Logout</button>
+						<button id='account_dialog_logout_button' class="control" type='button'>Logout</button>
 					</div>
 				</div>
 			</div>
@@ -4045,7 +4061,7 @@ body:not(.decode) .view_toggle_icon_code,
 				</div>
 				<div class='message_dialog_control_container'>
 					<div id='account_dialog_save' class="message_dialog_control center">
-						<button id='account_dialog_save_button' class="border control" type='button'>Save</button>
+						<button id='account_dialog_save_button' class="control" type='button'>Save</button>
 					</div>
 				</div>
 				<div id='waddress_list_container'></div>
@@ -4055,9 +4071,10 @@ body:not(.decode) .view_toggle_icon_code,
 				Saved
 			</h3>
 			<div id='account_dialog_save_list_container'>
-				<div id='account_dialog_save_list_loader' class='center'>-loading-</div>
-				<div id='account_dialog_save_list_placeholder' class="center hide">-empty-</div>
+				<div id='account_dialog_save_list_loader' class='account_dialog_save_list_indicator'>-loading-</div>
+				<div id='account_dialog_save_list_placeholder' class="account_dialog_save_list_indicator hide">-empty-</div>
 				<div id=account_dialog_save_list></div>
+				<div id='account_dialog_save_list_end' class="account_dialog_save_list_indicator hide">-end-</div>
 			</div>
 		</div>
 	</div>
@@ -4255,17 +4272,6 @@ body:not(.decode) .view_toggle_icon_code,
 	</div>
 	<div id='address_text_main'>
 		<span id='address_text_content'></span>
-	</div>
-	<div id='address_text_buttons'>
-		<span class='address_text_button_spacer'></span>
-		<span id='address_text_copy' class="control image"><svg xmlns='http://www.w3.org/2000/svg'
-	 height='20' width='20'
-	 viewBox="0 0 24 24">
-	<path fill='none' d="M0 0h24v24H0z" />
-	<path fill='#69B7CF' d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
-</svg>
-</span>
-		<span class='address_text_button_spacer'></span>
 	</div>
 </div>
 <script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-app.js"></script>
