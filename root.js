@@ -31,7 +31,52 @@ ClickEventHandler.prototype.getPlaceInformation = function(placeId) {
 // var refCityCenter;
 // var geoFire;
 
+function isFirebaseIndexedDbClosingError(error) {
+	var message = '';
+	if(error) {
+		if(error.message)
+			message = error.message;
+		else if(typeof error == 'string')
+			message = error;
+	}
+	return message.indexOf('database connection is closing') != -1 && (!error.name || error.name == 'InvalidStateError');
+}
+
+function recoverFirebaseIndexedDbConnection(error) {
+	if(typeof Sentry != 'undefined')
+		Sentry.captureException(error);
+	if(typeof sessionStorage != 'undefined' && sessionStorage.firebase_indexeddb_recovery == 'reloading')
+		return true;
+	if(typeof sessionStorage != 'undefined')
+		sessionStorage.firebase_indexeddb_recovery = 'reloading';
+	window.location.reload();
+	return true;
+}
+
+function firebaseResumeRecoveryInit() {
+	window.addEventListener('error', function(event) {
+		if(isFirebaseIndexedDbClosingError(event.error || event.message)) {
+			event.preventDefault();
+			event.stopImmediatePropagation();
+			recoverFirebaseIndexedDbConnection(event.error || new Error(event.message));
+		}
+	}, true);
+	window.addEventListener('unhandledrejection', function(event) {
+		if(isFirebaseIndexedDbClosingError(event.reason)) {
+			event.preventDefault();
+			event.stopImmediatePropagation();
+			recoverFirebaseIndexedDbConnection(event.reason);
+		}
+	}, true);
+	if(typeof sessionStorage != 'undefined' && sessionStorage.firebase_indexeddb_recovery == 'reloading') {
+		setTimeout(function() {
+			delete sessionStorage.firebase_indexeddb_recovery;
+		}, 5000);
+	}
+}
+
 function firebaseInit() {
+	firebaseResumeRecoveryInit();
 	pushLoader();
 	firebase.initializeApp(FIREBASE_CONFIG);
 	popLoader();
@@ -95,6 +140,9 @@ function onAccount() {
 
 function showAccountDialog() {
 	showOverlay(document.getElementById('account_dialog_container'));
+	var dialogBody = document.querySelector('#account_dialog > .message_dialog_body');
+	if(dialogBody)
+		dialogBody.scrollTop = 0;
 	if(current_title)
 		document.getElementById('save_title_main').value = current_title;
 	else
@@ -177,12 +225,12 @@ function onAccountDialogAddressActive() {
 }
 
 function updateSaveListEndIndicator() {
-	var listContainer = document.getElementById('account_dialog_save_list_container');
+	var list = document.getElementById('account_dialog_save_list');
 	var endIndicator = document.getElementById('account_dialog_save_list_end');
-	if(!listContainer || !endIndicator)
+	if(!list || !endIndicator)
 		return;
 	endIndicator.classList.add('hide');
-	if(listContainer.scrollHeight > listContainer.clientHeight)
+	if(list.children.length)
 		endIndicator.classList.remove('hide');
 }
 
@@ -231,7 +279,7 @@ function loadSaveList() {
 					row_code.innerText = '\\' + ' ' + saveList[key].code.join(' ') + ' ' + '/';
 					row_controls.setAttribute('class', 'row-controls');
 					row_delete.setAttribute('class', 'row-delete');
-					row_delete.innerText = 'Delete';
+					row_delete.innerText = 'delete';
 					row_delete.addEventListener('click', deleteSaveEntry);
 					row_process.setAttribute('class', 'row-process');
 					row_process_img.src = svg_front;
@@ -1551,7 +1599,7 @@ function authInit() {
 				popLoader();
 			}
 		},
-		signInFlow: 'popup',
+		signInFlow: 'redirect',
 		signInOptions: [
 			firebase.auth.GoogleAuthProvider.PROVIDER_ID,
 			firebase.auth.FacebookAuthProvider.PROVIDER_ID,
@@ -2806,6 +2854,10 @@ function initApp() {
 			document.getElementById('account_default_image').classList.remove('hide');
 		}
 	}).catch(function(error) {
+		if(isFirebaseIndexedDbClosingError(error)) {
+			recoverFirebaseIndexedDbConnection(error);
+			return;
+		}
 		Sentry.captureException(error);
 	});
 }

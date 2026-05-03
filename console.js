@@ -31,7 +31,52 @@ ClickEventHandler.prototype.getPlaceInformation = function(placeId) {
 // var refCityCenter;
 // var geoFire;
 
+function isFirebaseIndexedDbClosingError(error) {
+	var message = '';
+	if(error) {
+		if(error.message)
+			message = error.message;
+		else if(typeof error == 'string')
+			message = error;
+	}
+	return message.indexOf('database connection is closing') != -1 && (!error.name || error.name == 'InvalidStateError');
+}
+
+function recoverFirebaseIndexedDbConnection(error) {
+	if(typeof Sentry != 'undefined')
+		Sentry.captureException(error);
+	if(typeof sessionStorage != 'undefined' && sessionStorage.firebase_indexeddb_recovery == 'reloading')
+		return true;
+	if(typeof sessionStorage != 'undefined')
+		sessionStorage.firebase_indexeddb_recovery = 'reloading';
+	window.location.reload();
+	return true;
+}
+
+function firebaseResumeRecoveryInit() {
+	window.addEventListener('error', function(event) {
+		if(isFirebaseIndexedDbClosingError(event.error || event.message)) {
+			event.preventDefault();
+			event.stopImmediatePropagation();
+			recoverFirebaseIndexedDbConnection(event.error || new Error(event.message));
+		}
+	}, true);
+	window.addEventListener('unhandledrejection', function(event) {
+		if(isFirebaseIndexedDbClosingError(event.reason)) {
+			event.preventDefault();
+			event.stopImmediatePropagation();
+			recoverFirebaseIndexedDbConnection(event.reason);
+		}
+	}, true);
+	if(typeof sessionStorage != 'undefined' && sessionStorage.firebase_indexeddb_recovery == 'reloading') {
+		setTimeout(function() {
+			delete sessionStorage.firebase_indexeddb_recovery;
+		}, 5000);
+	}
+}
+
 function firebaseInit() {
+	firebaseResumeRecoveryInit();
 	pushLoader();
 	firebase.initializeApp(FIREBASE_CONFIG);
 	popLoader();

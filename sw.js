@@ -1,4 +1,4 @@
-var cacheName = 'v1:static';
+var cacheName = 'v2:static';
 
 self.addEventListener('install', function(e) { e.waitUntil(
 		caches.open(cacheName).then(function(cache) {
@@ -16,7 +16,25 @@ self.addEventListener('install', function(e) { e.waitUntil(
 	);
 });
 
+self.addEventListener('activate', function(e) { e.waitUntil(
+		caches.keys().then(function(cacheNames) {
+			return Promise.all(cacheNames.map(function(name) {
+				if(name != cacheName)
+					return caches.delete(name);
+			}));
+		}).then(function() {
+			return self.clients.claim();
+		})
+	);
+});
+
 self.addEventListener('fetch', function(event) {
+	if(event.request.mode == 'navigate') {
+		event.respondWith(fetch(event.request).catch(function() {
+			return caches.match(event.request);
+		}));
+		return;
+	}
 	event.respondWith(
 			caches.match(event.request).then(function(response) {
 					if (response) {

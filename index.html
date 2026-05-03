@@ -583,6 +583,12 @@ function isBadGeoPosition(pos) {
 
 function getCoarseLocation(success, failure) {
 	if (!navigator.geolocation) return failure?.("unsupported");
+	if (navigator.userActivation && !navigator.userActivation.isActive) {
+		return failure?.({
+			code: "USER_GESTURE_REQUIRED",
+			message: "Geolocation must be requested from a user gesture"
+		});
+	}
 
 	navigator.geolocation.getCurrentPosition(
 		(pos) => {
@@ -691,7 +697,7 @@ var start = function(e) {
 
 function addLongpressListener(node, fnShort, fnLong) {
 	node.addEventListener('mousedown', start);
-	node.addEventListener('touchstart', start);
+	node.addEventListener('touchstart', start, { passive: true });
 	node.addEventListener('click', click);
 	node.addEventListener('mouseout', cancel);
 	node.addEventListener('touchend', cancel);
@@ -1982,10 +1988,14 @@ h2.message_dialog_label {
 
 #account_dialog {
 	max-width: 320px;
+	max-height: calc(100vh - 32px);
 	background: white;
 	font-family: 'Abel';
 	background-color: #FFFFFF;
 	border: 1px solid transparent;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
 }
 
 #account svg {
@@ -1998,10 +2008,6 @@ h2.message_dialog_label {
 
 .message_dialog_body h3 {
 	text-align: left;
-}
-
-#firebaseui-auth-container {
-	
 }
 
 #firebaseui-auth > div {
@@ -2051,7 +2057,13 @@ h2.message_dialog_label {
 }
 
 #account_dialog_save_list_container {
-	max-height: 40vh;
+	overflow-x: hidden;
+	overflow-y: visible;
+}
+
+#account_dialog > .message_dialog_body {
+	flex: 1 1 auto;
+	min-height: 0;
 	overflow-x: hidden;
 	overflow-y: auto;
 }
@@ -2074,6 +2086,22 @@ h2.message_dialog_label {
 	left: auto;
 }
 
+#account_dialog_main {
+	padding-top: 8px;
+}
+
+#account_dialog_main > .message_dialog_control_container,
+#account_dialog_options > .message_dialog_control_container {
+	display: flex;
+	justify-content: flex-end;
+	width: 100%;
+}
+
+#account_dialog_logout, #account_dialog_save {
+	margin-left: 0;
+	margin-right: 0;
+}
+
 #account_dialog_save button, #account_dialog_logout button {
 	background: transparent;
 	border: none;
@@ -2085,7 +2113,28 @@ h2.message_dialog_label {
 .account_dialog_save_list_indicator {
 	font-family: 'Roboto Condensed', Abel, sans-serif;
 	margin: 6px 0;
-	text-align: right;
+	text-align: center;
+}
+
+#account_dialog_save_list_loader {
+	animation: account-dialog-loading 1.2s ease-in-out infinite;
+}
+
+#account_dialog_save_list_end {
+	padding-top: 18px;
+	color: #c7c7c7;
+	font-size: small;
+	letter-spacing: 2px;
+}
+
+@keyframes account-dialog-loading {
+	0%, 100% {
+		opacity: 0.35;
+	}
+
+	50% {
+		opacity: 1;
+	}
 }
 
 .row-header {
@@ -2150,7 +2199,8 @@ h2.message_dialog_label {
 	color: #69B7CF;
 	position: relative;
 	left: 50%;
-	box-shadow: rgba(0, 0, 0, 0.285) 0px 1px 4px -1px;
+	border: none;
+	box-shadow: none;
 	font-family: 'Roboto Condensed', Abel, sans-serif;
 	display: inline-block;
 	text-align: center;
@@ -2636,6 +2686,15 @@ body:not(.decode) .view_toggle_icon_code,
 	padding-top: 4px;
 	height: 14px;
 	width: 152px;
+}
+
+#info_version_indicator {
+	position: absolute;
+	bottom: 8px;
+	right: 12px;
+	color: #bbbbbb;
+	font-size: 0.78em;
+	line-height: 1;
 }
 
 #info_intro {
@@ -3503,6 +3562,7 @@ body:not(.decode) .view_toggle_icon_code,
 </span>
 		</a>
 	</div>
+	<div id='info_version_indicator'>v1.1.1</div>
 	<h1>
 	<a class='link' href='/about'>simplest precise address</a>
 </h1>
@@ -3838,11 +3898,11 @@ body:not(.decode) .view_toggle_icon_code,
 <div id='credits'>Wolo Code makes use of these opensource projects: <a class='link' href="https://wolo.codes/credits">wolo.codes/credits</a></div>
 <div id='software_info'>
 	<div id='version'>
-		Version: <span>1.1</span>
+		Version: <span>1.1.1</span>
 	</div>
 	<div id='updated'>Updated:
 		<span id='updated-timestamp'>
-		2026 May 02 17:18:44 UTC		</span> ~<span id='updated-timediff'></span> ago
+		2026 May 03 16:19:54 UTC		</span> ~<span id='updated-timediff'></span> ago
 	</div>
 </div>
 
@@ -4043,7 +4103,7 @@ body:not(.decode) .view_toggle_icon_code,
 				</div>
 				<div class='message_dialog_control_container'>
 					<div id='account_dialog_logout' class='message_dialog_control'>
-						<button id='account_dialog_logout_button' class="control" type='button'>Logout</button>
+						<button id='account_dialog_logout_button' class="control" type='button'>logout</button>
 					</div>
 				</div>
 			</div>
@@ -4061,7 +4121,7 @@ body:not(.decode) .view_toggle_icon_code,
 				</div>
 				<div class='message_dialog_control_container'>
 					<div id='account_dialog_save' class="message_dialog_control center">
-						<button id='account_dialog_save_button' class="control" type='button'>Save</button>
+						<button id='account_dialog_save_button' class="control" type='button'>save</button>
 					</div>
 				</div>
 				<div id='waddress_list_container'></div>
@@ -4071,10 +4131,10 @@ body:not(.decode) .view_toggle_icon_code,
 				Saved
 			</h3>
 			<div id='account_dialog_save_list_container'>
-				<div id='account_dialog_save_list_loader' class='account_dialog_save_list_indicator'>-loading-</div>
+				<div id='account_dialog_save_list_loader' class='account_dialog_save_list_indicator'>loading...</div>
 				<div id='account_dialog_save_list_placeholder' class="account_dialog_save_list_indicator hide">-empty-</div>
 				<div id=account_dialog_save_list></div>
-				<div id='account_dialog_save_list_end' class="account_dialog_save_list_indicator hide">-end-</div>
+				<div id='account_dialog_save_list_end' class="account_dialog_save_list_indicator hide">— * —</div>
 			</div>
 		</div>
 	</div>
