@@ -659,6 +659,223 @@ function getProperCityAccent(city) {
 	return city.name;
 }
 
+function initDecodeCityContext() {
+	decode_city_history = getDecodeCityHistory();
+	syncDecodeCityHistoryControl();
+
+	if(decode_city_history.length > 0)
+		setDecodeCity(decode_city_history[0], 'history', false);
+	else
+		setDecodeCityLabel('');
+
+	getCityByIp(function() {
+		if(!selected_decode_city)
+			selectIpDecodeCity();
+	});
+}
+
+function setDecodeCityFromIp(city_name) {
+	geoIp_city_name = city_name;
+	if(selected_decode_city_source == 'ip' || !selected_decode_city)
+		selectIpDecodeCity();
+}
+
+function selectIpDecodeCity() {
+	if(!geoIp_city_name) {
+		getCityByIp();
+		return;
+	}
+
+	selected_decode_city = {
+		name: geoIp_city_name
+	};
+	selected_decode_city_source = 'ip';
+	setDecodeCityLabel(geoIp_city_name);
+	syncDecodeCitySourceButtons();
+}
+
+function requestDecodeCityGeolocation() {
+	selected_decode_city = null;
+	selected_decode_city_source = 'geolocation';
+	setDecodeCityLabel('loading...');
+	syncDecodeCitySourceButtons();
+
+	initLocate(true, function(failure) {
+		function fail() {
+			selected_decode_city_source = null;
+			setDecodeCityLabel('');
+			syncDecodeCitySourceButtons();
+			if(typeof failure == 'function')
+				failure();
+			else
+				popLoader();
+			showNotification(PURE_WCODE_CITY_FAILED);
+		}
+
+		getCoarseLocation(function(position) {
+			getCityFromPositionViaGMap(position, function(city) {
+				getCityCenterFromId(city, function(city) {
+					setDecodeCity(city, 'geolocation', true);
+				});
+			}, fail);
+		}, fail);
+	});
+}
+
+function setDecodeCity(city, source, save_history) {
+	if(!city)
+		return;
+
+	selected_decode_city = city;
+	selected_decode_city_source = source;
+
+	if(city.gp_id)
+		current_city_gp_id = city.gp_id;
+	if(source == 'ip') {
+		geoIP_city = city;
+		geoIp_city_name = city.name;
+	}
+
+	setDecodeCityLabel(getDecodeCityDisplayName(city));
+	if(save_history)
+		saveDecodeCity(city);
+	syncDecodeCitySourceButtons();
+}
+
+function setDecodeCityLabel(label) {
+	var city_label = document.getElementById('decode_input_city');
+	if(city_label)
+		city_label.innerText = label || '\u00a0';
+}
+
+function getDecodeCityDisplayName(city) {
+	if(!city)
+		return '';
+	if(city.name)
+		return getProperCityAccent(city);
+	return '';
+}
+
+function getDecodeCityStorageKey() {
+	return 'decode_city_history';
+}
+
+function getDecodeCityHistory() {
+	if(typeof(Storage) === 'undefined' || typeof localStorage[getDecodeCityStorageKey()] == 'undefined')
+		return [];
+
+	try {
+		var history = JSON.parse(localStorage[getDecodeCityStorageKey()]);
+		if(Array.isArray(history))
+			return history.filter(function(city) { return city && city.name; });
+	}
+	catch(error) {}
+
+	return [];
+}
+
+function saveDecodeCity(city) {
+	if(typeof(Storage) === 'undefined' || !city || !city.name)
+		return;
+
+	var saved_city = cloneDecodeCity(city);
+	var history = getDecodeCityHistory().filter(function(entry) {
+		return getDecodeCityHistoryKey(entry) != getDecodeCityHistoryKey(saved_city);
+	});
+	history.unshift(saved_city);
+	history = history.slice(0, 8);
+	localStorage[getDecodeCityStorageKey()] = JSON.stringify(history);
+	decode_city_history = history;
+	syncDecodeCityHistoryControl();
+}
+
+function cloneDecodeCity(city) {
+	var saved_city = {
+		id: city.id,
+		gp_id: city.gp_id,
+		name: city.name,
+		name_id: city.name_id,
+		accent: city.accent,
+		country: city.country,
+		administrative_level_1: city.administrative_level_1,
+		administrative_level_2: city.administrative_level_2,
+		locality: city.locality
+	};
+	if(city.center)
+		saved_city.center = {
+			lat: city.center.lat,
+			lng: city.center.lng
+		};
+	return saved_city;
+}
+
+function getDecodeCityHistoryKey(city) {
+	return city.id || city.gp_id || city.name;
+}
+
+function syncDecodeCityHistoryControl() {
+	decode_city_history = getDecodeCityHistory();
+
+	var toggle = document.getElementById('decode_city_history_toggle');
+	if(toggle)
+		toggle.disabled = decode_city_history.length == 0;
+}
+
+function showDecodeCityHistoryMessage() {
+	var toggle = document.getElementById('decode_city_history_toggle');
+	var container = document.getElementById('decode_city_history_message_list');
+	if(!toggle || !container || decode_city_history.length == 0)
+		return;
+
+	clearDecodeCityHistoryList();
+	for(var i = 0; i < decode_city_history.length; i++) {
+		var row = document.createElement('div');
+		row.innerText = getDecodeCityDisplayName(decode_city_history[i]);
+		row.data_id = i;
+		row.addEventListener('click', chooseDecodeCityFromHistory);
+		container.appendChild(row);
+	}
+	toggle.setAttribute('aria-expanded', true);
+	showOverlay(document.getElementById('decode_city_history_message'));
+}
+
+function hideDecodeCityHistoryMessage() {
+	hideOverlay(document.getElementById('decode_city_history_message'));
+	clearDecodeCityHistoryList();
+	var toggle = document.getElementById('decode_city_history_toggle');
+	if(toggle)
+		toggle.setAttribute('aria-expanded', false);
+}
+
+function clearDecodeCityHistoryList() {
+	var container = document.getElementById('decode_city_history_message_list');
+	if(container)
+		container.innerHTML = '';
+}
+
+function chooseDecodeCityFromHistory(e) {
+	var id = e.currentTarget.data_id;
+	var city = decode_city_history[parseInt(id, 10)];
+
+	if(city) {
+		setDecodeCity(city, 'history', true);
+		hideDecodeCityHistoryMessage();
+	}
+}
+
+function syncDecodeCitySourceButtons() {
+	var controls = {
+		geolocation: document.getElementById('decode_city_geolocation'),
+		ip: document.getElementById('decode_city_ip'),
+		history: document.getElementById('decode_city_history_toggle')
+	};
+
+	for(var source in controls) {
+		if(controls[source])
+			controls[source].classList.toggle('active', selected_decode_city_source == source);
+	}
+}
+
 var geoQuery_completed;
 var nearCity;
 var pending_encode_latLng;
@@ -1099,6 +1316,7 @@ function getCityBegin(cityCenter) {
 
 function encode_(city, position) {
 	code_city = city;
+	setDecodeCity(city, 'history', true);
 	const code = encode__(getCityBegin(city.center), position);
 	for(var i of code)
 		if(i < 0 || i > 1023) {
@@ -1121,6 +1339,7 @@ function setCodeWords(code, city, position) {
 
 function decode_(city, code) {
 	code_city = city;
+	setDecodeCity(city, selected_decode_city_source || 'history', true);
 	var data = [];
 	data[0] = wordList.indexOf(code[0]);
 	data[1] = wordList.indexOf(code[1]);
@@ -1319,7 +1538,13 @@ function decode(words) {
 			}
 			else if (words.length == 3) {
 				
-				if(typeof(current_city_gp_id) != 'undefined' && current_city_gp_id != null)
+				if(selected_decode_city && selected_decode_city_source == 'ip') {
+					decodeWithIpCity(words);
+				}
+				else if(selected_decode_city && selected_decode_city.center) {
+					decode_continue(selected_decode_city, words);
+				}
+				else if(typeof(current_city_gp_id) != 'undefined' && current_city_gp_id != null)
 					getCityFromCityGp_idThenDecode(current_city_gp_id, words);
 				else {
 					
@@ -1817,7 +2042,11 @@ function showInfoWindow() {
 	initInfoWindow();
 	infoWindow.open(map, marker);
 }
-function getCityByIp() {
+function getCityByIp(retry_count, callback) {
+	if(typeof retry_count == 'function') {
+		callback = retry_count;
+		retry_count = 0;
+	}
 
 	var http = new XMLHttpRequest();
 	http.open('POST', FUNCTIONS_BASE_URL+'/'+'cityByIp', true);
@@ -1825,6 +2054,7 @@ function getCityByIp() {
 	http.setRequestHeader('Content-type', 'application/json');
 	http.setRequestHeader('version', '1');
 	http.requestId = ++curGeoIpRequestId;
+	retry_count = retry_count || 0;
 
 	pushLoader();
 	http.onreadystatechange = function() {
@@ -1834,13 +2064,33 @@ function getCityByIp() {
 				if(http.status == 200) {
 
 						if(http.responseText == '')
-							console.log(http.responseText);
+							retryCityByIp(retry_count, callback);
 						else {
-							geoIp_country_code = JSON.parse(http.responseText).country;
-							geoIp_city_name = JSON.parse(http.responseText).city;
-							document.getElementById('decode_input_city').innerText = geoIp_city_name;
-							if(pendingWords_geo)
-								decodeWithIpCity(pendingWords_geo);
+							var response;
+							try {
+								response = JSON.parse(http.responseText);
+							}
+							catch(error) {
+								retryCityByIp(retry_count, callback);
+								return;
+							}
+							var city_name = normalizeIpCityName(response.city);
+
+							if(city_name == null) {
+								retryCityByIp(retry_count, callback);
+								return;
+							}
+
+							geoIp_country_code = response.country;
+							geoIp_city_name = city_name;
+							setDecodeCityFromIp(city_name);
+							if(typeof callback == 'function')
+								callback(city_name);
+							if(pendingWords_geo) {
+								var pending_words = pendingWords_geo;
+								pendingWords_geo = null;
+								decodeWithIpCity(pending_words);
+							}
 						}
 				}
 				else if(http.status == 416) {
@@ -1853,6 +2103,41 @@ function getCityByIp() {
 	http.send( );
 	return '';
 	
+}
+
+function normalizeIpCityName(city_name) {
+	if(typeof city_name != 'string')
+		return null;
+
+	city_name = city_name.trim();
+	if(city_name == '' || city_name.toLowerCase() == 'undefined')
+		return null;
+
+	return city_name;
+}
+
+function retryCityByIp(retry_count, callback) {
+	var MAX_CITY_BY_IP_RETRIES = 2;
+	var CITY_BY_IP_RETRY_DELAY = 750;
+
+	if(retry_count < MAX_CITY_BY_IP_RETRIES) {
+		setTimeout(function() {
+			getCityByIp(retry_count + 1, callback);
+		}, CITY_BY_IP_RETRY_DELAY);
+	}
+	else {
+		geoIp_city_name = '';
+		failPendingIpCityDecode();
+	}
+}
+
+function failPendingIpCityDecode() {
+	if(!pendingWords_geo)
+		return;
+
+	pendingWords_geo = null;
+	popLoader();
+	showNotification(PURE_WCODE_CITY_FAILED);
 }
 var marker;
 var infoWindow;
@@ -2822,6 +3107,8 @@ if ('serviceWorker' in navigator) {
 	});
 }
 // var syncLocate_engage;
+var actionMenuTimeout = null;
+var actionMenuTimeoutDuration = 5000;
 
 function initLoad () {
 	if(!initLoadDone && document.readyState === 'interactive') {
@@ -2892,6 +3179,10 @@ function setupControls() {
 	document.getElementById('info_intro_close_button').addEventListener('click', closeInfo);
 	document.getElementById('info_full_close_button').addEventListener('click', closeInfo);
 	document.getElementById('action_menu_toggle').addEventListener('click', toggleActionMenu);
+	document.getElementById('action_menu').addEventListener('pointerdown', refreshActionMenuTimeout);
+	document.getElementById('action_menu').addEventListener('pointermove', refreshActionMenuTimeout);
+	document.getElementById('action_menu').addEventListener('focusin', refreshActionMenuTimeout);
+	document.getElementById('action_menu').addEventListener('keydown', refreshActionMenuTimeout);
 	document.getElementById('action_menu_info').addEventListener('click', showInfoFromActionMenu);
 	document.getElementById('action_menu_map').addEventListener('click', toggleMapViewTypeFromActionMenu);
 	document.getElementById('action_menu_decode').addEventListener('click', toggleDecodeViewFromActionMenu);
@@ -2911,6 +3202,7 @@ function setupControls() {
 	document.getElementById('incompatible_browser_message_continue').addEventListener('click', hideIncompatibleBrowserMessage);
 	document.getElementById('address_text_close').addEventListener('click', hideAddress);
 	document.getElementById('address_text_main').addEventListener('click', copyAddress);
+	document.getElementById('decode_city_history_message_close').addEventListener('click', hideDecodeCityHistoryMessage);
 	document.getElementById('choose_city_by_name_message_close').addEventListener('click', hideChooseCityMessage);
 	document.getElementById('choose_city_by_periphery_message_close').addEventListener('click', hideChooseCity_by_periphery_Message);
 	document.getElementById('qr_close').addEventListener('click', closeQR);
@@ -2918,6 +3210,9 @@ function setupControls() {
 	document.getElementById('qr_print').addEventListener('click', printQR);
 	document.getElementById('qr_address').addEventListener('focus', qr_address_active);
 	document.getElementById('decode_input').addEventListener('input', resizeInput);
+	document.getElementById('decode_city_geolocation').addEventListener('click', requestDecodeCityGeolocation);
+	document.getElementById('decode_city_ip').addEventListener('click', selectIpDecodeCity);
+	document.getElementById('decode_city_history_toggle').addEventListener('click', showDecodeCityHistoryMessage);
 	document.getElementById('external_close').addEventListener('click', external_close);
 	addLongpressListener(document.getElementById('external_proceed'), external_proceed_external, external_proceed_internal);
 	addLongpressListener(document.getElementById('qr_download'), downloadQR, onQRDialogSave);
@@ -2930,6 +3225,10 @@ function toggleActionMenu() {
 	document.getElementById('action_menu_info').tabIndex = is_open ? 0 : -1;
 	document.getElementById('action_menu_map').tabIndex = is_open ? 0 : -1;
 	document.getElementById('action_menu_decode').tabIndex = is_open ? 0 : -1;
+	if(is_open)
+		refreshActionMenuTimeout();
+	else
+		clearActionMenuTimeout();
 }
 
 function closeActionMenu() {
@@ -2938,6 +3237,21 @@ function closeActionMenu() {
 	document.getElementById('action_menu_info').tabIndex = -1;
 	document.getElementById('action_menu_map').tabIndex = -1;
 	document.getElementById('action_menu_decode').tabIndex = -1;
+	clearActionMenuTimeout();
+}
+
+function refreshActionMenuTimeout() {
+	if(!document.getElementById('action_menu').classList.contains('open'))
+		return;
+	clearActionMenuTimeout();
+	actionMenuTimeout = setTimeout(closeActionMenu, actionMenuTimeoutDuration);
+}
+
+function clearActionMenuTimeout() {
+	if(actionMenuTimeout) {
+		clearTimeout(actionMenuTimeout);
+		actionMenuTimeout = null;
+	}
 }
 
 function showInfoFromActionMenu() {

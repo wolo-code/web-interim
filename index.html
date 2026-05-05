@@ -322,7 +322,7 @@ function locateExec(failure) {
 			document.getElementById('proceed_progress').style.transition = 'width' + ' ' + WATCH_LOCATION_MAX_TIMEOUT/1000 + 's' + ' ' + 'linear';
 			document.getElementById('proceed_progress').style.width = "100%";
 			
-			accuracy_indicator.classList.add('blinking');
+			addClassIfPresent(typeof accuracy_indicator == 'undefined' ? null : accuracy_indicator, 'blinking');
 			location_button.removeEventListener('mouseup', processPositionButtonUp);
 			location_button.removeEventListener('touchend', processPositionButtonTouchEnd);
 			location_button.addEventListener('mouseup', processPositionButtonUp);
@@ -483,10 +483,8 @@ function processPositionButtonDown() {
 
 function processPositionButtonUp() {
 	var press_duration = locating && (new Date).getTime() - location_button_begin_time;
-	if(press_duration > location_button_PRESS_THRESHOLD) {
-		location_icon_dot.classList.add('blinking');
-	}
-	else
+	var location_dot = typeof location_icon_dot == 'undefined' ? null : location_icon_dot;
+	if(!(press_duration > location_button_PRESS_THRESHOLD && addClassIfPresent(location_dot, 'blinking')))
 		locate_button_pressed = false;
 	disarmPositionButtonReleaseHandlers();
 }
@@ -535,11 +533,25 @@ function clearLocating(hideAccuracyContainer) {
 		document.getElementById('accuracy_container').classList.add('hide');
 	locating = false;
 	popLoader();
-	location_icon_dot.classList.remove('blinking');
-	accuracy_indicator.classList.remove('blinking');
+	removeClassIfPresent(typeof location_icon_dot == 'undefined' ? null : location_icon_dot, 'blinking');
+	removeClassIfPresent(typeof accuracy_indicator == 'undefined' ? null : accuracy_indicator, 'blinking');
 	hideNotication();
 	clearTimeout(watch_location_notice_timer);
 	disarmPositionButtonReleaseHandlers();
+}
+
+function addClassIfPresent(element, className) {
+	if(typeof element == 'undefined' || !element || !element.classList)
+		return false;
+	element.classList.add(className);
+	return true;
+}
+
+function removeClassIfPresent(element, className) {
+	if(typeof element == 'undefined' || !element || !element.classList)
+		return false;
+	element.classList.remove(className);
+	return true;
 }
 
 function watch_location_notice() {
@@ -554,7 +566,7 @@ function watch_location_notice() {
 }
 
 function getCityFromPositionViaGMap(position, callback_success, callback_failure) {
-	encode_session_id = Date.now;
+	encode_session_id = Date.now();
 	var session_id = encode_session_id;
 	getAddress( {'lat':position.coords.latitude, 'lng':position.coords.longitude}, session_id, function(address_components) {
 			var city_gp_id = getCityGpId(address_components);
@@ -565,6 +577,8 @@ function getCityFromPositionViaGMap(position, callback_success, callback_failure
 						callback_success(city);
 				}, callback_failure );
 			}
+			else if(typeof callback_failure == 'function')
+				callback_failure();
 	} );
 }
 
@@ -729,28 +743,7 @@ function syncInitMap() {
 			});
 			initMap();
 
-			if(!locationAccessCheck()) {
-				getCityByIp();
-			}
-			else {
-				
-				var position;
-				initLocate(false, function() {
-					function fallbackToCityByIp() {
-						getCityByIp();
-					}
-
-					getCoarseLocation(function(position) {
-						getCityFromPositionViaGMap(position, function(city) {
-							document.getElementById('decode_input_city').innerText = city.name;
-							getCityCenterFromId(city, function() {
-								geoIP_city = city;
-							} );
-						}, fallbackToCityByIp) }, fallbackToCityByIp);
-					return;
-				});
-
-			}
+			initDecodeCityContext();
 
 			pendingInitMap = false;
 		}
@@ -1017,6 +1010,9 @@ var geoIp_country_code;
 var geoIp_city_name;
 var pendingWords_geo;
 var geoIP_city;
+var selected_decode_city;
+var selected_decode_city_source;
+var decode_city_history;
 // var pendingLocate;
 function syncLocate(override_dnd) {
 	if (typeof google === 'object' && typeof google.maps === 'object' && typeof map == 'object') {
@@ -3076,6 +3072,58 @@ body:not(.decode) .view_toggle_icon_code,
 	text-align: left;	
 }
 
+#decode_city_context {
+	align-items: center;
+	display: flex;
+	flex-direction: column;
+	flex-wrap: wrap;
+	gap: 22px;
+	justify-content: center;
+	min-height: 45px;
+	transform: translateY(-22px);
+}
+
+#decode_city_source_controls {
+	display: inline-flex;
+	gap: 14px;
+}
+
+.decode_city_source_button {
+	-webkit-tap-highlight-color: transparent;
+	align-items: center;
+	background: rgb(255 255 255 / 50%);
+	border: 1px solid rgb(105 183 207 / 35%);
+	border-radius: 50%;
+	color: #69B7CF;
+	cursor: pointer;
+	display: inline-flex;
+	height: 39px;
+	justify-content: center;
+	padding: 0;
+	width: 39px;
+}
+
+.decode_city_source_button svg {
+	display: block;
+	height: 39px;
+	opacity: .55;
+	width: 39px;
+}
+
+#decode_city_history_toggle svg path:not(:first-child) {
+	transform: scale(1.08);
+	transform-origin: center;
+}
+
+.decode_city_source_button.active svg {
+	opacity: 1;
+}
+
+.decode_city_source_button:disabled {
+	cursor: default;
+	opacity: .35;
+}
+
 #map_input_suggestion_result {
 	position: absolute;
 	top: 10px;
@@ -3307,7 +3355,35 @@ body:not(.decode) .view_toggle_icon_code,
 </div>
 <div id='decode_interface_overlay'>
 	<div id='decode_input_container'>
-		<div id='decode_input_city'>&nbsp;</div>
+		<div id='decode_city_context'>
+			<div id='decode_city_source_controls'>
+				<button id='decode_city_geolocation' class='decode_city_source_button' type='button' aria-label='Use geolocation city'>
+					<span class='image'><svg width="39" height="39" version="1.1" viewBox="0 0 39 39" xmlns="http://www.w3.org/2000/svg">
+	<path d="m0 0h24v24h-24z" fill="none"/>
+	<path d="m28.757 18.465c-0.47633-4.318-3.9038-7.7455-8.2218-8.2218v-2.1331h-2.071v2.1331c-4.318 0.47633-7.7455 3.9038-8.2218 8.2218h-2.1331v2.071h2.1331c0.47633 4.318 3.9038 7.7455 8.2218 8.2218v2.1331h2.071v-2.1331c4.318-0.47633 7.7455-3.9038 8.2218-8.2218h2.1331v-2.071zm-9.2573 8.284c-4.0074 0-7.2485-3.2411-7.2485-7.2485s3.2411-7.2485 7.2485-7.2485 7.2485 3.2411 7.2485 7.2485-3.2411 7.2485-7.2485 7.2485z" fill="#69b7cf" stroke-width="1.0355"/>
+	<path id="location_icon_dot" d="m19.5 15.358c-2.2884 0-4.142 1.8535-4.142 4.142s1.8535 4.142 4.142 4.142 4.142-1.8535 4.142-4.142-1.8535-4.142-4.142-4.142z" fill="#69b7cf" stroke-width="1.0355"/>
+</svg>
+</span>
+				</button>
+				<button id='decode_city_ip' class='decode_city_source_button' type='button' aria-label='Use IP city'>
+					<span class='image'><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>
+	<path fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z'/>
+	<path fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M3.6 9h16.8M3.6 15h16.8M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18'/>
+</svg>
+</span>
+				</button>
+				<button id='decode_city_history_toggle' class='decode_city_source_button' type='button' aria-label='Choose previous city' aria-expanded='false'>
+					<span class='image'><svg xmlns="http://www.w3.org/2000/svg" width="39" height="39" viewBox="0 0 39 39">
+	<path d="m0 0h39v39h-39z" fill="none"/>
+	<path d="m11 13h17" stroke="#69b7cf" stroke-linecap="round" stroke-width="2.4"/>
+	<path d="m11 19.5h17" stroke="#69b7cf" stroke-linecap="round" stroke-width="2.4"/>
+	<path d="m11 26h17" stroke="#69b7cf" stroke-linecap="round" stroke-width="2.4"/>
+</svg>
+</span>
+				</button>
+			</div>
+			<div id='decode_input_city'>&nbsp;</div>
+		</div>
 		<div id='decode_input_suggestion_result' class='suggestion_result' data-input='decode_input' data-resize_input='true'></div>
 		<textarea id='decode_input' data-suggest='decode_input_suggestion_result' data-handler='decode_input_button' rows='1' placeholder="\ Wolo Code /" autocomplete='off'></textarea>
 		<div id='decode_input_button' class='control' tabindex='4'>
@@ -3425,6 +3501,23 @@ body:not(.decode) .view_toggle_icon_code,
 			<button id='no_city_submit_wait_continue' class='border' type='button'>Continue</button>
 			<button id='no_city_submit_wait_stop' class='border' type='button'>Stop</button>
 		</div>
+	</div>
+</div>
+<div id='decode_city_history_message' class="choose_city_message message_dialog hide">
+	<h2 class='message_dialog_label'>
+		Choose the city
+	</h2>
+	<div id='decode_city_history_message_close' class="message_dialog_close control">
+		<span class='image'><svg xmlns='http://www.w3.org/2000/svg'
+	 height='22' width='22'
+	 viewBox="0 0 24 24">
+	<path fill='#CECECE' d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+	<path fill='none' d="M0 0h24v24H0z" />
+</svg>
+</span>
+	</div>
+	<div id='decode_city_history_message_prompt' class='message_dialog_body'>
+		<div id='decode_city_history_message_list' class='choose_city_message_list'></div>
 	</div>
 </div>
 <div id='choose_city_by_name_message' class="choose_city_message message_dialog hide">
@@ -3902,7 +3995,7 @@ body:not(.decode) .view_toggle_icon_code,
 	</div>
 	<div id='updated'>Updated:
 		<span id='updated-timestamp'>
-		2026 May 03 16:19:54 UTC		</span> ~<span id='updated-timediff'></span> ago
+		2026 May 05 13:46:50 UTC		</span> ~<span id='updated-timediff'></span> ago
 	</div>
 </div>
 
