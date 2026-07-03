@@ -3110,9 +3110,14 @@ body:not(.decode) .view_toggle_icon_code,
 	width: 39px;
 }
 
-#decode_city_history_toggle svg path:not(:first-child) {
-	transform: scale(1.08);
-	transform-origin: center;
+#decode_city_ip svg {
+	height: 24px;
+	width: 24px;
+}
+
+#decode_city_history_toggle svg{
+	height: 34px;
+	width: 34px;
 }
 
 .decode_city_source_button.active svg {
@@ -3357,18 +3362,18 @@ body:not(.decode) .view_toggle_icon_code,
 	<div id='decode_input_container'>
 		<div id='decode_city_context'>
 			<div id='decode_city_source_controls'>
+				<button id='decode_city_ip' class='decode_city_source_button' type='button' aria-label='Use IP city'>
+					<span class='image'><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>
+	<path fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z'/>
+	<path fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M3.6 9h16.8M3.6 15h16.8M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18'/>
+</svg>
+</span>
+				</button>
 				<button id='decode_city_geolocation' class='decode_city_source_button' type='button' aria-label='Use geolocation city'>
 					<span class='image'><svg width="39" height="39" version="1.1" viewBox="0 0 39 39" xmlns="http://www.w3.org/2000/svg">
 	<path d="m0 0h24v24h-24z" fill="none"/>
 	<path d="m28.757 18.465c-0.47633-4.318-3.9038-7.7455-8.2218-8.2218v-2.1331h-2.071v2.1331c-4.318 0.47633-7.7455 3.9038-8.2218 8.2218h-2.1331v2.071h2.1331c0.47633 4.318 3.9038 7.7455 8.2218 8.2218v2.1331h2.071v-2.1331c4.318-0.47633 7.7455-3.9038 8.2218-8.2218h2.1331v-2.071zm-9.2573 8.284c-4.0074 0-7.2485-3.2411-7.2485-7.2485s3.2411-7.2485 7.2485-7.2485 7.2485 3.2411 7.2485 7.2485-3.2411 7.2485-7.2485 7.2485z" fill="#69b7cf" stroke-width="1.0355"/>
 	<path id="location_icon_dot" d="m19.5 15.358c-2.2884 0-4.142 1.8535-4.142 4.142s1.8535 4.142 4.142 4.142 4.142-1.8535 4.142-4.142-1.8535-4.142-4.142-4.142z" fill="#69b7cf" stroke-width="1.0355"/>
-</svg>
-</span>
-				</button>
-				<button id='decode_city_ip' class='decode_city_source_button' type='button' aria-label='Use IP city'>
-					<span class='image'><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>
-	<path fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z'/>
-	<path fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M3.6 9h16.8M3.6 15h16.8M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18'/>
 </svg>
 </span>
 				</button>
@@ -3995,7 +4000,7 @@ body:not(.decode) .view_toggle_icon_code,
 	</div>
 	<div id='updated'>Updated:
 		<span id='updated-timestamp'>
-		2026 May 05 13:46:50 UTC		</span> ~<span id='updated-timediff'></span> ago
+		2026 Jul 03 22:53:30 UTC		</span> ~<span id='updated-timediff'></span> ago
 	</div>
 </div>
 
