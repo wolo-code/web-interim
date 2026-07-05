@@ -3085,7 +3085,7 @@ body:not(.decode) .view_toggle_icon_code,
 
 #decode_city_source_controls {
 	display: inline-flex;
-	gap: 14px;
+	gap: 36px;
 }
 
 .decode_city_source_button {
@@ -3100,6 +3100,9 @@ body:not(.decode) .view_toggle_icon_code,
 	height: 39px;
 	justify-content: center;
 	padding: 0;
+	transform: scale(1);
+	transform-origin: center;
+	transition: transform 180ms ease, opacity 160ms ease;
 	width: 39px;
 }
 
@@ -3107,6 +3110,7 @@ body:not(.decode) .view_toggle_icon_code,
 	display: block;
 	height: 39px;
 	opacity: .55;
+	transition: opacity 160ms ease;
 	width: 39px;
 }
 
@@ -3120,13 +3124,21 @@ body:not(.decode) .view_toggle_icon_code,
 	width: 34px;
 }
 
-.decode_city_source_button.active svg {
+.decode_city_source_button:hover:not(:disabled),
+.decode_city_source_button.active,
+.decode_city_source_button.activating {
+	transform: scale(1.1);
+}
+
+.decode_city_source_button.active svg,
+.decode_city_source_button.activating svg {
 	opacity: 1;
 }
 
 .decode_city_source_button:disabled {
 	cursor: default;
 	opacity: .35;
+	transform: scale(1);
 }
 
 #map_input_suggestion_result {
@@ -3378,11 +3390,11 @@ body:not(.decode) .view_toggle_icon_code,
 </span>
 				</button>
 				<button id='decode_city_history_toggle' class='decode_city_source_button' type='button' aria-label='Choose previous city' aria-expanded='false'>
-					<span class='image'><svg xmlns="http://www.w3.org/2000/svg" width="39" height="39" viewBox="0 0 39 39">
+					<span class='image'><?xml version="1.0" encoding="UTF-8"?>
+<svg width="39" height="39" version="1.1" viewBox="0 0 39 39" xmlns="http://www.w3.org/2000/svg">
 	<path d="m0 0h39v39h-39z" fill="none"/>
-	<path d="m11 13h17" stroke="#69b7cf" stroke-linecap="round" stroke-width="2.4"/>
-	<path d="m11 19.5h17" stroke="#69b7cf" stroke-linecap="round" stroke-width="2.4"/>
-	<path d="m11 26h17" stroke="#69b7cf" stroke-linecap="round" stroke-width="2.4"/>
+	<path d="m11 14.915h17" stroke="#69b7cf" stroke-linecap="round" stroke-width="2.4"/>
+	<path d="m11 25.915h12" stroke="#69b7cf" stroke-linecap="round" stroke-width="2.4"/>
 </svg>
 </span>
 				</button>
@@ -4000,7 +4012,7 @@ body:not(.decode) .view_toggle_icon_code,
 	</div>
 	<div id='updated'>Updated:
 		<span id='updated-timestamp'>
-		2026 Jul 03 23:28:01 UTC		</span> ~<span id='updated-timediff'></span> ago
+		2026 Jul 05 22:24:12 UTC		</span> ~<span id='updated-timediff'></span> ago
 	</div>
 </div>
 

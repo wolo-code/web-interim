@@ -827,6 +827,7 @@ function showDecodeCityHistoryMessage() {
 	if(!toggle || !container || decode_city_history.length == 0)
 		return;
 
+	toggle.classList.add('activating');
 	clearDecodeCityHistoryList();
 	for(var i = 0; i < decode_city_history.length; i++) {
 		var row = document.createElement('div');
@@ -843,8 +844,10 @@ function hideDecodeCityHistoryMessage() {
 	hideOverlay(document.getElementById('decode_city_history_message'));
 	clearDecodeCityHistoryList();
 	var toggle = document.getElementById('decode_city_history_toggle');
-	if(toggle)
+	if(toggle) {
 		toggle.setAttribute('aria-expanded', false);
+		toggle.classList.remove('activating');
+	}
 }
 
 function clearDecodeCityHistoryList() {
@@ -871,8 +874,11 @@ function syncDecodeCitySourceButtons() {
 	};
 
 	for(var source in controls) {
-		if(controls[source])
+		if(controls[source]) {
 			controls[source].classList.toggle('active', selected_decode_city_source == source);
+			if(selected_decode_city_source == source)
+				controls[source].classList.remove('activating');
+		}
 	}
 }
 
